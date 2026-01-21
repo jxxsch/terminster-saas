@@ -1,11 +1,15 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import createMiddleware from 'next-intl/middleware';
+import { locales, defaultLocale } from './i18n/config';
 
-export function middleware(request: NextRequest) {
-  // Nichts tun - einfach durchlassen
-  return NextResponse.next();
-}
+export default createMiddleware({
+  locales,
+  defaultLocale,
+  localePrefix: 'always'
+});
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  // Match all pathnames except for
+  // - ... if they start with `/api`, `/_next`, `/_vercel`
+  // - ... if they contain a dot (e.g. `favicon.ico`)
+  matcher: ['/((?!api|_next|_vercel|admin|dashboard|.*\\..*).*)']
 };
