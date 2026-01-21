@@ -309,12 +309,12 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
         />
 
         {/* Week Grid */}
-        <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
           <table className="w-full h-full border-collapse" style={{ tableLayout: 'fixed' }}>
             {/* Day Headers - kompakt */}
-            <thead className="bg-gray-50 dark:bg-[#252525]">
+            <thead className="bg-gray-50">
               <tr className="h-[28px]">
-                <th className="w-[45px] px-1 text-[9px] text-gray-400 text-center font-medium border-b border-r border-gray-200 dark:border-gray-700">
+                <th className="w-[45px] px-1 text-[9px] text-gray-400 text-center font-medium border-b border-r border-gray-200">
                   Zeit
                 </th>
                 {weekDays.map(day => {
@@ -323,11 +323,11 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
                   return (
                     <th
                       key={day.dateStr}
-                      className={`px-1 text-center border-b border-r border-gray-200 dark:border-gray-700 font-normal ${
-                        isClosed || isOff ? 'bg-gray-100 dark:bg-gray-800' : ''
+                      className={`px-1 text-center border-b border-r border-gray-200 font-normal ${
+                        isClosed || isOff ? 'bg-gray-100' : ''
                       } ${day.isToday ? 'bg-gold/10' : ''}`}
                     >
-                      <span className={`text-[11px] font-medium ${isClosed || isOff ? 'text-gray-400' : 'text-black dark:text-gray-100'}`}>
+                      <span className={`text-[11px] font-medium ${isClosed || isOff ? 'text-gray-400' : 'text-black'}`}>
                         {day.dayName} {day.dayNum}
                       </span>
                       {(isClosed || isOff) && (
@@ -344,12 +344,12 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
               {ALL_TIME_SLOTS.map((slot, slotIndex) => (
                 <tr
                   key={slot}
-                  className={slotIndex < ALL_TIME_SLOTS.length - 1 ? 'border-b border-gray-100 dark:border-gray-800' : ''}
+                  className={slotIndex < ALL_TIME_SLOTS.length - 1 ? 'border-b border-gray-100' : ''}
                   style={{ height: `${100 / ALL_TIME_SLOTS.length}%` }}
                 >
                   {/* Time Label */}
-                  <td className="text-center align-middle border-r border-gray-200 dark:border-gray-700 py-0">
-                    <span className="text-[10px] font-mono text-gray-600 dark:text-gray-400 font-medium">
+                  <td className="text-center align-middle border-r border-gray-200 py-0">
+                    <span className="text-[10px] font-mono text-gray-600 font-medium">
                       {slot}
                     </span>
                   </td>
@@ -367,7 +367,7 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
                       return (
                         <td
                           key={key}
-                          className="border-r border-gray-200 dark:border-gray-700 p-0 relative"
+                          className="border-r border-gray-200 p-0 relative"
                         >
                           {/* Absolut positionierter Container verhindert Zellen-Dehnung */}
                           <div className="absolute inset-0 overflow-hidden">
@@ -492,15 +492,15 @@ function BarberTabDroppable({ barber, isSelected, onSelectBarber }: BarberTabDro
         isSelected
           ? 'bg-gold/20 text-gold'
           : isOver
-            ? 'bg-gold/30 text-black dark:text-white ring-2 ring-gold'
+            ? 'bg-gold/30 text-black ring-2 ring-gold'
             : isValidDropTarget
-              ? 'bg-gold/10 text-gray-700 dark:text-gray-300 border border-dashed border-gold/50'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              ? 'bg-gold/10 text-gray-700 border border-dashed border-gold/50'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
       }`}
     >
       <div
         className={`relative w-8 h-8 rounded-full overflow-hidden border-2 flex-shrink-0 ${
-          isSelected ? 'border-gold' : isOver ? 'border-gold' : 'border-gray-300 dark:border-gray-600'
+          isSelected ? 'border-gold' : isOver ? 'border-gold' : 'border-gray-300'
         }`}
       >
         {barber.image ? (
@@ -515,8 +515,8 @@ function BarberTabDroppable({ barber, isSelected, onSelectBarber }: BarberTabDro
             }}
           />
         ) : (
-          <div className="w-full h-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
-            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+          <div className="w-full h-full bg-gray-300 flex items-center justify-center">
+            <span className="text-xs text-gray-500 font-medium">
               {barber.name.charAt(0)}
             </span>
           </div>
@@ -539,7 +539,7 @@ interface BarberTabsProps {
 
 function BarberTabs({ team, selectedBarberId, onSelectBarber }: BarberTabsProps) {
   return (
-    <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm p-1.5 mb-1.5 flex-shrink-0">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-1.5 mb-1.5 flex-shrink-0">
       <div className="flex gap-1.5">
         {team.map(barber => (
           <BarberTabDroppable

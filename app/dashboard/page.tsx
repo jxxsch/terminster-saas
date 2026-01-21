@@ -174,10 +174,10 @@ export default function DashboardPage() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-sm">
+        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-6 inline-block">
           {/* Logo */}
-          <div className="flex justify-center mb-8">
-            <div className="relative w-16 h-16">
+          <div className="flex justify-center mb-4">
+            <div className="relative w-10 h-10">
               <Image
                 src="/logo.png"
                 alt="Beban Logo"
@@ -188,32 +188,30 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Login Card */}
-          <div className="bg-white border border-gray-200 p-6 rounded-lg shadow-lg">
-            <h1 className="text-lg font-light text-center mb-6 tracking-wide text-black">
-              Dashboard <span className="text-gold">Login</span>
-            </h1>
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t('password')}
-                  className="w-full p-3 bg-white border border-gray-200 rounded text-sm text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                />
-              </div>
-              {error && (
-                <p className="text-red-500 text-xs text-center">{error}</p>
-              )}
-              <button
-                type="submit"
-                className="w-full py-3 bg-gold text-black text-sm font-medium tracking-wider uppercase hover:bg-gold-light transition-colors rounded"
-              >
-                {t('login')}
-              </button>
-            </form>
-          </div>
+          {/* Titel - kein Zeilenumbruch */}
+          <h1 className="text-base font-light text-center mb-5 tracking-wide text-black whitespace-nowrap">
+            Dashboard <span className="text-gold">Login</span>
+          </h1>
+
+          {/* Form */}
+          <form onSubmit={handleLogin} className="space-y-3">
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={t('password')}
+              className="w-64 px-4 py-2.5 bg-white border border-gray-200 rounded text-sm text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
+            />
+            {error && (
+              <p className="text-red-500 text-xs text-center">{error}</p>
+            )}
+            <button
+              type="submit"
+              className="w-full py-2.5 bg-gold text-black text-sm font-medium tracking-wider uppercase hover:bg-gold/80 transition-colors rounded"
+            >
+              {t('login')}
+            </button>
+          </form>
         </div>
       </div>
     );
@@ -238,26 +236,26 @@ export default function DashboardPage() {
 
           {/* Day Tabs with Navigation - immer sichtbar */}
           <div className="flex items-center gap-1 flex-1 justify-center">
-            {/* Vorheriger Tag - nur in Tagesansicht aktiv */}
+            {/* Vorheriger Tag/Woche */}
             <button
               onClick={() => {
-                if (viewMode !== 'day') return;
-                if (selectedDay === 0) {
+                if (viewMode === 'barber') {
+                  // Wochenansicht: Woche zurück
                   setCurrentWeekOffset(prev => prev - 1);
-                  setSelectedDay(5);
-                } else if (selectedDay === 6) {
-                  setSelectedDay(5);
                 } else {
-                  setSelectedDay(prev => prev - 1);
+                  // Tagesansicht: Tag zurück
+                  if (selectedDay === 0) {
+                    setCurrentWeekOffset(prev => prev - 1);
+                    setSelectedDay(5);
+                  } else if (selectedDay === 6) {
+                    setSelectedDay(5);
+                  } else {
+                    setSelectedDay(prev => prev - 1);
+                  }
                 }
               }}
-              className={`p-1.5 rounded transition-colors ${
-                viewMode === 'day'
-                  ? 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
-                  : 'text-gray-200 cursor-default'
-              }`}
-              aria-label={t('previousDay')}
-              disabled={viewMode !== 'day'}
+              className="p-1.5 rounded transition-colors hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+              aria-label={viewMode === 'barber' ? t('previousWeek') : t('previousDay')}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -276,13 +274,10 @@ export default function DashboardPage() {
                   key={day.dateStr}
                   onClick={() => {
                     if (isDisabled) return;
-                    if (isWeekView) {
-                      // Bei Klick in Wochen-/Barber-Ansicht: zur Tagesansicht wechseln
-                      setViewMode('day');
-                    }
+                    if (isWeekView) return; // In Wochenansicht: keine Aktion bei Klick auf Tage
                     setSelectedDay(index);
                   }}
-                  disabled={isDisabled}
+                  disabled={isDisabled || isWeekView}
                   title={day.isClosed ? day.closedReason : undefined}
                   className={`w-14 py-1.5 rounded text-xs font-medium transition-all relative text-center ${
                     isDisabled
@@ -292,7 +287,7 @@ export default function DashboardPage() {
                         ? 'bg-red-100 text-red-600 border border-red-300'
                         : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                       : day.isToday
-                      ? 'bg-gold/20 text-gold'
+                      ? 'bg-gold/20 text-gold border-2 border-gold'
                       : isSelected
                       ? isWeekView
                         ? 'bg-gold/20 text-gold border border-gold/30'
@@ -312,27 +307,27 @@ export default function DashboardPage() {
               );
             })}
 
-            {/* Nächster Tag - nur in Tagesansicht aktiv */}
+            {/* Nächster Tag/Woche */}
             <button
               onClick={() => {
-                if (viewMode !== 'day') return;
-                if (selectedDay === 5) {
+                if (viewMode === 'barber') {
+                  // Wochenansicht: Woche vor
                   setCurrentWeekOffset(prev => prev + 1);
-                  setSelectedDay(0);
-                } else if (selectedDay === 6) {
-                  setCurrentWeekOffset(prev => prev + 1);
-                  setSelectedDay(0);
                 } else {
-                  setSelectedDay(prev => prev + 1);
+                  // Tagesansicht: Tag vor
+                  if (selectedDay === 5) {
+                    setCurrentWeekOffset(prev => prev + 1);
+                    setSelectedDay(0);
+                  } else if (selectedDay === 6) {
+                    setCurrentWeekOffset(prev => prev + 1);
+                    setSelectedDay(0);
+                  } else {
+                    setSelectedDay(prev => prev + 1);
+                  }
                 }
               }}
-              className={`p-1.5 rounded transition-colors ${
-                viewMode === 'day'
-                  ? 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
-                  : 'text-gray-200 cursor-default'
-              }`}
-              aria-label={t('nextDay')}
-              disabled={viewMode !== 'day'}
+              className="p-1.5 rounded transition-colors hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+              aria-label={viewMode === 'barber' ? t('nextWeek') : t('nextDay')}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

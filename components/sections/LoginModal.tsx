@@ -144,7 +144,7 @@ export function LoginModal({ onClose, onSuccess }: LoginModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-white w-full max-w-xl min-w-[480px] rounded-lg overflow-hidden">
+      <div className="relative bg-white w-full max-w-sm rounded-lg overflow-hidden">
         {/* Header */}
         <div className="border-b border-gray-100 px-4 py-2 flex items-center justify-between">
           <span className="text-sm font-light text-gold tracking-[0.2em] uppercase">{t('customerArea')}</span>
@@ -202,7 +202,7 @@ export function LoginModal({ onClose, onSuccess }: LoginModalProps) {
         )}
 
         {/* Content */}
-        <div className="p-6 space-y-5 h-[400px] flex flex-col">
+        <div className="p-5 space-y-4 flex flex-col">
           {/* Success Message */}
           {successMessage && (
             <div className="flex items-center gap-2 text-green-700 text-[10px] bg-green-50 border border-green-200 rounded-sm px-3 py-2">
@@ -256,7 +256,7 @@ export function LoginModal({ onClose, onSuccess }: LoginModalProps) {
                 />
               </div>
 
-              <div className="mt-auto pt-4 flex items-center justify-between">
+              <div className="pt-2 flex items-center justify-between">
                 <button
                   type="button"
                   onClick={() => { setActiveTab('forgot'); resetForm(); }}
@@ -351,7 +351,7 @@ export function LoginModal({ onClose, onSuccess }: LoginModalProps) {
                 />
               </div>
 
-              <div className="mt-auto pt-4 flex items-center justify-end">
+              <div className="pt-2 flex items-center justify-end">
                 <button
                   type="submit"
                   disabled={isSubmitting || !firstName || !lastName || !birthDate || !phone || !email || !password || password.length < 6}
@@ -377,7 +377,7 @@ export function LoginModal({ onClose, onSuccess }: LoginModalProps) {
                 className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
                 required
               />
-              <div className="mt-auto pt-4 flex justify-end">
+              <div className="pt-2 flex justify-end">
                 <button
                   type="submit"
                   disabled={isSubmitting || !email}
@@ -391,7 +391,7 @@ export function LoginModal({ onClose, onSuccess }: LoginModalProps) {
 
           {/* Back to Login after success */}
           {successMessage && activeTab !== 'login' && (
-            <div className="mt-auto pt-4 flex justify-end">
+            <div className="pt-2 flex justify-end">
               <button
                 onClick={() => { setActiveTab('login'); resetForm(); }}
                 className="px-6 py-2.5 bg-black text-white text-xs font-light tracking-[0.15em] uppercase hover:bg-gold transition-all"

@@ -254,14 +254,14 @@ export function WeekView({ monday, selectedDay, closedReason }: WeekViewProps) {
   if (closedReason) {
     return (
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm flex-1 flex items-center justify-center min-h-0">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 flex items-center justify-center min-h-0">
           <div className="text-center p-8">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h3 className="text-xl font-medium text-black dark:text-white">{closedReason}</h3>
+            <h3 className="text-xl font-medium text-black">{closedReason}</h3>
           </div>
         </div>
       </div>
@@ -288,12 +288,12 @@ export function WeekView({ monday, selectedDay, closedReason }: WeekViewProps) {
         )}
 
         {/* Schedule Grid - Table-Layout für durchgehende Linien */}
-        <div className="bg-white dark:bg-[#1a1a1a] rounded-lg border border-gray-200 dark:border-gray-800 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
           <table className="w-full h-full border-collapse" style={{ tableLayout: 'fixed' }}>
             {/* Header mit Datum und Barber */}
             <thead>
-              <tr className="bg-gray-50 dark:bg-[#252525]">
-                <th className="w-[60px] p-2 text-center font-medium border-b border-gray-200 dark:border-gray-700">
+              <tr className="bg-gray-50">
+                <th className="w-[60px] p-2 text-center font-medium border-b border-gray-200">
                   <span className="text-[10px] text-gray-400">Zeit</span>
                 </th>
                 {team.map(barber => {
@@ -301,13 +301,13 @@ export function WeekView({ monday, selectedDay, closedReason }: WeekViewProps) {
                   return (
                     <th
                       key={barber.id}
-                      className={`border-l border-b border-gray-200 dark:border-gray-700 p-2 ${timeOff ? 'bg-red-50 dark:bg-red-900/20' : ''}`}
+                      className={`border-l border-b border-gray-200 p-2 ${timeOff ? 'bg-red-50' : ''}`}
                       style={{ height: '40.5px' }}
                     >
                       <div className="flex items-center justify-center gap-2">
                         <div
                           className={`relative w-6 h-6 rounded-full overflow-hidden border flex-shrink-0 ${
-                            timeOff ? 'border-red-200 dark:border-red-800' : 'border-gray-300 dark:border-gray-600'
+                            timeOff ? 'border-red-200' : 'border-gray-300'
                           }`}
                         >
                           {barber.image ? (
@@ -322,14 +322,14 @@ export function WeekView({ monday, selectedDay, closedReason }: WeekViewProps) {
                               }}
                             />
                           ) : (
-                            <div className="w-full h-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
-                              <span className="text-[8px] text-gray-500 dark:text-gray-400 font-medium">
+                            <div className="w-full h-full bg-gray-300 flex items-center justify-center">
+                              <span className="text-[8px] text-gray-500 font-medium">
                                 {barber.name.charAt(0)}
                               </span>
                             </div>
                           )}
                         </div>
-                        <span className={`text-xs font-medium ${timeOff ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
+                        <span className={`text-xs font-medium ${timeOff ? 'text-gray-400' : 'text-gray-700'}`}>
                           {barber.name}
                         </span>
                         {timeOff && (
@@ -347,12 +347,12 @@ export function WeekView({ monday, selectedDay, closedReason }: WeekViewProps) {
               {ALL_TIME_SLOTS.map((slot, index) => (
                 <tr
                   key={slot}
-                  className={index < ALL_TIME_SLOTS.length - 1 ? 'border-b border-gray-100 dark:border-gray-800' : ''}
+                  className={index < ALL_TIME_SLOTS.length - 1 ? 'border-b border-gray-100' : ''}
                   style={{ height: `${100 / ALL_TIME_SLOTS.length}%` }}
                 >
                   {/* Time Label */}
                   <td className="text-center align-middle">
-                    <span className="text-xs font-mono text-gray-600 dark:text-gray-400 font-medium">
+                    <span className="text-xs font-mono text-gray-600 font-medium">
                       {slot}
                     </span>
                   </td>
@@ -366,7 +366,7 @@ export function WeekView({ monday, selectedDay, closedReason }: WeekViewProps) {
                     const barberTimeOff = isBarberOffOnDate(barber.id, currentDay.dateStr);
 
                     return (
-                      <td key={key} className="border-l border-gray-200 dark:border-gray-700 p-0 align-middle">
+                      <td key={key} className="border-l border-gray-200 p-0 align-middle">
                         <DroppableCell id={dropId} disabled={!!barberTimeOff}>
                           {appointment && appointment.status === 'confirmed' ? (
                             <DraggableSlot id={appointment.id} disabled={appointment.customer_name?.includes('Pause')}>

@@ -106,14 +106,14 @@ export function AdminSidebar() {
       onMouseLeave={() => setIsExpanded(false)}
       className={`
         fixed left-0 top-0 h-screen z-40
-        bg-white dark:bg-[#1a1a1a] border-r border-gray-200 dark:border-gray-800
+        bg-white border-r border-gray-200
         transition-all duration-300 ease-in-out
         overflow-hidden flex flex-col
         ${isExpanded ? 'w-56' : 'w-16'}
       `}
     >
       {/* Logo */}
-      <div className="h-[57px] flex items-center border-b border-gray-200 dark:border-gray-800 px-3">
+      <div className="h-[57px] flex items-center border-b border-gray-200 px-3">
         <Link href="/admin" className="flex items-center gap-3 no-underline">
           <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
             <Image
@@ -130,8 +130,8 @@ export function AdminSidebar() {
               ${isExpanded ? 'opacity-100' : 'opacity-0'}
             `}
           >
-            <span className="text-sm font-medium text-black dark:text-white block">Beban</span>
-            <span className="text-xs text-gray-500 dark:text-gray-400 block">Admin Panel</span>
+            <span className="text-sm font-medium text-black block">Beban</span>
+            <span className="text-xs text-gray-500 block">Admin Panel</span>
           </div>
         </Link>
       </div>
@@ -149,12 +149,12 @@ export function AdminSidebar() {
                 transition-colors duration-200
                 ${isActive
                   ? 'bg-gold/10 text-gold'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  : 'text-gray-600 hover:bg-gray-100'
                 }
               `}
               title={!isExpanded ? item.label : undefined}
             >
-              <span className={isActive ? 'text-gold' : 'text-gray-400 dark:text-gray-500'}>
+              <span className={isActive ? 'text-gold' : 'text-gray-400'}>
                 {item.icon}
               </span>
               <span
@@ -171,13 +171,13 @@ export function AdminSidebar() {
       </nav>
 
       {/* Footer Links */}
-      <div className="border-t border-gray-200 dark:border-gray-800 py-3 px-2">
+      <div className="border-t border-gray-200 py-3 px-2">
         <Link
           href="/dashboard"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 no-underline mb-1"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 no-underline mb-1"
           title={!isExpanded ? 'Terminkalender' : undefined}
         >
-          <svg className="w-5 h-5 flex-shrink-0 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
           </svg>
           <span
@@ -191,10 +191,10 @@ export function AdminSidebar() {
         </Link>
         <Link
           href="/"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 no-underline"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-600 hover:bg-gray-100 no-underline"
           title={!isExpanded ? 'Zur Website' : undefined}
         >
-          <svg className="w-5 h-5 flex-shrink-0 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
           <span
