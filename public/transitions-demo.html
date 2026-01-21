@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sektions-Übergänge - Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, -apple-system, sans-serif; }
+
+    h1 {
+      text-align: center;
+      padding: 40px;
+      background: #111;
+      color: #d4af37;
+      font-weight: 300;
+      letter-spacing: 0.1em;
+    }
+
+    .variant-label {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: #d4af37;
+      color: #000;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      z-index: 10;
+    }
+
+    /* Basis Sektionen */
+    .section {
+      padding: 80px 40px;
+      text-align: center;
+      position: relative;
+    }
+
+    .section h2 {
+      font-size: 32px;
+      font-weight: 300;
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+    }
+
+    .section p {
+      font-size: 14px;
+      opacity: 0.7;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .dark { background: #111; color: #fff; }
+    .white { background: #fff; color: #111; }
+    .light-gray { background: #f5f5f5; color: #111; }
+    .cream { background: #faf8f5; color: #111; }
+    .warm-gray { background: #f0ece8; color: #111; }
+
+    /* ========== A. FARBLICHE ABGRENZUNG ========== */
+    .section-a { min-height: 200px; }
+
+    /* ========== B. WELLENFÖRMIGE ÜBERGÄNGE ========== */
+    .wave-container { position: relative; }
+
+    .wave-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      overflow: hidden;
+      line-height: 0;
+    }
+
+    .wave-bottom svg {
+      position: relative;
+      display: block;
+      width: calc(100% + 1.3px);
+      height: 60px;
+    }
+
+    .wave-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      overflow: hidden;
+      line-height: 0;
+      transform: rotate(180deg);
+    }
+
+    .wave-top svg {
+      position: relative;
+      display: block;
+      width: calc(100% + 1.3px);
+      height: 60px;
+    }
+
+    /* ========== C. DIAGONALE ÜBERGÄNGE ========== */
+    .diagonal-container { position: relative; }
+
+    .diagonal-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      overflow: hidden;
+      line-height: 0;
+    }
+
+    .diagonal-bottom svg {
+      position: relative;
+      display: block;
+      width: calc(100% + 1.3px);
+      height: 50px;
+    }
+
+    /* ========== D. ÜBERLAPPENDE ELEMENTE ========== */
+    .overlap-section {
+      position: relative;
+      overflow: visible;
+      z-index: 1;
+    }
+
+    .overlap-element {
+      position: absolute;
+      bottom: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 20px;
+      z-index: 10;
+    }
+
+    .overlap-card {
+      width: 80px;
+      height: 80px;
+      background: #d4af37;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .overlap-next {
+      padding-top: 60px;
+    }
+
+    /* ========== E. GRADIENT ÜBERGÄNGE ========== */
+    .gradient-section {
+      position: relative;
+    }
+
+    .gradient-fade {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 100px;
+      background: linear-gradient(to bottom, transparent, #f5f5f5);
+      pointer-events: none;
+    }
+
+    .gradient-fade-dark {
+      background: linear-gradient(to bottom, transparent, #111);
+    }
+
+    /* ========== F. KOMBINATION ========== */
+    .combo-section {
+      position: relative;
+    }
+
+    .combo-divider {
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      overflow: hidden;
+      line-height: 0;
+    }
+
+    .combo-divider svg {
+      position: relative;
+      display: block;
+      width: calc(100% + 1.3px);
+      height: 40px;
+    }
+
+    /* Abstand zwischen Demo-Bereichen */
+    .demo-spacer {
+      height: 60px;
+      background: #222;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .demo-spacer span {
+      color: #d4af37;
+      font-size: 12px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Sektions-Übergänge - Alle Varianten</h1>
+
+<!-- ========== A. FARBLICHE ABGRENZUNG ========== -->
+<div class="demo-spacer"><span>Variante A - Farbliche Abgrenzung</span></div>
+
+<div class="section section-a dark" style="position: relative;">
+  <span class="variant-label">A. Farbwechsel</span>
+  <h2>Hero (Dunkel)</h2>
+  <p>Dunkler Hintergrund für Hero-Bereich</p>
+</div>
+
+<div class="section section-a white">
+  <h2>About (Weiß)</h2>
+  <p>Weißer Hintergrund für About-Bereich</p>
+</div>
+
+<div class="section section-a cream">
+  <h2>Services (Creme)</h2>
+  <p>Warmer Creme-Ton für Services</p>
+</div>
+
+<div class="section section-a white">
+  <h2>Team (Weiß)</h2>
+  <p>Zurück zu Weiß für Kontrast</p>
+</div>
+
+<div class="section section-a warm-gray">
+  <h2>Galerie (Warm-Grau)</h2>
+  <p>Warmes Grau für Galerie</p>
+</div>
+
+<!-- ========== B. WELLENFÖRMIGE ÜBERGÄNGE ========== -->
+<div class="demo-spacer"><span>Variante B - Wellenförmige Übergänge</span></div>
+
+<div class="section dark wave-container" style="position: relative; padding-bottom: 100px;">
+  <span class="variant-label">B. Wellen</span>
+  <h2>Hero (Dunkel)</h2>
+  <p>Mit Wellen-Übergang nach unten</p>
+  <div class="wave-bottom">
+    <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C57.1,118.92,156.63,69.08,321.39,56.44Z" fill="#ffffff"></path>
+    </svg>
+  </div>
+</div>
+
+<div class="section white wave-container" style="padding-bottom: 100px;">
+  <h2>About (Weiß)</h2>
+  <p>Welle fließt in die nächste Sektion</p>
+  <div class="wave-bottom">
+    <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C57.1,118.92,156.63,69.08,321.39,56.44Z" fill="#f5f5f5"></path>
+    </svg>
+  </div>
+</div>
+
+<div class="section light-gray wave-container" style="padding-bottom: 100px;">
+  <h2>Services (Hellgrau)</h2>
+  <p>Smooth-Übergang durch Wellen</p>
+  <div class="wave-bottom">
+    <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C57.1,118.92,156.63,69.08,321.39,56.44Z" fill="#ffffff"></path>
+    </svg>
+  </div>
+</div>
+
+<div class="section white">
+  <h2>Team (Weiß)</h2>
+  <p>Fließender Übergang abgeschlossen</p>
+</div>
+
+<!-- ========== C. DIAGONALE ÜBERGÄNGE ========== -->
+<div class="demo-spacer"><span>Variante C - Diagonale Übergänge</span></div>
+
+<div class="section dark diagonal-container" style="padding-bottom: 80px;">
+  <span class="variant-label">C. Diagonal</span>
+  <h2>Hero (Dunkel)</h2>
+  <p>Schräge Kante nach unten</p>
+  <div class="diagonal-bottom">
+    <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <polygon points="1200 120 0 120 0 0" fill="#ffffff"></polygon>
+    </svg>
+  </div>
+</div>
+
+<div class="section white diagonal-container" style="padding-bottom: 80px;">
+  <h2>About (Weiß)</h2>
+  <p>Diagonale greift in die nächste Sektion</p>
+  <div class="diagonal-bottom">
+    <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <polygon points="0 120 1200 120 1200 0" fill="#f0ece8"></polygon>
+    </svg>
+  </div>
+</div>
+
+<div class="section warm-gray diagonal-container" style="padding-bottom: 80px;">
+  <h2>Services (Warm-Grau)</h2>
+  <p>Wechselnde Diagonalrichtung</p>
+  <div class="diagonal-bottom">
+    <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <polygon points="1200 120 0 120 0 0" fill="#ffffff"></polygon>
+    </svg>
+  </div>
+</div>
+
+<div class="section white">
+  <h2>Team (Weiß)</h2>
+  <p>Dynamische Übergänge durch Winkel</p>
+</div>
+
+<!-- ========== D. ÜBERLAPPENDE ELEMENTE ========== -->
+<div class="demo-spacer"><span>Variante D - Überlappende Elemente</span></div>
+
+<div class="section dark overlap-section" style="padding-bottom: 60px;">
+  <span class="variant-label">D. Überlappend</span>
+  <h2>Hero (Dunkel)</h2>
+  <p>Elemente ragen in die nächste Sektion</p>
+  <div class="overlap-element">
+    <div class="overlap-card">1</div>
+    <div class="overlap-card">2</div>
+    <div class="overlap-card">3</div>
+  </div>
+</div>
+
+<div class="section light-gray overlap-next overlap-section" style="padding-bottom: 60px;">
+  <h2>About (Hellgrau)</h2>
+  <p>Kreise verbinden die Sektionen visuell</p>
+  <div class="overlap-element">
+    <div class="overlap-card" style="background: #111; color: #d4af37;">A</div>
+    <div class="overlap-card" style="background: #111; color: #d4af37;">B</div>
+    <div class="overlap-card" style="background: #111; color: #d4af37;">C</div>
+  </div>
+</div>
+
+<div class="section white overlap-next">
+  <h2>Services (Weiß)</h2>
+  <p>Verbindung durch überlappende Elemente</p>
+</div>
+
+<!-- ========== E. GRADIENT ÜBERGÄNGE ========== -->
+<div class="demo-spacer"><span>Variante E - Gradient Übergänge</span></div>
+
+<div class="section white gradient-section" style="padding-bottom: 40px;">
+  <span class="variant-label">E. Gradient</span>
+  <h2>About (Weiß)</h2>
+  <p>Sanfter Farbverlauf am Ende</p>
+  <div class="gradient-fade"></div>
+</div>
+
+<div class="section light-gray gradient-section" style="padding-bottom: 40px;">
+  <h2>Services (Hellgrau)</h2>
+  <p>Nahtloser Übergang durch Gradient</p>
+  <div class="gradient-fade" style="background: linear-gradient(to bottom, transparent, #fff);"></div>
+</div>
+
+<div class="section white gradient-section" style="padding-bottom: 40px;">
+  <h2>Team (Weiß)</h2>
+  <p>Weicher Übergang zu Dunkel</p>
+  <div class="gradient-fade gradient-fade-dark"></div>
+</div>
+
+<div class="section dark">
+  <h2>Kontakt (Dunkel)</h2>
+  <p>Smooth ins Dunkle übergegangen</p>
+</div>
+
+<!-- ========== F. KOMBINATION ========== -->
+<div class="demo-spacer"><span>Variante F - Kombination (Farbe + Subtile Welle)</span></div>
+
+<div class="section dark combo-section" style="padding-bottom: 60px;">
+  <span class="variant-label">F. Kombi</span>
+  <h2>Hero (Dunkel)</h2>
+  <p>Farbwechsel mit subtiler Wellenform</p>
+  <div class="combo-divider">
+    <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V120H0Z" fill="#ffffff" opacity="0.25"></path>
+      <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" fill="#ffffff" opacity="0.5"></path>
+      <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,googletag172.46-45.71,248.8-84.81V0Z" fill="#ffffff"></path>
+    </svg>
+  </div>
+</div>
+
+<div class="section white combo-section" style="padding-bottom: 60px;">
+  <h2>About (Weiß)</h2>
+  <p>Mehrlagige Wellen für Tiefe</p>
+  <div class="combo-divider">
+    <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V120H0Z" fill="#f0ece8" opacity="0.25"></path>
+      <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" fill="#f0ece8" opacity="0.5"></path>
+      <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z" fill="#f0ece8"></path>
+    </svg>
+  </div>
+</div>
+
+<div class="section warm-gray combo-section" style="padding-bottom: 60px;">
+  <h2>Services (Warm-Grau)</h2>
+  <p>Premium-Look durch Kombination</p>
+  <div class="combo-divider">
+    <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+      <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V120H0Z" fill="#ffffff" opacity="0.25"></path>
+      <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" fill="#ffffff" opacity="0.5"></path>
+      <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z" fill="#ffffff"></path>
+    </svg>
+  </div>
+</div>
+
+<div class="section white">
+  <h2>Team (Weiß)</h2>
+  <p>Elegante Verbindung aller Bereiche</p>
+</div>
+
+<div style="background: #111; color: #d4af37; text-align: center; padding: 40px;">
+  <p style="font-size: 14px; letter-spacing: 0.2em;">ENDE DER DEMO</p>
+</div>
+
+</body>
+</html>

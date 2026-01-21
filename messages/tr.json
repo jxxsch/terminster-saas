@@ -1,0 +1,454 @@
+{
+  "nav": {
+    "services": "Hizmetler",
+    "about": "Hakkımızda",
+    "team": "Ekip",
+    "gallery": "Galeri",
+    "reviews": "Değerlendirmeler",
+    "contact": "İletişim",
+    "partners": "Ortaklar",
+    "location": "Konum",
+    "bookNow": "Randevu Al",
+    "myArea": "Hesabım",
+    "login": "Giriş Yap"
+  },
+  "hero": {
+    "title": "2016'dan beri erkek kültürü",
+    "subtitle": "Modern erkek için premium berber dükkanı",
+    "cta": "Şimdi Randevu Al",
+    "slogan": "Rathaus Galerie Leverkusen'de güvenilir berberiniz",
+    "status": {
+      "openUntil": "Saat {time}'e kadar açık",
+      "opensToday": "Bugün saat {time}'de açılıyor",
+      "opensOn": "{day} saat {time}'de açılıyor"
+    },
+    "tooltips": {
+      "location": "Rathaus Galerie Leverkusen, Üst Kat",
+      "slotsAvailable": "Bugün {count} randevu müsait"
+    },
+    "aria": {
+      "contact": "İletişim",
+      "location": "Konum",
+      "open": "Açık",
+      "closed": "Kapalı",
+      "bookAppointment": "Randevu al",
+      "scrollDown": "Aşağı kaydır"
+    }
+  },
+  "services": {
+    "title": "Hizmetlerimiz",
+    "subtitle": "Profesyonel saç ve sakal bakımı",
+    "bookService": "Randevu",
+    "duration": "{minutes} dk",
+    "from": "başlayan",
+    "badge": "Hizmetlerimiz",
+    "headline": "Hassasiyet, Ustalık & Stil"
+  },
+  "about": {
+    "title": "Hakkımızda",
+    "subtitle": "Gelenek Modernlikle Buluşuyor",
+    "description": "2016'dan beri rahat bir atmosferde birinci sınıf berber hizmetleri sunuyoruz. Deneyimli ekibimiz kalite, hassasiyet ve kişisel danışmanlığa önem verir."
+  },
+  "team": {
+    "title": "Ekibimiz",
+    "subtitle": "Alanlarının Ustaları",
+    "badge": "Ekibimiz",
+    "headline": "Alanlarının Ustaları",
+    "bookButton": "Randevu"
+  },
+  "gallery": {
+    "title": "Galeri",
+    "subtitle": "Çalışmalarımızdan Kesitler",
+    "badge": "Galeri",
+    "headline": "Çalışmalarımızdan Kesitler"
+  },
+  "reviews": {
+    "title": "Değerlendirmeler",
+    "subtitle": "Müşterilerimiz Ne Diyor",
+    "readMore": "Google'da daha fazla",
+    "rating": "Değerlendirme"
+  },
+  "contact": {
+    "title": "İletişim",
+    "subtitle": "Mesajınızı bekliyoruz",
+    "name": "İsim",
+    "email": "E-posta",
+    "message": "Mesaj",
+    "send": "Gönder",
+    "sending": "Gönderiliyor...",
+    "success": "Mesaj başarıyla gönderildi!",
+    "error": "Gönderim hatası. Lütfen tekrar deneyin."
+  },
+  "partners": {
+    "title": "Ortaklarımız",
+    "subtitle": "Birinci sınıf ürünlerle kalite"
+  },
+  "location": {
+    "title": "Ulaşım & Otopark",
+    "subtitle": "Bizi nasıl bulursunuz",
+    "address": "Adres",
+    "parking": "Otopark imkanları",
+    "publicTransport": "Toplu taşıma",
+    "openingHours": "Çalışma saatleri"
+  },
+  "footer": {
+    "rights": "Tüm hakları saklıdır",
+    "imprint": "Künye",
+    "privacy": "Gizlilik Politikası"
+  },
+  "booking": {
+    "title": "Randevu Al",
+    "step": "Adım {current} / {total}",
+    "next": "İleri",
+    "back": "Geri",
+    "selectService": "Hizmet seçin",
+    "selectStaff": "Personel seçin",
+    "selectDate": "Tarih seçin",
+    "selectTime": "Saat seçin",
+    "customerInfo": "Bilgileriniz",
+    "noPreference": "Tercih yok",
+    "available": "Müsait",
+    "unavailable": "Müsait değil",
+    "fullyBooked": "Dolu",
+    "customerName": "Adınız",
+    "customerEmail": "E-posta adresiniz",
+    "customerPhone": "Telefon numaranız",
+    "notes": "Özel istekler (opsiyonel)",
+    "agreeTerms": "Şartları ve gizlilik politikasını kabul ediyorum",
+    "summary": "Özet",
+    "service": "Hizmet",
+    "staff": "Personel",
+    "date": "Tarih",
+    "time": "Saat",
+    "price": "Fiyat",
+    "confirmBooking": "Ücretli randevu al",
+    "processing": "İşleniyor...",
+    "steps": {
+      "day": "Gün",
+      "barber": "Berber",
+      "time": "Saat",
+      "service": "Hizmet",
+      "contact": "İletişim"
+    },
+    "week": "Hafta",
+    "selectBarberFirst": "Lütfen önce bir berber seçin",
+    "contactData": "İletişim bilgileri",
+    "autoFilled": "Otomatik dolduruldu",
+    "loggedInAs": "Giriş yapıldı",
+    "myAppointments": "Randevularım",
+    "bookAsGuest": "Misafir olarak devam",
+    "quickWithoutAccount": "Hesapsız hızlı randevu",
+    "manageAppointments": "Randevuları yönet",
+    "name": "İsim",
+    "email": "E-posta",
+    "phone": "Telefon",
+    "fillAllFields": "Lütfen tüm alanları doldurun",
+    "at": "",
+    "on": "",
+    "atTime": "saat",
+    "booking": "Randevu alınıyor...",
+    "bookAppointment": "Randevu Al",
+    "success": {
+      "title": "Randevu başarıyla alındı!",
+      "message": "{barber} ile {date} tarihinde saat {time} randevunuz onaylandı.",
+      "addToCalendar": "Takvime ekle",
+      "backHome": "Ana sayfaya dön"
+    },
+    "errors": {
+      "required": "Bu alan zorunludur",
+      "invalidEmail": "Lütfen geçerli bir e-posta adresi girin",
+      "invalidPhone": "Lütfen geçerli bir telefon numarası girin",
+      "slotUnavailable": "Bu zaman dilimi artık müsait değil",
+      "bookingFailed": "Randevu alınamadı. Lütfen tekrar deneyin."
+    }
+  },
+  "common": {
+    "loading": "Yükleniyor...",
+    "error": "Bir hata oluştu",
+    "tryAgain": "Tekrar dene",
+    "close": "Kapat",
+    "cancel": "İptal",
+    "save": "Kaydet",
+    "saving": "Kaydediliyor...",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "add": "Ekle",
+    "create": "Oluştur",
+    "confirm": "Onayla",
+    "yes": "Evet",
+    "no": "Hayır",
+    "or": "veya",
+    "and": "ve",
+    "today": "Bugün",
+    "tomorrow": "Yarın",
+    "week": "Hafta",
+    "month": "Ay",
+    "year": "Yıl",
+    "minutes": "Dakika",
+    "hours": "Saat",
+    "oclock": "",
+    "unknown": "Bilinmiyor"
+  },
+  "days": {
+    "short": {
+      "mon": "Pzt",
+      "tue": "Sal",
+      "wed": "Çar",
+      "thu": "Per",
+      "fri": "Cum",
+      "sat": "Cmt",
+      "sun": "Paz"
+    },
+    "long": {
+      "mon": "Pazartesi",
+      "tue": "Salı",
+      "wed": "Çarşamba",
+      "thu": "Perşembe",
+      "fri": "Cuma",
+      "sat": "Cumartesi",
+      "sun": "Pazar"
+    }
+  },
+  "months": {
+    "jan": "Ocak",
+    "feb": "Şubat",
+    "mar": "Mart",
+    "apr": "Nisan",
+    "may": "Mayıs",
+    "jun": "Haziran",
+    "jul": "Temmuz",
+    "aug": "Ağustos",
+    "sep": "Eylül",
+    "oct": "Ekim",
+    "nov": "Kasım",
+    "dec": "Aralık",
+    "short": {
+      "jan": "Oca",
+      "feb": "Şub",
+      "mar": "Mar",
+      "apr": "Nis",
+      "may": "May",
+      "jun": "Haz",
+      "jul": "Tem",
+      "aug": "Ağu",
+      "sep": "Eyl",
+      "oct": "Eki",
+      "nov": "Kas",
+      "dec": "Ara"
+    }
+  },
+  "auth": {
+    "login": "Giriş Yap",
+    "logout": "Çıkış Yap",
+    "register": "Kayıt Ol",
+    "forgotPassword": "Şifremi unuttum?",
+    "resetPassword": "Şifre sıfırla",
+    "sendResetLink": "Link gönder",
+    "email": "E-posta",
+    "password": "Şifre",
+    "passwordMinLength": "En az 6 karakter",
+    "firstName": "Ad",
+    "lastName": "Soyad",
+    "phone": "Telefon",
+    "birthDate": "Doğum tarihi",
+    "customerArea": "Müşteri Alanı",
+    "loggingIn": "Giriş yapılıyor...",
+    "registering": "Kayıt olunuyor...",
+    "sendingLink": "Gönderiliyor...",
+    "registerSuccess": "Kayıt başarılı! Şimdi giriş yapabilirsiniz.",
+    "resetLinkSent": "Sıfırlama linki gönderildi. E-postanızı kontrol edin.",
+    "resetDescription": "E-posta adresinizi girin, size sıfırlama linki gönderelim.",
+    "errors": {
+      "invalidCredentials": "E-posta veya şifre hatalı",
+      "emailNotConfirmed": "E-posta henüz onaylanmadı",
+      "userExists": "E-posta zaten kayıtlı",
+      "passwordTooShort": "Şifre en az 6 karakter olmalı",
+      "invalidEmail": "Geçersiz e-posta formatı",
+      "enterEmail": "Lütfen e-posta girin",
+      "enterFirstName": "Lütfen adınızı girin",
+      "enterLastName": "Lütfen soyadınızı girin",
+      "enterPhone": "Lütfen telefon numarası girin",
+      "enterBirthDate": "Lütfen doğum tarihi girin"
+    },
+    "goToLogin": "Girişe git"
+  },
+  "customerPortal": {
+    "title": "Hesabım",
+    "welcome": "Hoş geldiniz",
+    "myAppointments": "Randevularım",
+    "upcoming": "Yaklaşan",
+    "past": "Geçmiş",
+    "profile": "Profil",
+    "upcomingAppointments": "Yaklaşan Randevular",
+    "pastAppointments": "Geçmiş Randevular",
+    "noAppointments": "Randevu yok",
+    "noUpcoming": "Yaklaşan randevu yok",
+    "noPast": "Geçmiş randevu yok",
+    "bookNew": "Yeni randevu al",
+    "cancel": "İptal et",
+    "cancelling": "İptal ediliyor...",
+    "cancelled": "İptal edildi",
+    "cancelAppointment": "Randevuyu iptal et",
+    "cancelConfirm": "Bu randevuyu iptal etmek istediğinize emin misiniz?",
+    "barber": "Berber",
+    "service": "Hizmet",
+    "price": "Fiyat",
+    "myProfile": "Profilim",
+    "editProfile": "Profili düzenle",
+    "profileSaved": "Profil kaydedildi",
+    "profileUpdated": "Profil güncellendi",
+    "personalData": "Kişisel Bilgiler",
+    "contact": "İletişim",
+    "emailCannotChange": "E-posta değiştirilemez",
+    "membership": "Üyelik",
+    "memberSince": "Üyelik tarihi",
+    "saveChanges": "Değişiklikleri kaydet",
+    "logoutConfirm": "Çıkış yapmak istediğinize emin misiniz?"
+  },
+  "status": {
+    "open": "Açık",
+    "closed": "Kapalı",
+    "opensAt": "Saat {time}'de açılıyor",
+    "closesAt": "Saat {time}'de kapanıyor",
+    "available": "Müsait",
+    "unavailable": "Müsait değil",
+    "booked": "Rezerveli",
+    "fullyBooked": "Dolu",
+    "absent": "Yok",
+    "holiday": "Tatil",
+    "vacation": "İzin"
+  },
+  "dashboard": {
+    "title": "Kontrol Paneli",
+    "appointments": "Randevular",
+    "week": "Hafta",
+    "today": "Bugün",
+    "previousWeek": "Önceki hafta",
+    "nextWeek": "Sonraki hafta",
+    "previousDay": "Önceki gün",
+    "nextDay": "Sonraki gün",
+    "addAppointment": "Randevu ekle",
+    "noAppointments": "Randevu yok",
+    "free": "Boş",
+    "series": "Seri",
+    "deleteAppointment": "Randevuyu sil",
+    "deleteConfirm": "Bu randevuyu silmek istediğinize emin misiniz?",
+    "deleteSeries": "Tüm seriyi sil",
+    "deleteSeriesConfirm": "Bu serideki tüm randevuları silmek istediğinize emin misiniz?",
+    "customer": "Müşteri",
+    "phone": "Telefon",
+    "service": "Hizmet",
+    "source": "Kaynak",
+    "online": "Online",
+    "manual": "Manuel",
+    "password": "Şifre",
+    "login": "Giriş Yap",
+    "logout": "Çıkış Yap",
+    "wrongPassword": "Yanlış şifre"
+  },
+  "legal": {
+    "backToHome": "Ana sayfaya dön",
+    "lastUpdated": "Son güncelleme",
+    "imprint": "Künye",
+    "privacy": "Gizlilik Politikası"
+  },
+  "imprint": {
+    "title": "Künye",
+    "lastUpdated": "Ocak 2026",
+    "section1": {
+      "title": "§ 5 TMG'ye göre bilgiler",
+      "content": "Samir AL-Karwani\nBeban Barber Shop 2.0\nFriedrich-Ebert-Platz 2\n51373 Leverkusen"
+    },
+    "section2": {
+      "title": "İletişim",
+      "phone": "Telefon",
+      "phoneValue": "0214 7500 4590",
+      "email": "E-posta",
+      "emailValue": "bebanbarbershop2.0@hotmail.com"
+    },
+    "section3": {
+      "title": "Vergi Numarası",
+      "content": "Vergi numarası: 230/5003/3443\n§ 27a Satış Vergisi Kanunu kapsamında KDV kimlik numarası: DE305654329"
+    },
+    "section4": {
+      "title": "Denetim Kurumu",
+      "content": "Handwerkskammer zu Köln\nHeumarkt 12\n50667 Köln"
+    },
+    "section5": {
+      "title": "İçerik Sorumluluğu",
+      "content": "TMG § 7 madde 1 uyarınca, bu sayfalardaki kendi içeriklerimizden genel yasalar çerçevesinde sorumluyuz. TMG §§ 8-10 uyarınca, iletilen veya depolanan üçüncü taraf bilgilerini izlemek veya yasadışı faaliyetleri gösteren koşulları araştırmak zorunda değiliz."
+    },
+    "section6": {
+      "title": "Bağlantılar için Sorumluluk",
+      "content": "Teklifimiz, içeriklerini etkileyemediğimiz harici üçüncü taraf web sitelerine bağlantılar içermektedir. Bu nedenle, bu harici içerikler için herhangi bir sorumluluk kabul edemeyiz."
+    },
+    "section7": {
+      "title": "Telif Hakkı",
+      "content": "Site operatörleri tarafından bu sayfalarda oluşturulan içerik ve eserler Alman telif hakkı yasasına tabidir. İndirmeler ve bu sayfanın kopyaları yalnızca özel, ticari olmayan kullanım için izin verilmiştir."
+    }
+  },
+  "privacy": {
+    "title": "Gizlilik Politikası",
+    "lastUpdated": "Ocak 2026",
+    "section1": {
+      "title": "1. Gizlilik Hakkında Genel Bilgiler",
+      "subtitle1": "Genel notlar",
+      "content1": "Aşağıdaki bilgiler, bu web sitesini ziyaret ettiğinizde kişisel verilerinize ne olduğuna dair basit bir genel bakış sunmaktadır.",
+      "subtitle2": "Bu web sitesinde veri toplama",
+      "question1": "Bu web sitesinde veri toplamadan kim sorumlu?",
+      "answer1": "Bu web sitesindeki veri işleme, web sitesi operatörü tarafından gerçekleştirilir. İletişim bilgilerini bu web sitesinin künyesinde bulabilirsiniz.",
+      "question2": "Verilerinizi nasıl topluyoruz?",
+      "answer2": "Verileriniz bir yandan bize bildirmenizle toplanır. Bu, örneğin bir iletişim formuna girdiğiniz veya randevu alırken belirttiğiniz veriler olabilir.",
+      "question3": "Verilerinizi ne için kullanıyoruz?",
+      "answer3": "Verilerin bir kısmı web sitesinin hatasız sağlanmasını garanti etmek için toplanır. Diğer veriler kullanıcı davranışınızı analiz etmek için kullanılabilir.",
+      "question4": "Verileriniz hakkında hangi haklara sahipsiniz?",
+      "answer4": "Saklanan kişisel verilerinizin kaynağı, alıcısı ve amacı hakkında her zaman ücretsiz bilgi alma hakkına sahipsiniz."
+    },
+    "section2": {
+      "title": "2. Barındırma",
+      "content": "Bu web sitesi Vercel Inc. tarafından barındırılmaktadır. Sağlayıcı Vercel Inc., 340 S Lemon Ave #4133, Walnut, CA 91789, ABD'dir."
+    },
+    "section3": {
+      "title": "3. Genel Bilgiler ve Zorunlu Açıklamalar",
+      "subtitle1": "Gizlilik",
+      "content1": "Bu sayfaların operatörleri kişisel verilerinizin korunmasını çok ciddiye almaktadır.",
+      "subtitle2": "Sorumlu birim hakkında not",
+      "content2": "Bu web sitesindeki veri işlemeden sorumlu birim:\n\nSamir AL-Karwani\nBeban Barber Shop 2.0\nFriedrich-Ebert-Platz 2\n51373 Leverkusen\n\nTelefon: 0214 7500 4590\nE-posta: bebanbarbershop2.0@hotmail.com",
+      "subtitle3": "Saklama süresi",
+      "content3": "Bu gizlilik politikasında daha spesifik bir saklama süresi belirtilmedikçe, kişisel verileriniz veri işleme amacı ortadan kalkana kadar bizimle kalır.",
+      "subtitle4": "Veri işleme için onayınızın iptali",
+      "content4": "Birçok veri işleme işlemi yalnızca açık onayınızla mümkündür. Zaten verilen bir onayı istediğiniz zaman iptal edebilirsiniz.",
+      "subtitle5": "Yetkili denetim makamına şikayet hakkı",
+      "content5": "GDPR ihlalleri durumunda, etkilenen kişilerin bir denetim makamına şikayet etme hakları vardır.",
+      "subtitle6": "Veri taşınabilirliği hakkı",
+      "content6": "Onayınıza dayanarak veya bir sözleşmenin yerine getirilmesi için otomatik olarak işlediğimiz verilerin size veya üçüncü bir tarafa ortak, makine tarafından okunabilir bir formatta teslim edilmesini isteme hakkına sahipsiniz.",
+      "subtitle7": "Bilgi, silme ve düzeltme",
+      "content7": "Yürürlükteki yasal hükümler çerçevesinde, saklanan kişisel verileriniz, bunların kaynağı ve alıcısı ve veri işlemenin amacı hakkında ücretsiz bilgi alma ve gerekirse bu verilerin düzeltilmesi veya silinmesi hakkına sahipsiniz.",
+      "subtitle8": "İşlemenin kısıtlanması hakkı",
+      "content8": "Kişisel verilerinizin işlenmesinin kısıtlanmasını talep etme hakkına sahipsiniz."
+    },
+    "section4": {
+      "title": "4. Bu Web Sitesinde Veri Toplama",
+      "subtitle1": "Sunucu günlük dosyaları",
+      "content1": "Sayfa sağlayıcısı, tarayıcınızın bize otomatik olarak ilettiği bilgileri otomatik olarak sunucu günlük dosyalarında toplar ve saklar.",
+      "subtitle2": "İletişim formu",
+      "content2": "Bize iletişim formu aracılığıyla sorularınızı gönderirseniz, talep formundaki bilgileriniz, orada belirttiğiniz iletişim verileri dahil, talebin işlenmesi ve takip soruları durumunda bizim tarafımızdan saklanacaktır.",
+      "subtitle3": "Randevu rezervasyonu",
+      "content3": "Web sitemiz üzerinden randevu aldığınızda, aşağıdaki veriler toplanır ve saklanır:\n\n• İsim\n• Telefon numarası\n• E-posta adresi (opsiyonel)\n• İstenen hizmet\n• İstenen randevu (tarih ve saat)\n• İstenen personel (opsiyonel)"
+    },
+    "section5": {
+      "title": "5. Sosyal Medya",
+      "subtitle1": "Sosyal medya bağlantıları",
+      "content1": "Web sitemizde sosyal medya profillerimize (Instagram, Facebook) bağlantılar bulunmaktadır. Bunlar basit bağlantılardır ve bağlantıya tıklamadan platformlara veri aktarılmaz."
+    },
+    "section6": {
+      "title": "6. Eklentiler ve Araçlar",
+      "subtitle1": "Google Haritalar",
+      "content1": "Bu sayfa Google Haritalar harita hizmetini kullanmaktadır. Sağlayıcı Google Ireland Limited ('Google'), Gordon House, Barrow Street, Dublin 4, İrlanda'dır."
+    },
+    "section7": {
+      "title": "7. Reklam E-postalarına İtiraz",
+      "content": "Künye kapsamında yayınlanan iletişim verilerinin açıkça talep edilmemiş reklam ve bilgi materyalleri göndermek için kullanılmasına işbu itiraz edilmektedir."
+    }
+  }
+}

@@ -1,0 +1,454 @@
+{
+  "nav": {
+    "services": "Services",
+    "about": "About Us",
+    "team": "Team",
+    "gallery": "Gallery",
+    "reviews": "Reviews",
+    "contact": "Contact",
+    "partners": "Partners",
+    "location": "Location",
+    "bookNow": "Book Appointment",
+    "myArea": "My Area",
+    "login": "Login"
+  },
+  "hero": {
+    "title": "Men's Culture since 2016",
+    "subtitle": "Premium Barbershop for the Modern Man",
+    "cta": "Book Appointment Now",
+    "slogan": "Your trusted barber in the Rathaus Galerie Leverkusen",
+    "status": {
+      "openUntil": "Open until {time}",
+      "opensToday": "Opens today, {time}",
+      "opensOn": "Opens {day}, {time}"
+    },
+    "tooltips": {
+      "location": "Rathaus Galerie Leverkusen, Upper Floor",
+      "slotsAvailable": "{count} appointments available today"
+    },
+    "aria": {
+      "contact": "Contact",
+      "location": "Location",
+      "open": "Open",
+      "closed": "Closed",
+      "bookAppointment": "Book appointment",
+      "scrollDown": "Scroll down"
+    }
+  },
+  "services": {
+    "title": "Our Services",
+    "subtitle": "Professional Hair and Beard Care",
+    "bookService": "Book",
+    "duration": "{minutes} Min",
+    "from": "from",
+    "badge": "Our Services",
+    "headline": "Precision, Craftsmanship & Style"
+  },
+  "about": {
+    "title": "About Us",
+    "subtitle": "Tradition Meets Modern",
+    "description": "Since 2016, we've been providing first-class barbershop services in a relaxed atmosphere. Our experienced team values quality, precision, and individual consultation."
+  },
+  "team": {
+    "title": "Our Team",
+    "subtitle": "Masters of Their Craft",
+    "badge": "Our Team",
+    "headline": "Masters of Their Craft",
+    "bookButton": "Book"
+  },
+  "gallery": {
+    "title": "Gallery",
+    "subtitle": "Insights into Our Work",
+    "badge": "Gallery",
+    "headline": "Insights into Our Work"
+  },
+  "reviews": {
+    "title": "Reviews",
+    "subtitle": "What Our Customers Say",
+    "readMore": "More on Google",
+    "rating": "Rating"
+  },
+  "contact": {
+    "title": "Contact",
+    "subtitle": "We Look Forward to Your Message",
+    "name": "Name",
+    "email": "Email",
+    "message": "Message",
+    "send": "Send",
+    "sending": "Sending...",
+    "success": "Message sent successfully!",
+    "error": "Error sending. Please try again."
+  },
+  "partners": {
+    "title": "Our Partners",
+    "subtitle": "Quality Through Premium Products"
+  },
+  "location": {
+    "title": "Location & Parking",
+    "subtitle": "How to Find Us",
+    "address": "Address",
+    "parking": "Parking",
+    "publicTransport": "Public Transport",
+    "openingHours": "Opening Hours"
+  },
+  "footer": {
+    "rights": "All Rights Reserved",
+    "imprint": "Imprint",
+    "privacy": "Privacy Policy"
+  },
+  "booking": {
+    "title": "Book Appointment",
+    "step": "Step {current} of {total}",
+    "next": "Next",
+    "back": "Back",
+    "selectService": "Select Service",
+    "selectStaff": "Select Staff",
+    "selectDate": "Select Date",
+    "selectTime": "Select Time",
+    "customerInfo": "Your Information",
+    "noPreference": "No Preference",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "fullyBooked": "Fully Booked",
+    "customerName": "Your Name",
+    "customerEmail": "Your Email",
+    "customerPhone": "Your Phone Number",
+    "notes": "Special Requests (optional)",
+    "agreeTerms": "I accept the Terms and Privacy Policy",
+    "summary": "Summary",
+    "service": "Service",
+    "staff": "Staff",
+    "date": "Date",
+    "time": "Time",
+    "price": "Price",
+    "confirmBooking": "Confirm & Pay",
+    "processing": "Processing...",
+    "steps": {
+      "day": "Day",
+      "barber": "Barber",
+      "time": "Time",
+      "service": "Service",
+      "contact": "Contact"
+    },
+    "week": "Week",
+    "selectBarberFirst": "Please select a barber first",
+    "contactData": "Contact Details",
+    "autoFilled": "Auto-filled",
+    "loggedInAs": "Logged in as",
+    "myAppointments": "My Appointments",
+    "bookAsGuest": "Book as Guest",
+    "quickWithoutAccount": "Quick without account",
+    "manageAppointments": "Manage appointments",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "fillAllFields": "Please fill in all fields",
+    "at": "with",
+    "on": "on",
+    "atTime": "at",
+    "booking": "Booking...",
+    "bookAppointment": "Book Appointment",
+    "success": {
+      "title": "Appointment Successfully Booked!",
+      "message": "Your appointment with {barber} on {date} at {time} has been confirmed.",
+      "addToCalendar": "Add to Calendar",
+      "backHome": "Back to Home"
+    },
+    "errors": {
+      "required": "This field is required",
+      "invalidEmail": "Please enter a valid email address",
+      "invalidPhone": "Please enter a valid phone number",
+      "slotUnavailable": "This time slot is no longer available",
+      "bookingFailed": "Booking failed. Please try again."
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "tryAgain": "Try Again",
+    "close": "Close",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "create": "Create",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or",
+    "and": "and",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "week": "Week",
+    "month": "Month",
+    "year": "Year",
+    "minutes": "minutes",
+    "hours": "hours",
+    "oclock": "",
+    "unknown": "Unknown"
+  },
+  "days": {
+    "short": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
+    "long": {
+      "mon": "Monday",
+      "tue": "Tuesday",
+      "wed": "Wednesday",
+      "thu": "Thursday",
+      "fri": "Friday",
+      "sat": "Saturday",
+      "sun": "Sunday"
+    }
+  },
+  "months": {
+    "jan": "January",
+    "feb": "February",
+    "mar": "March",
+    "apr": "April",
+    "may": "May",
+    "jun": "June",
+    "jul": "July",
+    "aug": "August",
+    "sep": "September",
+    "oct": "October",
+    "nov": "November",
+    "dec": "December",
+    "short": {
+      "jan": "Jan",
+      "feb": "Feb",
+      "mar": "Mar",
+      "apr": "Apr",
+      "may": "May",
+      "jun": "Jun",
+      "jul": "Jul",
+      "aug": "Aug",
+      "sep": "Sep",
+      "oct": "Oct",
+      "nov": "Nov",
+      "dec": "Dec"
+    }
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Register",
+    "forgotPassword": "Forgot password?",
+    "resetPassword": "Reset password",
+    "sendResetLink": "Send link",
+    "email": "Email",
+    "password": "Password",
+    "passwordMinLength": "At least 6 characters",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "phone": "Phone",
+    "birthDate": "Date of birth",
+    "customerArea": "Customer area",
+    "loggingIn": "Logging in...",
+    "registering": "Registering...",
+    "sendingLink": "Sending...",
+    "registerSuccess": "Registration successful! You can now log in.",
+    "resetLinkSent": "Reset link has been sent. Check your email inbox.",
+    "resetDescription": "Enter your email address and we'll send you a reset link.",
+    "errors": {
+      "invalidCredentials": "Email or password incorrect",
+      "emailNotConfirmed": "Email not yet confirmed",
+      "userExists": "Email already registered",
+      "passwordTooShort": "Password must be at least 6 characters",
+      "invalidEmail": "Invalid email format",
+      "enterEmail": "Please enter email",
+      "enterFirstName": "Please enter first name",
+      "enterLastName": "Please enter last name",
+      "enterPhone": "Please enter phone number",
+      "enterBirthDate": "Please enter date of birth"
+    },
+    "goToLogin": "Go to login"
+  },
+  "customerPortal": {
+    "title": "My Area",
+    "welcome": "Welcome",
+    "myAppointments": "My Appointments",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "profile": "Profile",
+    "upcomingAppointments": "Upcoming Appointments",
+    "pastAppointments": "Past Appointments",
+    "noAppointments": "No appointments",
+    "noUpcoming": "No upcoming appointments",
+    "noPast": "No past appointments",
+    "bookNew": "Book new appointment",
+    "cancel": "Cancel",
+    "cancelling": "Cancelling...",
+    "cancelled": "Cancelled",
+    "cancelAppointment": "Cancel appointment",
+    "cancelConfirm": "Do you really want to cancel this appointment?",
+    "barber": "Barber",
+    "service": "Service",
+    "price": "Price",
+    "myProfile": "My Profile",
+    "editProfile": "Edit profile",
+    "profileSaved": "Profile saved",
+    "profileUpdated": "Profile updated",
+    "personalData": "Personal Data",
+    "contact": "Contact",
+    "emailCannotChange": "Email cannot be changed",
+    "membership": "Membership",
+    "memberSince": "Member since",
+    "saveChanges": "Save changes",
+    "logoutConfirm": "Do you really want to log out?"
+  },
+  "status": {
+    "open": "Open",
+    "closed": "Closed",
+    "opensAt": "Opens at {time}",
+    "closesAt": "Closes at {time}",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "booked": "Booked",
+    "fullyBooked": "Fully booked",
+    "absent": "Absent",
+    "holiday": "Holiday",
+    "vacation": "Vacation"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "appointments": "Appointments",
+    "week": "Week",
+    "today": "Today",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week",
+    "previousDay": "Previous day",
+    "nextDay": "Next day",
+    "addAppointment": "Add appointment",
+    "noAppointments": "No appointments",
+    "free": "Free",
+    "series": "Series",
+    "deleteAppointment": "Delete appointment",
+    "deleteConfirm": "Do you really want to delete this appointment?",
+    "deleteSeries": "Delete entire series",
+    "deleteSeriesConfirm": "Do you really want to delete all appointments in this series?",
+    "customer": "Customer",
+    "phone": "Phone",
+    "service": "Service",
+    "source": "Source",
+    "online": "Online",
+    "manual": "Manual",
+    "password": "Password",
+    "login": "Login",
+    "logout": "Logout",
+    "wrongPassword": "Wrong password"
+  },
+  "legal": {
+    "backToHome": "Back to Home",
+    "lastUpdated": "Last updated",
+    "imprint": "Imprint",
+    "privacy": "Privacy Policy"
+  },
+  "imprint": {
+    "title": "Legal Notice",
+    "lastUpdated": "January 2026",
+    "section1": {
+      "title": "Information according to § 5 TMG",
+      "content": "Samir AL-Karwani\nBeban Barber Shop 2.0\nFriedrich-Ebert-Platz 2\n51373 Leverkusen\nGermany"
+    },
+    "section2": {
+      "title": "Contact",
+      "phone": "Phone",
+      "phoneValue": "+49 214 7500 4590",
+      "email": "Email",
+      "emailValue": "bebanbarbershop2.0@hotmail.com"
+    },
+    "section3": {
+      "title": "Tax Information",
+      "content": "Tax Number: 230/5003/3443\nVAT ID according to § 27a of the German VAT Act: DE305654329"
+    },
+    "section4": {
+      "title": "Supervisory Authority",
+      "content": "Chamber of Crafts Cologne\nHeumarkt 12\n50667 Cologne\nGermany"
+    },
+    "section5": {
+      "title": "Liability for Content",
+      "content": "As a service provider, we are responsible for our own content on these pages in accordance with general laws pursuant to Section 7 (1) of the German Telemedia Act (TMG). However, according to Sections 8 to 10 TMG, we as a service provider are not obligated to monitor transmitted or stored third-party information or to investigate circumstances that indicate illegal activity.\n\nObligations to remove or block the use of information under general law remain unaffected. However, liability in this regard is only possible from the time of knowledge of a specific legal violation. Upon becoming aware of such violations, we will remove this content immediately."
+    },
+    "section6": {
+      "title": "Liability for Links",
+      "content": "Our website contains links to external third-party websites over whose content we have no influence. Therefore, we cannot accept any liability for this external content. The respective provider or operator of the pages is always responsible for the content of the linked pages. The linked pages were checked for possible legal violations at the time of linking. Illegal content was not recognizable at the time of linking.\n\nHowever, permanent content control of the linked pages is not reasonable without concrete evidence of a legal violation. Upon becoming aware of legal violations, we will remove such links immediately."
+    },
+    "section7": {
+      "title": "Copyright",
+      "content": "The content and works on these pages created by the site operators are subject to German copyright law. Duplication, processing, distribution, and any kind of exploitation outside the limits of copyright law require the written consent of the respective author or creator. Downloads and copies of this site are only permitted for private, non-commercial use.\n\nInsofar as the content on this site was not created by the operator, the copyrights of third parties are respected. In particular, third-party content is identified as such. Should you nevertheless become aware of a copyright infringement, please inform us accordingly. Upon becoming aware of legal violations, we will remove such content immediately."
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "January 2026",
+    "section1": {
+      "title": "1. Privacy at a Glance",
+      "subtitle1": "General Information",
+      "content1": "The following information provides a simple overview of what happens to your personal data when you visit this website. Personal data is any data that can be used to personally identify you. For detailed information on the subject of data protection, please refer to our privacy policy listed below this text.",
+      "subtitle2": "Data Collection on This Website",
+      "question1": "Who is responsible for data collection on this website?",
+      "answer1": "Data processing on this website is carried out by the website operator. You can find the operator's contact details in the imprint of this website.",
+      "question2": "How do we collect your data?",
+      "answer2": "On one hand, your data is collected when you provide it to us. This may include data you enter in a contact form or provide when booking an appointment.\n\nOther data is automatically collected or collected with your consent when you visit the website by our IT systems. This is primarily technical data (e.g., internet browser, operating system, or time of page access). This data is collected automatically as soon as you enter this website.",
+      "question3": "What do we use your data for?",
+      "answer3": "Some of the data is collected to ensure error-free provision of the website. Other data may be used to analyze your user behavior. If you book an appointment, your data will be used to carry out and manage the appointment.",
+      "question4": "What rights do you have regarding your data?",
+      "answer4": "You have the right to receive information about the origin, recipient, and purpose of your stored personal data free of charge at any time. You also have the right to request the correction or deletion of this data. If you have given consent to data processing, you can revoke this consent at any time for the future. You also have the right to request the restriction of the processing of your personal data under certain circumstances. Furthermore, you have the right to lodge a complaint with the competent supervisory authority.\n\nYou can contact us at any time for this and other questions on the subject of data protection."
+    },
+    "section2": {
+      "title": "2. Hosting",
+      "content": "This website is hosted by Vercel Inc. The provider is Vercel Inc., 340 S Lemon Ave #4133, Walnut, CA 91789, USA (hereinafter \"Vercel\").\n\nWhen you visit our website, Vercel collects various log files including your IP addresses. For details, please refer to Vercel's privacy policy: https://vercel.com/legal/privacy-policy\n\nThe use of Vercel is based on Art. 6 para. 1 lit. f GDPR. We have a legitimate interest in the most reliable presentation of our website. If a corresponding consent has been requested, the processing is carried out exclusively on the basis of Art. 6 para. 1 lit. a GDPR."
+    },
+    "section3": {
+      "title": "3. General Notes and Mandatory Information",
+      "subtitle1": "Data Protection",
+      "content1": "The operators of these pages take the protection of your personal data very seriously. We treat your personal data confidentially and in accordance with the statutory data protection regulations and this privacy policy.\n\nWhen you use this website, various personal data is collected. Personal data is data that can be used to personally identify you. This privacy policy explains what data we collect and what we use it for. It also explains how and for what purpose this happens.\n\nWe point out that data transmission over the Internet (e.g., when communicating by email) can have security gaps. Complete protection of data against access by third parties is not possible.",
+      "subtitle2": "Note on the Responsible Party",
+      "content2": "The responsible party for data processing on this website is:\n\nSamir AL-Karwani\nBeban Barber Shop 2.0\nFriedrich-Ebert-Platz 2\n51373 Leverkusen\nGermany\n\nPhone: +49 214 7500 4590\nEmail: bebanbarbershop2.0@hotmail.com\n\nThe responsible party is the natural or legal person who, alone or jointly with others, decides on the purposes and means of processing personal data (e.g., names, email addresses, etc.).",
+      "subtitle3": "Storage Duration",
+      "content3": "Unless a more specific storage period has been specified within this privacy policy, your personal data will remain with us until the purpose for data processing no longer applies. If you assert a legitimate request for deletion or revoke consent to data processing, your data will be deleted unless we have other legally permissible reasons for storing your personal data (e.g., tax or commercial law retention periods); in the latter case, deletion takes place after these reasons cease to apply.",
+      "subtitle4": "Revocation of Your Consent to Data Processing",
+      "content4": "Many data processing operations are only possible with your express consent. You can revoke consent you have already given at any time. The legality of the data processing carried out until the revocation remains unaffected by the revocation.",
+      "subtitle5": "Right to Lodge a Complaint with the Competent Supervisory Authority",
+      "content5": "In the event of violations of the GDPR, data subjects have the right to lodge a complaint with a supervisory authority, particularly in the Member State of their habitual residence, place of work, or the place of the alleged violation. The right to lodge a complaint exists without prejudice to other administrative or judicial remedies.",
+      "subtitle6": "Right to Data Portability",
+      "content6": "You have the right to have data that we process automatically on the basis of your consent or in fulfillment of a contract handed over to you or to a third party in a common, machine-readable format. If you request the direct transfer of data to another responsible party, this will only be done to the extent that it is technically feasible.",
+      "subtitle7": "Information, Deletion, and Correction",
+      "content7": "Within the framework of the applicable legal provisions, you have the right to free information about your stored personal data, its origin and recipient, and the purpose of data processing and, if applicable, a right to correction or deletion of this data at any time. You can contact us at any time for this and other questions on the subject of personal data.",
+      "subtitle8": "Right to Restriction of Processing",
+      "content8": "You have the right to request the restriction of the processing of your personal data. You can contact us at any time for this purpose."
+    },
+    "section4": {
+      "title": "4. Data Collection on This Website",
+      "subtitle1": "Server Log Files",
+      "content1": "The provider of the pages automatically collects and stores information in so-called server log files, which your browser automatically transmits to us. These are:\n\n• Browser type and browser version\n• Operating system used\n• Referrer URL\n• Host name of the accessing computer\n• Time of the server request\n• IP address\n\nThis data is not merged with other data sources.\n\nThe collection of this data is based on Art. 6 para. 1 lit. f GDPR. The website operator has a legitimate interest in the technically error-free presentation and optimization of his website - for this purpose, the server log files must be collected.",
+      "subtitle2": "Contact Form",
+      "content2": "If you send us inquiries via the contact form, your details from the inquiry form, including the contact data you provided there, will be stored by us for the purpose of processing the inquiry and in case of follow-up questions. We do not pass on this data without your consent.\n\nThe processing of this data is based on Art. 6 para. 1 lit. b GDPR if your request is related to the fulfillment of a contract or is necessary for the implementation of pre-contractual measures. In all other cases, the processing is based on our legitimate interest in the effective processing of inquiries addressed to us (Art. 6 para. 1 lit. f GDPR) or on your consent (Art. 6 para. 1 lit. a GDPR) if this has been requested.\n\nThe data you enter in the contact form will remain with us until you request us to delete it, revoke your consent to store it, or the purpose for storing the data no longer applies (e.g., after we have completed processing your request). Mandatory statutory provisions - in particular retention periods - remain unaffected.",
+      "subtitle3": "Appointment Booking",
+      "content3": "When you book an appointment through our website, the following data is collected and stored:\n\n• Name\n• Phone number\n• Email address (optional)\n• Desired service\n• Desired appointment (date and time)\n• Desired staff member (optional)\n\nThis data is stored in our database (Supabase) and is used exclusively for appointment management and execution. The database is hosted by Supabase Inc. in Europe.\n\nProcessing is based on Art. 6 para. 1 lit. b GDPR for the fulfillment of the contract for the booked service.\n\nYour appointment data will be deleted 12 months after the appointment date, unless statutory retention requirements prevent this."
+    },
+    "section5": {
+      "title": "5. Social Media",
+      "subtitle1": "Social Media Links",
+      "content1": "Our website contains links to our social media profiles (Instagram, Facebook). These are simple links that do not transfer any data to the platforms before you click on the link.\n\nOnly when you click on one of the links and visit the respective platform do their privacy policies apply:\n\n• Instagram/Facebook (Meta): https://www.facebook.com/privacy/policy/"
+    },
+    "section6": {
+      "title": "6. Plugins and Tools",
+      "subtitle1": "Google Maps",
+      "content1": "This site uses the Google Maps map service. The provider is Google Ireland Limited (\"Google\"), Gordon House, Barrow Street, Dublin 4, Ireland.\n\nTo use the functions of Google Maps, it is necessary to store your IP address. This information is usually transferred to a Google server in the USA and stored there. The provider of this site has no influence on this data transfer. When Google Maps is activated, Google may use Google Fonts for the purpose of uniform display of fonts.\n\nThe use of Google Maps is in the interest of an appealing presentation of our online offers and easy findability of the places indicated by us on the website. This constitutes a legitimate interest within the meaning of Art. 6 para. 1 lit. f GDPR.\n\nMore information on handling user data can be found in Google's privacy policy: https://policies.google.com/privacy"
+    },
+    "section7": {
+      "title": "7. Objection to Advertising Emails",
+      "content": "The use of contact data published as part of the imprint obligation for sending unsolicited advertising and information materials is hereby objected to. The operators of the pages expressly reserve the right to take legal action in the event of unsolicited sending of advertising information, such as spam emails."
+    }
+  }
+}

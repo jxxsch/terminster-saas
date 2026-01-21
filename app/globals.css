@@ -1,0 +1,220 @@
+@import "tailwindcss";
+
+/* Enable class-based dark mode for Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Barbershop Premium Theme - Schwarz-Weiß-Gold */
+  --color-black: #000000;
+  --color-white: #FFFFFF;
+  --color-gold: #D4AF37;
+  --color-gold-light: #E5C158;
+  --color-gold-dark: #B8941F;
+
+  /* Grayscale for subtle elements */
+  --color-gray-50: #FAFAFA;
+  --color-gray-100: #F5F5F5;
+  --color-gray-200: #E5E5E5;
+  --color-gray-300: #D4D4D4;
+  --color-gray-400: #A3A3A3;
+  --color-gray-500: #737373;
+  --color-gray-600: #525252;
+  --color-gray-700: #404040;
+  --color-gray-800: #262626;
+  --color-gray-900: #171717;
+
+  /* Semantic colors */
+  --background: var(--color-black);
+  --foreground: var(--color-white);
+  --accent: var(--color-gold);
+  --muted: var(--color-gray-700);
+  --border: var(--color-gray-800);
+}
+
+@theme inline {
+  /* Colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+
+  --color-primary: var(--color-white);
+  --color-secondary: var(--color-gold);
+  --color-black: var(--color-black);
+  --color-white: var(--color-white);
+  --color-gold: var(--color-gold);
+  --color-gold-light: var(--color-gold-light);
+  --color-gold-dark: var(--color-gold-dark);
+
+  --color-gray-50: var(--color-gray-50);
+  --color-gray-100: var(--color-gray-100);
+  --color-gray-200: var(--color-gray-200);
+  --color-gray-300: var(--color-gray-300);
+  --color-gray-400: var(--color-gray-400);
+  --color-gray-500: var(--color-gray-500);
+  --color-gray-600: var(--color-gray-600);
+  --color-gray-700: var(--color-gray-700);
+  --color-gray-800: var(--color-gray-800);
+  --color-gray-900: var(--color-gray-900);
+
+  /* Typography */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Spacing */
+  --spacing-xs: 0.5rem;    /* 8px */
+  --spacing-sm: 0.75rem;   /* 12px */
+  --spacing-md: 1rem;      /* 16px */
+  --spacing-lg: 1.5rem;    /* 24px */
+  --spacing-xl: 2rem;      /* 32px */
+  --spacing-2xl: 3rem;     /* 48px */
+  --spacing-3xl: 4rem;     /* 64px */
+
+  /* Borders */
+  --radius-sm: 0.25rem;    /* 4px */
+  --radius-md: 0.5rem;     /* 8px */
+  --radius-lg: 0.75rem;    /* 12px */
+  --radius-xl: 1rem;       /* 16px */
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+}
+
+/* Remove dark mode media query - always dark */
+/* This is a premium barbershop theme, always black background */
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Styles */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+}
+
+h2 {
+  font-size: clamp(2rem, 4vw, 3rem);
+}
+
+h3 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+p {
+  line-height: 1.7;
+}
+
+/* Selection */
+::selection {
+  background: var(--color-gold);
+  color: var(--color-black);
+}
+
+/* Scrollbar - Premium look */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-gray-900);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-gold-dark);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gold);
+}
+
+/* Focus States */
+*:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Link hover effect - nur für Content-Links, nicht Navigation */
+a:not([class*="nav"]):not([class*="tracking"]) {
+  transition: color var(--transition-fast);
+}
+
+a:not([class*="nav"]):not([class*="tracking"]):hover {
+  color: var(--color-gold);
+}
+
+/* Progress fill animation for drag hover */
+@keyframes progress-fill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* ========================================
+   Dashboard & Admin Dark Mode
+   ======================================== */
+
+/* Dark mode variables for dashboard/admin */
+.dark {
+  --dashboard-bg: #0f0f0f;
+  --dashboard-bg-secondary: #1a1a1a;
+  --dashboard-bg-tertiary: #252525;
+  --dashboard-border: #333333;
+  --dashboard-text: #f5f5f5;
+  --dashboard-text-secondary: #a3a3a3;
+  --dashboard-text-muted: #737373;
+}
+
+/* Light mode variables (default) */
+:root {
+  --dashboard-bg: #fafaf9;
+  --dashboard-bg-secondary: #ffffff;
+  --dashboard-bg-tertiary: #f5f5f4;
+  --dashboard-border: #e5e5e5;
+  --dashboard-text: #0a0a0a;
+  --dashboard-text-secondary: #525252;
+  --dashboard-text-muted: #a3a3a3;
+}
+
+/* Dashboard/Admin specific dark mode overrides */
+.dark .dashboard-layout {
+  background-color: var(--dashboard-bg);
+  color: var(--dashboard-text);
+}
+
+.dark .dashboard-layout ::-webkit-scrollbar-track {
+  background: var(--dashboard-bg-secondary);
+}
+
+.dark .dashboard-layout ::-webkit-scrollbar-thumb {
+  background: #404040;
+}
+
+.dark .dashboard-layout ::-webkit-scrollbar-thumb:hover {
+  background: #525252;
+}
