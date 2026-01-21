@@ -90,6 +90,9 @@ Wichtige Änderungen hier dokumentieren:
 | 2026-01-20 | **Admin Dashboard V2:** Hover-Sidebar (64px→224px), Statistik-Modal (Wochen-Vergleich), CollapsibleWidgets, Beliebteste Services, Stammkunden-Quote | `components/admin/AdminSidebar.tsx`, `components/admin/StatsModal.tsx`, `components/admin/CollapsibleWidget.tsx`, `components/admin/StatCard.tsx`, `app/admin/page.tsx`, `app/admin/layout.tsx`, `lib/supabase.ts` |
 | 2026-01-20 | **Admin Dashboard V3:** Expandierbare Widgets (accordion-style statt Modals), fixierter Footer, 3-Spalten-Grid | `app/admin/page.tsx`, `components/admin/ExpandableWidget.tsx` |
 | 2026-01-20 | **Admin Dashboard V4:** Heute-Widget zeigt Tages-Statistik (letzte 7 Tage), Woche-Widget zeigt KW (letzte 12 Wochen), "Alle anzeigen" Links für Details, Fixed Footer | `app/admin/page.tsx`, `components/admin/DailyStatsModal.tsx`, `lib/supabase.ts` |
+| 2026-01-21 | **Dashboard + Admin zusammengeführt:** Gemeinsame AppSidebar, neue Menüstruktur (Kalender, Team, Services, Urlaube, Zeiten, Medien, Statistiken, Einstellungen), kombinierte Zeiten-Seite (Zeitslots + Öffnungszeiten + Sondertage), kombinierte Medien-Seite (Galerie + Content) | `components/shared/AppSidebar.tsx`, `app/admin/zeiten/page.tsx`, `app/admin/medien/page.tsx`, `app/admin/layout.tsx`, `app/dashboard/page.tsx` |
+| 2026-01-21 | **Resend E-Mail-Integration:** Buchungsbestätigung, Terminerinnerung (Cron-Job täglich 18:00), Stornierungsbestätigung. Professionelle HTML-Templates mit Beban-Branding | `lib/email.ts`, `lib/email-client.ts`, `app/api/email/route.ts`, `app/api/email/reminders/route.ts`, `vercel.json` |
+| 2026-01-21 | **Erweiterte Mitarbeiter-Daten:** Neue Felder in team-Tabelle (phone, birthday, vacation_days, start_date), Anzeige in Listenansicht und Bearbeitungsformular | `lib/supabase.ts`, `app/admin/team/page.tsx` |
 
 ## Dateistruktur
 
@@ -101,38 +104,42 @@ my-website/
 │   │   ├── page.tsx      # Homepage
 │   │   ├── impressum/    # Impressum-Seite
 │   │   └── datenschutz/  # Datenschutz-Seite
-│   ├── admin/            # Admin-Panel
+│   ├── admin/            # Admin-Panel (mit AppSidebar)
 │   │   ├── layout.tsx    # Layout mit Sidebar & Auth
-│   │   ├── page.tsx      # Dashboard mit Statistiken
+│   │   ├── page.tsx      # Statistiken-Dashboard
 │   │   ├── team/         # Team-Verwaltung
 │   │   ├── services/     # Services-Verwaltung
-│   │   ├── time-slots/   # Zeitslots-Verwaltung
-│   │   ├── opening-hours/# Öffnungszeiten
 │   │   ├── time-off/     # Urlaubs-Verwaltung
-│   │   ├── content/      # Content-Verwaltung
-│   │   └── settings/     # Einstellungen
-│   ├── dashboard/        # Mitarbeiter-Dashboard
+│   │   ├── zeiten/       # Kombiniert: Zeitslots + Öffnungszeiten + Sondertage
+│   │   ├── medien/       # Kombiniert: Galerie + Content
+│   │   ├── settings/     # Buchungseinstellungen
+│   │   ├── time-slots/   # (Redirect → /admin/zeiten?tab=slots)
+│   │   ├── opening-hours/# (Redirect → /admin/zeiten?tab=hours)
+│   │   ├── gallery/      # (Redirect → /admin/medien?tab=galerie)
+│   │   └── content/      # (Redirect → /admin/medien?tab=content)
+│   ├── dashboard/        # Terminkalender (mit AppSidebar)
 │   │   ├── layout.tsx
 │   │   └── page.tsx
 │   ├── globals.css
 │   └── layout.tsx
 ├── components/
+│   ├── shared/           # Gemeinsame Komponenten
+│   │   └── AppSidebar.tsx      # Gemeinsame Sidebar für Dashboard & Admin
 │   ├── admin/            # Admin-Komponenten
-│   │   ├── AdminSidebar.tsx
-│   │   ├── AdminHeader.tsx
-│   │   ├── ExpandableWidget.tsx  # Expandierbares Widget (accordion)
-│   │   ├── StatsModal.tsx        # Wochen-Vergleich Modal
-│   │   ├── BirthdayModal.tsx     # Geburtstags-Modal
-│   │   ├── AppointmentsModal.tsx
+│   │   ├── ExpandableWidget.tsx
+│   │   ├── StatsModal.tsx
+│   │   ├── BirthdayModal.tsx
+│   │   ├── DailyStatsModal.tsx
+│   │   ├── SundayPicker.tsx
 │   │   └── ConfirmModal.tsx
 │   ├── dashboard/        # Dashboard-Komponenten
 │   │   ├── AddAppointmentModal.tsx
 │   │   ├── AppointmentSlot.tsx
-│   │   ├── DragContext.tsx      # Drag & Drop Provider
-│   │   ├── DraggableSlot.tsx    # Draggable Wrapper
-│   │   ├── DroppableCell.tsx    # Drop-Zone Wrapper
-│   │   ├── FullWeekView.tsx     # 7-Tage Wochenansicht
-│   │   └── WeekView.tsx         # Tagesansicht mit Drag & Drop
+│   │   ├── BarberWeekView.tsx
+│   │   ├── DragContext.tsx
+│   │   ├── DraggableSlot.tsx
+│   │   ├── DroppableCell.tsx
+│   │   └── WeekView.tsx
 │   ├── layout/           # Layout-Komponenten
 │   │   ├── Header.tsx
 │   │   ├── Footer.tsx
@@ -143,14 +150,16 @@ my-website/
 │       ├── Contact.tsx
 │       └── ...
 ├── i18n/                 # Internationalisierung
-│   ├── config.ts         # Locale-Konfiguration
-│   ├── request.ts        # next-intl Server-Config
-│   └── navigation.ts     # i18n Link & Router
+│   ├── config.ts
+│   ├── request.ts
+│   └── navigation.ts
 ├── messages/             # Übersetzungen
-│   ├── de.json           # Deutsche Texte
-│   └── en.json           # Englische Texte
+│   ├── de.json
+│   └── en.json
 ├── lib/
-│   └── supabase.ts       # Supabase Client & Funktionen (SSOT)
+│   ├── supabase.ts       # Supabase Client & Funktionen (SSOT)
+│   ├── email.ts          # Resend E-Mail-Service (Server-seitig)
+│   └── email-client.ts   # E-Mail-Client-Funktionen (Client-seitig)
 └── CLAUDE.md             # Diese Datei
 ```
 
@@ -163,7 +172,7 @@ my-website/
 
 | Tabelle | Beschreibung | Spalten |
 |---------|--------------|---------|
-| `team` | Mitarbeiter | id, name, image, image_position, image_scale, sort_order, active |
+| `team` | Mitarbeiter | id, name, image, image_position, image_scale, sort_order, active, phone, birthday, vacation_days, start_date |
 | `services` | Leistungen | id, name, price (Cent), duration (Min), sort_order, active |
 | `time_slots` | Zeitslots | id, time, sort_order, active |
 | `appointments` | Einzeltermine | id, barber_id, date, time_slot, service_id, customer_name, customer_phone, source, series_id |
@@ -257,6 +266,32 @@ getMaxSlotsPerWeek(): Promise<number>  // Max. Slots pro Woche (Barber × Slots 
 getServicePopularity(days: number): Promise<ServicePopularity[]>  // Beliebteste Services
 getCustomerLoyaltyStats(days: number): Promise<CustomerLoyaltyStats>  // Stammkunden-Quote
 ```
+
+### E-Mail-Funktionen (lib/email.ts)
+
+```typescript
+// Server-seitige Funktionen
+sendBookingConfirmation(data: BookingEmailData): Promise<{ success: boolean; error?: string }>
+sendAppointmentReminder(data: ReminderEmailData): Promise<{ success: boolean; error?: string }>
+sendCancellationConfirmation(data: CancellationEmailData): Promise<{ success: boolean; error?: string }>
+formatDateForEmail(dateString: string): string  // "Montag, 20. Januar 2026"
+
+// Client-seitige Funktionen (lib/email-client.ts)
+sendBookingConfirmationEmail(data): Promise<{ success: boolean; error?: string }>
+sendCancellationEmail(data): Promise<{ success: boolean; error?: string }>
+```
+
+**Umgebungsvariablen:**
+```
+RESEND_API_KEY=re_xxx              # Resend API-Key
+RESEND_FROM_EMAIL=noreply@...     # Absender-E-Mail (muss in Resend verifiziert sein)
+CRON_SECRET=xxx                    # Sicherheits-Token für Cron-Job
+```
+
+**Cron-Job (Terminerinnerungen):**
+- Endpoint: `/api/email/reminders`
+- Schedule: Täglich um 18:00 (in vercel.json konfiguriert)
+- Sendet Erinnerungen für alle Termine am nächsten Tag
 
 ## Testdaten
 

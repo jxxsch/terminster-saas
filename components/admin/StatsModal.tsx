@@ -97,55 +97,56 @@ export function StatsModal({ isOpen, onClose }: StatsModalProps) {
               Keine Daten vorhanden
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {stats.map((week) => {
                 const utilization = maxSlots > 0 ? Math.round((week.appointmentCount / maxSlots) * 100) : 0;
 
                 return (
                   <div
                     key={`${week.year}-${week.weekNumber}`}
-                    className="grid grid-cols-[80px_140px_100px_1fr_40px] gap-3 items-center p-3 bg-gray-50 rounded-lg"
+                    className="p-4 bg-gray-50 rounded-xl"
                   >
-                    {/* Week info */}
-                    <span className="text-sm font-medium text-black">KW {week.weekNumber}</span>
+                    {/* Top row: Week info */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-3">
+                        <span className="text-base font-semibold text-black">KW {week.weekNumber}</span>
+                        <span className="text-sm text-gray-500">
+                          {formatDateRange(week.startDate, week.endDate)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-gray-700">{week.appointmentCount} Termine</span>
+                        {/* Indicator */}
+                        <div className={`${
+                          utilization >= 70 ? 'text-green-600' :
+                          utilization >= 40 ? 'text-yellow-600' : 'text-red-600'
+                        }`}>
+                          {utilization >= 70 ? (
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                          ) : utilization >= 40 ? (
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
-                    {/* Date range */}
-                    <span className="text-sm text-gray-500">
-                      {formatDateRange(week.startDate, week.endDate)}
-                    </span>
-
-                    {/* Appointment count */}
-                    <span className="text-sm text-gray-700">{week.appointmentCount} Termine</span>
-
-                    {/* Progress bar */}
+                    {/* Bottom row: Progress bar */}
                     <div className="flex items-center gap-3">
-                      <div className="flex-1 h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="flex-1 h-3 bg-gray-200 rounded-full overflow-hidden">
                         <div
                           className={`h-full ${getUtilizationColor(utilization)} transition-all duration-500`}
                           style={{ width: `${Math.min(utilization, 100)}%` }}
                         />
                       </div>
-                      <span className="text-sm text-gray-600 w-12 text-right">{utilization}%</span>
-                    </div>
-
-                    {/* Indicator */}
-                    <div className={`text-center ${
-                      utilization >= 70 ? 'text-green-600' :
-                      utilization >= 40 ? 'text-yellow-600' : 'text-red-600'
-                    }`}>
-                      {utilization >= 70 ? (
-                        <svg className="w-5 h-5 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                      ) : utilization >= 40 ? (
-                        <svg className="w-5 h-5 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                        </svg>
-                      )}
+                      <span className="text-sm font-semibold text-gray-700 w-14 text-right">{utilization}%</span>
                     </div>
                   </div>
                 );

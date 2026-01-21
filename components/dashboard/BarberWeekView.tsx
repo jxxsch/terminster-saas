@@ -16,12 +16,14 @@ import {
   getServices,
   getStaffTimeOffForDateRange,
   getClosedDates,
+  getOpenSundays,
   Appointment,
   Series,
   TeamMember,
   Service,
   StaffTimeOff,
   ClosedDate,
+  OpenSunday,
 } from '@/lib/supabase';
 
 // Generiere Zeitslots nur für reguläre Öffnungszeiten (10:00 bis 18:30)
@@ -36,6 +38,7 @@ function generateAllTimeSlots(): string[] {
 
 const DAY_NAMES = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 const ALL_TIME_SLOTS = generateAllTimeSlots();
+
 
 // Helper: Format date as YYYY-MM-DD in local timezone
 function formatDateLocal(date: Date): string {
@@ -63,32 +66,40 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
   const [services, setServices] = useState<Service[]>([]);
   const [staffTimeOff, setStaffTimeOff] = useState<StaffTimeOff[]>([]);
   const [closedDates, setClosedDates] = useState<ClosedDate[]>([]);
+  const [openSundays, setOpenSundays] = useState<OpenSunday[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSlot, setSelectedSlot] = useState<SlotInfo | null>(null);
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(initialBarberId || null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [moveToBarberInfo, setMoveToBarberInfo] = useState<BarberHeaderDropInfo | null>(null);
 
-  // Generate week days (Mo-Sa, 6 Tage - ohne Sonntag)
+  // Generate week days (Mo-Sa + verkaufsoffene Sonntage)
   const weekDays = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const days: { date: Date; dateStr: string; dayName: string; dayNum: number; isToday: boolean }[] = [];
+    const days: { date: Date; dateStr: string; dayName: string; dayNum: number; isToday: boolean; isSunday: boolean; isOpenSunday: boolean }[] = [];
     for (let i = 0; i < 7; i++) {
       const date = new Date(monday);
       date.setDate(monday.getDate() + i);
-      // Sonntag überspringen
-      if (date.getDay() === 0) continue;
+      const dateStr = formatDateLocal(date);
+      const isSunday = date.getDay() === 0;
+      const isOpenSunday = isSunday && openSundays.some(os => os.date === dateStr);
+
+      // Sonntag nur einblenden wenn verkaufsoffen
+      if (isSunday && !isOpenSunday) continue;
+
       days.push({
         date,
-        dateStr: formatDateLocal(date),
+        dateStr,
         dayName: DAY_NAMES[date.getDay()],
         dayNum: date.getDate(),
         isToday: date.getTime() === today.getTime(),
+        isSunday,
+        isOpenSunday,
       });
     }
     return days;
-  }, [monday]);
+  }, [monday, openSundays]);
 
   // Load all data
   useEffect(() => {
@@ -97,13 +108,14 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
       const startDate = formatDateLocal(monday);
       const endDate = formatDateLocal(new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000));
 
-      const [appointmentsData, seriesData, teamData, servicesData, staffTimeOffData, closedDatesData] = await Promise.all([
+      const [appointmentsData, seriesData, teamData, servicesData, staffTimeOffData, closedDatesData, openSundaysData] = await Promise.all([
         getAppointments(startDate, endDate),
         getSeries(),
         getTeam(),
         getServices(),
         getStaffTimeOffForDateRange(startDate, endDate),
         getClosedDates(),
+        getOpenSundays(),
       ]);
 
       setAppointments(appointmentsData);
@@ -111,6 +123,7 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
       setTeam(teamData);
       setServices(servicesData);
       setStaffTimeOff(staffTimeOffData);
+      setOpenSundays(openSundaysData);
       setClosedDates(closedDatesData);
 
       // Auto-select first barber if none selected
@@ -309,8 +322,9 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
         />
 
         {/* Week Grid */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
-          <table className="w-full h-full border-collapse" style={{ tableLayout: 'fixed' }}>
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 min-h-0 overflow-hidden relative">
+          <div className="absolute inset-0 overflow-auto">
+            <table className="w-full h-full border-collapse" style={{ tableLayout: 'fixed' }}>
             {/* Day Headers - kompakt */}
             <thead className="bg-gray-50">
               <tr className="h-[28px]">
@@ -320,17 +334,18 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
                 {weekDays.map(day => {
                   const isClosed = isDayClosed(day.dateStr);
                   const isOff = !!isBarberOffOnDate(day.dateStr);
+                  const isDisabled = day.isSunday || isClosed || isOff;
                   return (
                     <th
                       key={day.dateStr}
                       className={`px-1 text-center border-b border-r border-gray-200 font-normal ${
-                        isClosed || isOff ? 'bg-gray-100' : ''
-                      } ${day.isToday ? 'bg-gold/10' : ''}`}
+                        isDisabled ? 'bg-gray-100' : ''
+                      } ${day.isToday && !day.isSunday ? 'bg-gold/10' : ''}`}
                     >
-                      <span className={`text-[11px] font-medium ${isClosed || isOff ? 'text-gray-400' : 'text-black'}`}>
+                      <span className={`text-[11px] font-medium ${isDisabled ? 'text-gray-400' : 'text-black'}`}>
                         {day.dayName} {day.dayNum}
                       </span>
-                      {(isClosed || isOff) && (
+                      {(isClosed || isOff) && !day.isSunday && (
                         <span className="ml-1 text-[8px] text-red-500">{isClosed ? '✕' : '⌀'}</span>
                       )}
                     </th>
@@ -417,16 +432,33 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
                   </tr>
                 ))}
             </tbody>
-          </table>
+            </table>
+          </div>
+
         </div>
 
-        {/* Legend - kompakt in einer Zeile */}
-        <div className="flex gap-3 text-[9px] text-gray-400 justify-center items-center flex-shrink-0 py-1">
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-gold/30 border border-gold/50"></span>Manuell</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-green-100 border border-green-300"></span>Online</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-blue-100 border border-blue-300"></span>Serie</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-gray-200 border border-gray-400"></span>Pause</span>
-          <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-red-50 border border-red-200"></span>Storniert</span>
+        {/* Legend */}
+        <div className="mt-1 flex gap-4 text-[10px] text-gray-400 justify-center items-center flex-shrink-0">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-gold/30 border border-gold/50"></div>
+            <span>Manuell</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-green-100 border border-green-300"></div>
+            <span>Online</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-blue-100 border border-blue-300"></div>
+            <span>Serie</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-gray-200 border border-gray-400"></div>
+            <span>Pause</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-red-50 border border-red-200"></div>
+            <span>Storniert</span>
+          </div>
         </div>
 
         {/* Add Appointment Modal */}

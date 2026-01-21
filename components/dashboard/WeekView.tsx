@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { AppointmentSlot } from './AppointmentSlot';
 import { AddAppointmentModal } from './AddAppointmentModal';
@@ -56,6 +56,23 @@ interface SlotInfo {
 // Alle Zeitslots von 9:00 bis 20:00
 const ALL_TIME_SLOTS = generateAllTimeSlots();
 
+// Berechne den aktuellen Zeitslot (z.B. 16:10 -> "16:00")
+function getCurrentTimeSlot(): string | null {
+  // TEST: Simuliere 16:10 Uhr
+  const now = new Date(); now.setHours(16, 10, 0, 0);
+  // const now = new Date(); // Echte Zeit
+
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+
+  // Öffnungszeiten: 10:00 - 18:30
+  if (hours < 10 || hours > 18 || (hours === 18 && minutes > 30)) return null;
+
+  // Runde auf den aktuellen 30-Minuten-Slot ab
+  const slotMinutes = minutes < 30 ? '00' : '30';
+  return `${String(hours).padStart(2, '0')}:${slotMinutes}`;
+}
+
 export function WeekView({ monday, selectedDay, closedReason }: WeekViewProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [series, setSeries] = useState<Series[]>([]);
@@ -66,10 +83,14 @@ export function WeekView({ monday, selectedDay, closedReason }: WeekViewProps) {
   const [selectedSlot, setSelectedSlot] = useState<SlotInfo | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [moveToBarberInfo, setMoveToBarberInfo] = useState<BarberHeaderDropInfo | null>(null);
+  const [currentTimeSlot, setCurrentTimeSlot] = useState<string | null>(getCurrentTimeSlot());
+  const tableBodyRef = useRef<HTMLTableSectionElement>(null);
 
   // Generate week days (Mo-So, 7 Tage)
   const weekDays = useMemo(() => {
-    const days: { date: Date; dateStr: string; dayName: string; dayNum: number }[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days: { date: Date; dateStr: string; dayName: string; dayNum: number; isToday: boolean }[] = [];
     for (let i = 0; i < 7; i++) {
       const date = new Date(monday);
       date.setDate(monday.getDate() + i);
@@ -78,10 +99,20 @@ export function WeekView({ monday, selectedDay, closedReason }: WeekViewProps) {
         dateStr: formatDateLocal(date),
         dayName: DAY_NAMES[date.getDay()],
         dayNum: date.getDate(),
+        isToday: date.getTime() === today.getTime(),
       });
     }
     return days;
   }, [monday]);
+
+  // Update current time slot every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTimeSlot(getCurrentTimeSlot());
+    }, 60000); // Jede Minute
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Load all data
   useEffect(() => {
@@ -178,6 +209,8 @@ export function WeekView({ monday, selectedDay, closedReason }: WeekViewProps) {
   };
 
   const handleSlotClick = (barberId: string, dateStr: string, timeSlot: string) => {
+    // Keine Termine an Feiertagen
+    if (closedReason) return;
     setSelectedSlot({ barberId, date: dateStr, timeSlot });
   };
 
@@ -250,23 +283,8 @@ export function WeekView({ monday, selectedDay, closedReason }: WeekViewProps) {
     );
   }
 
-  // Wenn Feiertag, zeige Hinweis statt Grid
-  if (closedReason) {
-    return (
-      <div className="flex-1 flex flex-col min-h-0">
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 flex items-center justify-center min-h-0">
-          <div className="text-center p-8">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-medium text-black">{closedReason}</h3>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Wenn Feiertag: Kalender anzeigen aber ausgegraut mit Overlay
+  const isClosed = !!closedReason;
 
   return (
     <DragProvider
@@ -288,8 +306,9 @@ export function WeekView({ monday, selectedDay, closedReason }: WeekViewProps) {
         )}
 
         {/* Schedule Grid - Table-Layout für durchgehende Linien */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
-          <table className="w-full h-full border-collapse" style={{ tableLayout: 'fixed' }}>
+        <div className={`bg-white rounded-lg border border-gray-200 shadow-sm flex-1 min-h-0 overflow-hidden relative ${isClosed ? 'grayscale opacity-40' : ''}`}>
+          <div className="absolute inset-0 overflow-auto">
+            <table className="w-full h-full border-collapse" style={{ tableLayout: 'fixed' }}>
             {/* Header mit Datum und Barber */}
             <thead>
               <tr className="bg-gray-50">
@@ -343,31 +362,47 @@ export function WeekView({ monday, selectedDay, closedReason }: WeekViewProps) {
             </thead>
 
             {/* Time Slots */}
-            <tbody>
-              {ALL_TIME_SLOTS.map((slot, index) => (
+            <tbody ref={tableBodyRef}>
+              {ALL_TIME_SLOTS.map((slot, index) => {
+                const isCurrentSlot = currentDay.isToday && slot === currentTimeSlot && !isClosed;
+                return (
                 <tr
                   key={slot}
-                  className={index < ALL_TIME_SLOTS.length - 1 ? 'border-b border-gray-100' : ''}
+                  className={`${index < ALL_TIME_SLOTS.length - 1 ? 'border-b border-gray-100' : ''} ${
+                    isCurrentSlot ? 'relative' : ''
+                  }`}
                   style={{ height: `${100 / ALL_TIME_SLOTS.length}%` }}
                 >
                   {/* Time Label */}
-                  <td className="text-center align-middle">
-                    <span className="text-xs font-mono text-gray-600 font-medium">
+                  <td className={`text-center align-middle ${isCurrentSlot ? 'bg-red-50/50 border-y border-l border-red-400' : ''}`}>
+                    <span className={`text-xs font-mono font-medium ${isCurrentSlot ? 'text-red-500' : 'text-gray-600'}`}>
                       {slot}
                     </span>
                   </td>
 
                   {/* Barber Slots */}
-                  {team.map(barber => {
+                  {team.map((barber, barberIndex) => {
                     const key = `${barber.id}-${currentDay.dateStr}-${slot}`;
                     const dropId = `droppable|${barber.id}|${currentDay.dateStr}|${slot}`;
                     const appointment = appointmentMap.get(key);
                     const seriesItem = seriesAppointments.get(key);
                     const barberTimeOff = isBarberOffOnDate(barber.id, currentDay.dateStr);
+                    const isLastBarber = barberIndex === team.length - 1;
 
                     return (
-                      <td key={key} className="border-l border-gray-200 p-0 align-middle">
-                        <DroppableCell id={dropId} disabled={!!barberTimeOff}>
+                      <td
+                        key={key}
+                        className="border-l border-gray-200 p-0 align-middle"
+                        style={isCurrentSlot ? {
+                          backgroundColor: 'rgba(254, 242, 242, 0.5)',
+                          borderTopWidth: '1px',
+                          borderBottomWidth: '1px',
+                          borderTopColor: 'rgb(248, 113, 113)',
+                          borderBottomColor: 'rgb(248, 113, 113)',
+                          ...(isLastBarber && { borderRightWidth: '1px', borderRightColor: 'rgb(248, 113, 113)' })
+                        } : undefined}
+                      >
+                        <DroppableCell id={dropId} disabled={!!barberTimeOff || isClosed}>
                           {appointment && appointment.status === 'confirmed' ? (
                             <DraggableSlot id={appointment.id} disabled={appointment.customer_name?.includes('Pause')}>
                               <AppointmentSlot
@@ -410,10 +445,32 @@ export function WeekView({ monday, selectedDay, closedReason }: WeekViewProps) {
                     );
                   })}
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
-          </table>
+            </table>
+          </div>
+
         </div>
+
+        {/* Feiertag Overlay */}
+        {isClosed && closedReason && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 rounded-lg">
+            <div className="bg-white/95 backdrop-blur-sm px-8 py-6 rounded-xl shadow-xl border border-gray-200">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">{closedReason}</h3>
+                  <p className="text-sm text-gray-500 mt-1">Geschlossen</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Legend */}
         <div className="mt-1 flex gap-4 text-[10px] text-gray-400 justify-center items-center flex-shrink-0">

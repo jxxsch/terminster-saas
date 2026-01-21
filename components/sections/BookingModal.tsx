@@ -21,6 +21,7 @@ import {
   OpenSunday,
   StaffTimeOff
 } from '@/lib/supabase';
+import { sendBookingConfirmationEmail } from '@/lib/email-client';
 import { useAuth } from '@/context/AuthContext';
 import { CustomerPortal } from '@/components/sections/CustomerPortal';
 
@@ -452,6 +453,27 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       // Füge den neuen Termin zur Liste hinzu, damit er sofort als gebucht gilt
       setBookedAppointments(prev => [...prev, appointment]);
       setBookingSuccess(true);
+
+      // Bestätigungs-E-Mail senden (im Hintergrund, ohne auf Ergebnis zu warten)
+      const barber = team.find(b => b.id === selectedBarber);
+      const service = services.find(s => s.id === selectedService);
+      const dayData = days.find(d => d.dateStr === selectedDay);
+
+      if (barber && service && dayData) {
+        sendBookingConfirmationEmail({
+          customerName: customerName.trim(),
+          customerEmail: customerEmail.trim(),
+          customerPhone: customerPhone.trim(),
+          barberName: barber.name,
+          serviceName: service.name,
+          date: `${dayData.dayNameLong}, ${dayData.dayNumFull}`,
+          time: selectedSlot,
+          duration: service.duration,
+          price: formatPrice(service.price),
+        }).catch(err => {
+          console.error('Failed to send confirmation email:', err);
+        });
+      }
     } else {
       setBookingError(t('errors.bookingFailed'));
     }

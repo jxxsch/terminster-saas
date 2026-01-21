@@ -44,9 +44,16 @@ export interface TeamMember {
   image: string | null;
   image_position: string;
   image_scale: number;
+  image_position_portrait: string;
+  image_scale_portrait: number;
   sort_order: number;
   active: boolean;
   created_at: string;
+  // Zusätzliche Mitarbeiter-Details
+  phone: string | null;
+  birthday: string | null;
+  vacation_days: number;
+  start_date: string | null;
 }
 
 export interface Service {
@@ -815,6 +822,20 @@ export async function deleteService(id: string): Promise<boolean> {
   }
 
   return true;
+}
+
+export async function updateServiceOrder(
+  items: Array<{ id: string; sort_order: number }>
+): Promise<boolean> {
+  const updates = items.map(item =>
+    supabase
+      .from('services')
+      .update({ sort_order: item.sort_order })
+      .eq('id', item.id)
+  );
+
+  const results = await Promise.all(updates);
+  return results.every(r => !r.error);
 }
 
 // ============================================

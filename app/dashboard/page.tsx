@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { WeekView } from '@/components/dashboard/WeekView';
 import { BarberWeekView } from '@/components/dashboard/BarberWeekView';
+import { AppSidebar } from '@/components/shared/AppSidebar';
 import Image from 'next/image';
 import { getClosedDates, getOpenSundays, ClosedDate, OpenSunday } from '@/lib/supabase';
 import { useTranslations } from 'next-intl';
@@ -14,7 +15,6 @@ const DASHBOARD_PASSWORD = 'beban2024';
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as const;
 
-// Helper: Format date as YYYY-MM-DD in local timezone (not UTC)
 function formatDateLocal(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -58,11 +58,9 @@ export default function DashboardPage() {
     if (session === 'authenticated') {
       setIsAuthenticated(true);
     }
-    // Load closed dates and open sundays
     getClosedDates().then(setClosedDates);
     getOpenSundays().then(setOpenSundays);
   }, []);
-
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +81,6 @@ export default function DashboardPage() {
   const monday = useMemo(() => getMondayOfWeek(currentWeekOffset), [currentWeekOffset]);
   const weekNumber = useMemo(() => getWeekNumber(monday), [monday]);
 
-  // Week date range for display
   const weekRange = useMemo(() => {
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
@@ -98,7 +95,6 @@ export default function DashboardPage() {
     return `${startDay}. ${startMonth} - ${endDay}. ${endMonth}`;
   }, [monday, tMonths]);
 
-  // Generate week days for tabs (Mo-So)
   const weekDays = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -111,7 +107,6 @@ export default function DashboardPage() {
       const isToday = date.getTime() === today.getTime();
       const isActuallySunday = date.getDay() === 0;
       const isOpenSunday = isActuallySunday && openSundays.some(os => os.date === dateStr);
-      // Sonntag ist nur disabled, wenn es KEIN verkaufsoffener Sonntag ist
       const isSunday = isActuallySunday && !isOpenSunday;
       const closedDate = closedDates.find(cd => cd.date === dateStr);
       days.push({
@@ -129,7 +124,6 @@ export default function DashboardPage() {
     return days;
   }, [monday, closedDates, openSundays, tDays]);
 
-  // Auto-select today only on initial load
   useEffect(() => {
     if (currentWeekOffset === 0) {
       const todayIndex = weekDays.findIndex(d => d.isToday);
@@ -140,7 +134,6 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Keyboard navigation for days
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') {
@@ -148,9 +141,9 @@ export default function DashboardPage() {
         setSelectedDay(prev => {
           if (prev === 0) {
             setCurrentWeekOffset(w => w - 1);
-            return 5; // Samstag
+            return 5;
           } else if (prev === 6) {
-            return 5; // Sonntag -> Samstag
+            return 5;
           }
           return prev - 1;
         });
@@ -159,7 +152,7 @@ export default function DashboardPage() {
         setSelectedDay(prev => {
           if (prev === 5 || prev === 6) {
             setCurrentWeekOffset(w => w + 1);
-            return 0; // Montag
+            return 0;
           }
           return prev + 1;
         });
@@ -173,41 +166,42 @@ export default function DashboardPage() {
   // Login Screen
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-6 inline-block">
-          {/* Logo */}
-          <div className="flex justify-center mb-4">
-            <div className="relative w-10 h-10">
+      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
+        <div className="bg-white border border-slate-200/50 rounded-3xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.04)] p-8 w-full max-w-sm">
+          <div className="flex justify-center mb-6">
+            <div className="w-12 h-12 bg-gold rounded-xl flex items-center justify-center shadow-sm">
               <Image
                 src="/logo.png"
                 alt="Beban Logo"
-                fill
+                width={32}
+                height={32}
                 className="object-contain"
                 priority
               />
             </div>
           </div>
 
-          {/* Titel - kein Zeilenumbruch */}
-          <h1 className="text-base font-light text-center mb-5 tracking-wide text-black whitespace-nowrap">
-            Dashboard <span className="text-gold">Login</span>
+          <h1 className="text-xl font-bold text-center mb-1 text-slate-900">
+            Willkommen zurück
           </h1>
+          <p className="text-sm text-slate-400 text-center mb-6">
+            Melde dich im Dashboard an
+          </p>
 
-          {/* Form */}
-          <form onSubmit={handleLogin} className="space-y-3">
+          <form onSubmit={handleLogin} className="space-y-4">
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t('password')}
-              className="w-64 px-4 py-2.5 bg-white border border-gray-200 rounded text-sm text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-all"
             />
             {error && (
               <p className="text-red-500 text-xs text-center">{error}</p>
             )}
             <button
               type="submit"
-              className="w-full py-2.5 bg-gold text-black text-sm font-medium tracking-wider uppercase hover:bg-gold/80 transition-colors rounded"
+              className="w-full py-3 bg-gold text-slate-900 text-sm font-bold tracking-wide uppercase hover:bg-gold/90 transition-colors rounded-xl shadow-sm"
             >
               {t('login')}
             </button>
@@ -219,31 +213,45 @@ export default function DashboardPage() {
 
   // Dashboard
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      {/* Compact Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-2 flex-shrink-0">
-        <div className="flex items-center justify-between gap-2 w-full">
-          {/* Logo */}
-          <div className="relative w-8 h-8 flex-shrink-0">
-            <Image
-              src="/logo.png"
-              alt="Beban Logo"
-              fill
-              className="object-contain"
-              priority
-            />
+    <div className="h-screen flex gap-4 p-4 overflow-hidden bg-white">
+      {/* Floating Sidebar */}
+      <AppSidebar onLogout={handleLogout} />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+        {/* Header */}
+        <header className="bg-slate-50 px-5 py-3 flex items-center rounded-2xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.04)] border border-slate-200/50 shrink-0">
+          {/* View Toggle - Links */}
+          <div className="flex items-center bg-slate-100 rounded-xl p-1">
+            <button
+              onClick={() => setViewMode('day')}
+              className={`px-3 py-2 text-[11px] font-bold rounded-lg transition-all ${
+                viewMode === 'day'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Tag
+            </button>
+            <button
+              onClick={() => setViewMode('barber')}
+              className={`px-3 py-2 text-[11px] font-bold rounded-lg transition-all ${
+                viewMode === 'barber'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Woche
+            </button>
           </div>
 
-          {/* Day Tabs with Navigation - immer sichtbar */}
-          <div className="flex items-center gap-1 flex-1 justify-center">
-            {/* Vorheriger Tag/Woche */}
+          {/* Day Tabs - Mitte (zentriert) */}
+          <div className="flex-1 flex items-center justify-center gap-1">
             <button
               onClick={() => {
                 if (viewMode === 'barber') {
-                  // Wochenansicht: Woche zurück
                   setCurrentWeekOffset(prev => prev - 1);
                 } else {
-                  // Tagesansicht: Tag zurück
                   if (selectedDay === 0) {
                     setCurrentWeekOffset(prev => prev - 1);
                     setSelectedDay(5);
@@ -254,71 +262,59 @@ export default function DashboardPage() {
                   }
                 }
               }}
-              className="p-1.5 rounded transition-colors hover:bg-gray-100 text-gray-400 hover:text-gray-600"
-              aria-label={viewMode === 'barber' ? t('previousWeek') : t('previousDay')}
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-white text-slate-400 hover:text-slate-600 hover:ring-2 hover:ring-gold transition-all shadow-sm"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
 
             {weekDays.map((day, index) => {
-              const isDisabled = day.isSunday;
-              const isClosedDay = day.isClosed;
               const isWeekView = viewMode === 'barber';
-              // In Wochen-/Barber-Ansicht: alle Tage markiert (außer Sonntag)
-              const isSelected = isWeekView ? !isDisabled : selectedDay === index;
+              const isSundayDisabled = day.isSunday || (isWeekView && day.date.getDay() === 0 && !day.isOpenSunday);
+              const isClosedDay = day.isClosed;
+              const isSelected = isWeekView ? !isSundayDisabled && !isClosedDay : selectedDay === index;
 
               return (
                 <button
                   key={day.dateStr}
                   onClick={() => {
-                    if (isDisabled) return;
-                    if (isWeekView) return; // In Wochenansicht: keine Aktion bei Klick auf Tage
+                    if (isSundayDisabled) return;
+                    if (isWeekView) return;
                     setSelectedDay(index);
                   }}
-                  disabled={isDisabled || isWeekView}
+                  disabled={isSundayDisabled || isWeekView}
                   title={day.isClosed ? day.closedReason : undefined}
-                  className={`w-14 py-1.5 rounded text-xs font-medium transition-all relative text-center ${
-                    isDisabled
-                      ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                  className={`w-12 py-2 rounded-xl text-[11px] font-semibold transition-all relative ${
+                    isSundayDisabled
+                      ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
                       : isClosedDay
                       ? isSelected
-                        ? 'bg-red-100 text-red-600 border border-red-300'
-                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
-                      : day.isToday
-                      ? 'bg-gold/20 text-gold border-2 border-gold'
+                        ? 'bg-red-100 text-red-600 border border-red-200'
+                        : 'bg-slate-100 text-slate-400'
                       : isSelected
-                      ? isWeekView
-                        ? 'bg-gold/20 text-gold border border-gold/30'
-                        : 'bg-gold text-black'
-                      : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                      ? 'bg-white text-slate-900 shadow-sm border-2 border-gold'
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                   }`}
                 >
-                  <span>{day.dayName}</span>
-                  <span className="ml-1">{day.dayNum}</span>
-                  {day.isToday && !isSelected && !isClosedDay && (
-                    <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-gold rounded-full"></span>
+                  <span className="block">{day.dayName}</span>
+                  <span className="block text-[10px] font-bold">{day.dayNum}</span>
+                  {isClosedDay && !isSundayDisabled && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-400 rounded-full" />
                   )}
-                  {isClosedDay && (
-                    <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                  {day.isToday && !isSelected && !isSundayDisabled && (
+                    <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gold rounded-full" />
                   )}
                 </button>
               );
             })}
 
-            {/* Nächster Tag/Woche */}
             <button
               onClick={() => {
                 if (viewMode === 'barber') {
-                  // Wochenansicht: Woche vor
                   setCurrentWeekOffset(prev => prev + 1);
                 } else {
-                  // Tagesansicht: Tag vor
-                  if (selectedDay === 5) {
-                    setCurrentWeekOffset(prev => prev + 1);
-                    setSelectedDay(0);
-                  } else if (selectedDay === 6) {
+                  if (selectedDay === 5 || selectedDay === 6) {
                     setCurrentWeekOffset(prev => prev + 1);
                     setSelectedDay(0);
                   } else {
@@ -326,86 +322,26 @@ export default function DashboardPage() {
                   }
                 }
               }}
-              className="p-1.5 rounded transition-colors hover:bg-gray-100 text-gray-400 hover:text-gray-600"
-              aria-label={viewMode === 'barber' ? t('nextWeek') : t('nextDay')}
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-white text-slate-400 hover:text-slate-600 hover:ring-2 hover:ring-gold transition-all shadow-sm"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-
-          {/* View Toggle Buttons */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setViewMode('day')}
-              className={`w-20 flex items-center justify-center gap-1.5 py-1.5 text-[11px] rounded font-medium transition-colors ${
-                viewMode === 'day'
-                  ? 'bg-gold/20 text-gold'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {/* Team Icon - alle Barber an einem Tag */}
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <span>Tag</span>
-            </button>
-            <button
-              onClick={() => setViewMode('barber')}
-              className={`w-20 flex items-center justify-center gap-1.5 py-1.5 text-[11px] rounded font-medium transition-colors ${
-                viewMode === 'barber'
-                  ? 'bg-gold/20 text-gold'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {/* User + Calendar Icon - ein Barber über die Woche */}
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <span>Woche</span>
-            </button>
-          </div>
-
-          {/* Week Info with Navigation */}
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <button
-              onClick={() => setCurrentWeekOffset(prev => prev - 1)}
-              className="p-1.5 hover:bg-gray-100 rounded transition-colors text-gray-400 hover:text-gray-600"
-              aria-label={t('previousWeek')}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-
-            <span className="text-xs font-medium text-gray-600 text-center whitespace-nowrap w-[140px]">
-              {t('week')} {weekNumber} · {weekRange}
-            </span>
-
-            <button
-              onClick={() => setCurrentWeekOffset(prev => prev + 1)}
-              className="p-1.5 hover:bg-gray-100 rounded transition-colors text-gray-400 hover:text-gray-600"
-              aria-label={t('nextWeek')}
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
 
+            {/* Heute Button */}
             <button
               onClick={() => {
                 setCurrentWeekOffset(0);
                 const today = new Date();
                 const dayOfWeek = today.getDay();
-                // Sonntag (0) -> Montag (0), sonst Tag - 1 (weil Array bei Montag=0 startet)
                 const todayIndex = dayOfWeek === 0 ? 0 : dayOfWeek - 1;
                 setSelectedDay(todayIndex);
               }}
-              className={`ml-1 px-2 py-1 text-[10px] rounded font-medium transition-colors ${
+              className={`ml-1 px-4 py-2 text-xs font-bold rounded-xl transition-all ${
                 currentWeekOffset !== 0 || !weekDays[selectedDay]?.isToday
                   ? 'bg-gold/20 text-gold hover:bg-gold/30'
-                  : 'bg-gray-100 text-gray-400 cursor-default'
+                  : 'bg-slate-100 text-slate-400 cursor-default'
               }`}
               disabled={currentWeekOffset === 0 && weekDays[selectedDay]?.isToday}
             >
@@ -413,31 +349,48 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Logout */}
-          <button
-            onClick={handleLogout}
-            className="p-1.5 hover:bg-gray-100 rounded transition-colors text-gray-400 hover:text-gray-600 flex-shrink-0"
-            aria-label={t('logout')}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </button>
-        </div>
-      </header>
+          {/* KW Navigation - Rechts (feste Breite) */}
+          <div className="flex items-center gap-1 w-[160px] justify-end">
+            <button
+              onClick={() => setCurrentWeekOffset(prev => prev - 1)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-white text-slate-400 hover:text-slate-600 hover:ring-2 hover:ring-gold transition-all shadow-sm"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="text-center w-[80px] leading-tight">
+              <p className="text-xs font-bold text-slate-900 whitespace-nowrap">
+                {t('week')} {weekNumber}
+              </p>
+              <p className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
+                {weekRange}
+              </p>
+            </div>
+            <button
+              onClick={() => setCurrentWeekOffset(prev => prev + 1)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg bg-white text-slate-400 hover:text-slate-600 hover:ring-2 hover:ring-gold transition-all shadow-sm"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </header>
 
-      {/* Main Content - fills remaining space */}
-      <main className="flex-1 px-4 pb-3 pt-3 overflow-hidden flex flex-col">
-        {viewMode === 'day' ? (
-          <WeekView
-            monday={monday}
-            selectedDay={selectedDay}
-            closedReason={weekDays[selectedDay]?.closedReason}
-          />
-        ) : (
-          <BarberWeekView monday={monday} />
-        )}
-      </main>
+        {/* Main Calendar View */}
+        <main className="flex-1 flex flex-col overflow-hidden bg-slate-50 rounded-2xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.04)] border border-slate-200/50 p-4">
+          {viewMode === 'day' ? (
+            <WeekView
+              monday={monday}
+              selectedDay={selectedDay}
+              closedReason={weekDays[selectedDay]?.closedReason}
+            />
+          ) : (
+            <BarberWeekView monday={monday} />
+          )}
+        </main>
+      </div>
     </div>
   );
 }

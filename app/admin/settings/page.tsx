@@ -1,15 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-  getAllSettings,
-  updateSetting,
-  getClosedDates,
-  createClosedDate,
-  deleteClosedDate,
-  ClosedDate,
-} from '@/lib/supabase';
-import { ConfirmModal } from '@/components/admin/ConfirmModal';
+import { getAllSettings, updateSetting } from '@/lib/supabase';
 
 interface BookingSettings {
   booking_advance_days: { value: number };
@@ -25,24 +17,15 @@ const defaultSettings: BookingSettings = {
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<BookingSettings>(defaultSettings);
-  const [closedDates, setClosedDates] = useState<ClosedDate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [savedFields, setSavedFields] = useState<Set<string>>(new Set());
-
-  // Closed date form
-  const [newClosedDate, setNewClosedDate] = useState('');
-  const [newClosedReason, setNewClosedReason] = useState('');
-  const [deleteTarget, setDeleteTarget] = useState<ClosedDate | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadData() {
-      const [settingsData, closedDatesData] = await Promise.all([
-        getAllSettings(),
-        getClosedDates(),
-      ]);
+      const settingsData = await getAllSettings();
 
       if (mounted) {
         setSettings({
@@ -50,7 +33,6 @@ export default function SettingsPage() {
           cancellation_hours: (settingsData.cancellation_hours as BookingSettings['cancellation_hours']) || defaultSettings.cancellation_hours,
           max_bookings_per_day: (settingsData.max_bookings_per_day as BookingSettings['max_bookings_per_day']) || defaultSettings.max_bookings_per_day,
         });
-        setClosedDates(closedDatesData);
         setIsLoading(false);
       }
     }
@@ -77,37 +59,6 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleAddClosedDate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newClosedDate) return;
-
-    const created = await createClosedDate(newClosedDate, newClosedReason || undefined);
-    if (created) {
-      setClosedDates([...closedDates, created].sort((a, b) => a.date.localeCompare(b.date)));
-      setNewClosedDate('');
-      setNewClosedReason('');
-    }
-  }
-
-  async function handleDeleteClosedDate() {
-    if (!deleteTarget) return;
-
-    const success = await deleteClosedDate(deleteTarget.id);
-    if (success) {
-      setClosedDates(closedDates.filter(d => d.id !== deleteTarget.id));
-    }
-    setDeleteTarget(null);
-  }
-
-  function formatDate(dateStr: string): string {
-    return new Date(dateStr).toLocaleDateString('de-DE', {
-      weekday: 'short',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  }
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -121,7 +72,7 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-medium text-black">Einstellungen</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Buchungsregeln und geschlossene Tage verwalten
+          Buchungsregeln und System-Einstellungen
         </p>
       </div>
 
@@ -222,81 +173,20 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Closed Dates */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-lg font-medium text-black mb-4">Geschlossene Tage</h2>
-        <p className="text-sm text-gray-500 mb-4">
-          Feiertage, Betriebsurlaub oder andere Tage, an denen der Laden geschlossen ist.
-        </p>
-
-        {/* Add Closed Date Form */}
-        <form onSubmit={handleAddClosedDate} className="flex gap-3 mb-6">
-          <input
-            type="date"
-            value={newClosedDate}
-            onChange={(e) => setNewClosedDate(e.target.value)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none"
-            required
-          />
-          <input
-            type="text"
-            value={newClosedReason}
-            onChange={(e) => setNewClosedReason(e.target.value)}
-            placeholder="Grund (optional)"
-            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="px-4 py-2 bg-gold text-black text-sm font-medium rounded-lg hover:bg-gold-light transition-colors"
-          >
-            Hinzufügen
-          </button>
-        </form>
-
-        {/* Closed Dates List */}
-        {closedDates.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-6">
-            Keine geschlossenen Tage eingetragen
-          </p>
-        ) : (
-          <div className="divide-y divide-gray-100">
-            {closedDates.map((closedDate) => (
-              <div
-                key={closedDate.id}
-                className="flex items-center justify-between py-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-black">
-                    {formatDate(closedDate.date)}
-                  </p>
-                  {closedDate.reason && (
-                    <p className="text-xs text-gray-500">{closedDate.reason}</p>
-                  )}
-                </div>
-                <button
-                  onClick={() => setDeleteTarget(closedDate)}
-                  className="p-1.5 hover:bg-red-100 rounded text-gray-400 hover:text-red-600"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
+      {/* Info Box */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex gap-3">
+          <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div>
+            <h3 className="text-sm font-medium text-blue-800">Hinweis</h3>
+            <p className="text-sm text-blue-700 mt-1">
+              Geschlossene Tage und Öffnungszeiten können jetzt unter <strong>Zeiten</strong> → <strong>Sondertage</strong> verwaltet werden.
+            </p>
           </div>
-        )}
+        </div>
       </div>
-
-      {/* Delete Confirmation */}
-      <ConfirmModal
-        isOpen={!!deleteTarget}
-        title="Geschlossenen Tag löschen"
-        message={`Möchten Sie den ${deleteTarget ? formatDate(deleteTarget.date) : ''} wirklich aus der Liste entfernen?`}
-        confirmLabel="Löschen"
-        variant="danger"
-        onConfirm={handleDeleteClosedDate}
-        onCancel={() => setDeleteTarget(null)}
-      />
     </div>
   );
 }
