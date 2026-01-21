@@ -9,7 +9,7 @@ const intlMiddleware = createMiddleware({
   localePrefix: 'always'
 });
 
-export default function proxy(request: NextRequest) {
+export default function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Skip middleware for dashboard, admin, api, and static files
