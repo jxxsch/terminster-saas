@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { WeekView } from '@/components/dashboard/WeekView';
 import { BarberWeekView } from '@/components/dashboard/BarberWeekView';
-import { DarkModeToggle } from '@/components/DarkModeToggle';
 import Image from 'next/image';
 import { getClosedDates, getOpenSundays, ClosedDate, OpenSunday } from '@/lib/supabase';
 import { useTranslations } from 'next-intl';
@@ -224,7 +223,7 @@ export default function DashboardPage() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       {/* Compact Header */}
-      <header className="bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 px-4 py-2 flex-shrink-0">
+      <header className="bg-white border-b border-gray-200 px-4 py-2 flex-shrink-0">
         <div className="flex items-center justify-between gap-2 w-full">
           {/* Logo */}
           <div className="relative w-8 h-8 flex-shrink-0">
@@ -419,13 +418,10 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Dark Mode Toggle */}
-          <DarkModeToggle />
-
           {/* Logout */}
           <button
             onClick={handleLogout}
-            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+            className="p-1.5 hover:bg-gray-100 rounded transition-colors text-gray-400 hover:text-gray-600 flex-shrink-0"
             aria-label={t('logout')}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

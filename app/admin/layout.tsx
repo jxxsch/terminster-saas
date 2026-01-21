@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react';
 import { Geist } from 'next/font/google';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
-import { ThemeProvider } from '@/context/ThemeContext';
-import { DarkModeToggle } from '@/components/DarkModeToggle';
 import Image from 'next/image';
 
 const geistSans = Geist({
@@ -182,31 +180,28 @@ export default function AdminLayout({
   return (
     <html lang="de">
       <body className={`${geistSans.variable} antialiased`}>
-        <ThemeProvider storageKey="admin-theme">
-          <div className="dashboard-layout min-h-screen bg-[#FAFAFA] text-black dark:bg-[#0f0f0f] dark:text-gray-100">
-            <AdminSidebar />
-            {/* Main content with margin for collapsed sidebar */}
-            <div className="ml-16 flex flex-col min-h-screen">
-              {/* Header */}
-              <header className="h-[57px] bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-800 px-6 flex items-center justify-end gap-3 sticky top-0 z-30">
-                <DarkModeToggle />
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  Abmelden
-                </button>
-              </header>
-              {/* Main Content */}
-              <main className="flex-1 p-6 overflow-auto">
-                {children}
-              </main>
-            </div>
+        <div className="dashboard-layout min-h-screen bg-[#FAFAFA] text-black">
+          <AdminSidebar />
+          {/* Main content with margin for collapsed sidebar */}
+          <div className="ml-16 flex flex-col min-h-screen">
+            {/* Header */}
+            <header className="h-[57px] bg-white border-b border-gray-200 px-6 flex items-center justify-end gap-3 sticky top-0 z-30">
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Abmelden
+              </button>
+            </header>
+            {/* Main Content */}
+            <main className="flex-1 p-6 overflow-auto">
+              {children}
+            </main>
           </div>
-        </ThemeProvider>
+        </div>
       </body>
     </html>
   );

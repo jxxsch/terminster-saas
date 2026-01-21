@@ -1,8 +1,5 @@
 @import "tailwindcss";
 
-/* Enable class-based dark mode for Tailwind v4 */
-@custom-variant dark (&:where(.dark, .dark *));
-
 :root {
   /* Barbershop Premium Theme - Schwarz-Weiß-Gold */
   --color-black: #000000;
@@ -175,46 +172,3 @@ a:not([class*="nav"]):not([class*="tracking"]):hover {
   }
 }
 
-/* ========================================
-   Dashboard & Admin Dark Mode
-   ======================================== */
-
-/* Dark mode variables for dashboard/admin */
-.dark {
-  --dashboard-bg: #0f0f0f;
-  --dashboard-bg-secondary: #1a1a1a;
-  --dashboard-bg-tertiary: #252525;
-  --dashboard-border: #333333;
-  --dashboard-text: #f5f5f5;
-  --dashboard-text-secondary: #a3a3a3;
-  --dashboard-text-muted: #737373;
-}
-
-/* Light mode variables (default) */
-:root {
-  --dashboard-bg: #fafaf9;
-  --dashboard-bg-secondary: #ffffff;
-  --dashboard-bg-tertiary: #f5f5f4;
-  --dashboard-border: #e5e5e5;
-  --dashboard-text: #0a0a0a;
-  --dashboard-text-secondary: #525252;
-  --dashboard-text-muted: #a3a3a3;
-}
-
-/* Dashboard/Admin specific dark mode overrides */
-.dark .dashboard-layout {
-  background-color: var(--dashboard-bg);
-  color: var(--dashboard-text);
-}
-
-.dark .dashboard-layout ::-webkit-scrollbar-track {
-  background: var(--dashboard-bg-secondary);
-}
-
-.dark .dashboard-layout ::-webkit-scrollbar-thumb {
-  background: #404040;
-}
-
-.dark .dashboard-layout ::-webkit-scrollbar-thumb:hover {
-  background: #525252;
-}
