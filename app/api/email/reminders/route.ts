@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAppointments, getTeam, getServices } from '@/lib/supabase';
 import { sendAppointmentReminder, formatDateForEmail } from '@/lib/email';
 
-// Diese Route kann von einem Cron-Job aufgerufen werden (z.B. täglich um 18:00)
+// Diese Route wird von einem Cron-Job aufgerufen (täglich um 00:01 deutscher Zeit / 23:01 UTC)
 // Vercel Cron: https://vercel.com/docs/cron-jobs
 
 export async function GET(request: NextRequest) {
