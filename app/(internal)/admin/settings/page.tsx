@@ -68,23 +68,33 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-medium text-black">Einstellungen</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Buchungsregeln und System-Einstellungen
-        </p>
-      </div>
+    <div className="h-full">
+      {/* Floating Panel - alles in einem Container */}
+      <div className="bg-white rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-slate-200/50 overflow-hidden">
+        {/* Header */}
+        <div className="px-8 py-5 flex items-center gap-4">
+          <div className="w-10 h-10 bg-gold/10 rounded-xl flex items-center justify-center">
+            <svg className="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Einstellungen</h3>
+            <p className="text-xs text-slate-400">Buchungsregeln und System-Einstellungen</p>
+          </div>
+        </div>
 
-      {/* Booking Settings */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <h2 className="text-lg font-medium text-black mb-4">Buchungseinstellungen</h2>
-        <div className="space-y-6">
+        {/* Gradient Divider */}
+        <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
           {/* Booking Advance Days */}
           <div className="flex items-start justify-between gap-8">
             <div>
-              <h3 className="text-sm font-medium text-black">Buchungszeitraum</h3>
-              <p className="text-xs text-gray-500 mt-1">
+              <h3 className="text-sm font-medium text-slate-900">Buchungszeitraum</h3>
+              <p className="text-xs text-slate-500 mt-1">
                 Wie viele Tage im Voraus können Kunden buchen?
               </p>
             </div>
@@ -98,9 +108,9 @@ export default function SettingsPage() {
                   ...s,
                   booking_advance_days: { value: parseInt(e.target.value) || 14 }
                 }))}
-                className="w-20 px-3 py-2 border border-gray-200 rounded-lg text-sm text-center focus:border-gold focus:outline-none"
+                className="w-20 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-center text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
               />
-              <span className="text-sm text-gray-500">Tage</span>
+              <span className="text-sm text-slate-500">Tage</span>
               <SaveButton
                 onClick={() => saveField('booking_advance_days', settings.booking_advance_days)}
                 saving={saving === 'booking_advance_days'}
@@ -109,13 +119,13 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="border-t border-gray-100" />
+          <div className="h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent" />
 
           {/* Cancellation Hours */}
           <div className="flex items-start justify-between gap-8">
             <div>
-              <h3 className="text-sm font-medium text-black">Stornierungsfrist</h3>
-              <p className="text-xs text-gray-500 mt-1">
+              <h3 className="text-sm font-medium text-slate-900">Stornierungsfrist</h3>
+              <p className="text-xs text-slate-500 mt-1">
                 Bis wie viele Stunden vorher können Termine storniert werden?
               </p>
             </div>
@@ -129,9 +139,9 @@ export default function SettingsPage() {
                   ...s,
                   cancellation_hours: { value: parseInt(e.target.value) || 24 }
                 }))}
-                className="w-20 px-3 py-2 border border-gray-200 rounded-lg text-sm text-center focus:border-gold focus:outline-none"
+                className="w-20 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-center text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
               />
-              <span className="text-sm text-gray-500">Stunden</span>
+              <span className="text-sm text-slate-500">Stunden</span>
               <SaveButton
                 onClick={() => saveField('cancellation_hours', settings.cancellation_hours)}
                 saving={saving === 'cancellation_hours'}
@@ -140,13 +150,13 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="border-t border-gray-100" />
+          <div className="h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent" />
 
           {/* Max Bookings per Day */}
           <div className="flex items-start justify-between gap-8">
             <div>
-              <h3 className="text-sm font-medium text-black">Max. Buchungen pro Tag</h3>
-              <p className="text-xs text-gray-500 mt-1">
+              <h3 className="text-sm font-medium text-slate-900">Max. Buchungen pro Tag</h3>
+              <p className="text-xs text-slate-500 mt-1">
                 Wie viele Termine kann ein Kunde pro Tag buchen?
               </p>
             </div>
@@ -160,9 +170,9 @@ export default function SettingsPage() {
                   ...s,
                   max_bookings_per_day: { value: parseInt(e.target.value) || 2 }
                 }))}
-                className="w-20 px-3 py-2 border border-gray-200 rounded-lg text-sm text-center focus:border-gold focus:outline-none"
+                className="w-20 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-center text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
               />
-              <span className="text-sm text-gray-500">pro Tag</span>
+              <span className="text-sm text-slate-500">pro Tag</span>
               <SaveButton
                 onClick={() => saveField('max_bookings_per_day', settings.max_bookings_per_day)}
                 saving={saving === 'max_bookings_per_day'}
@@ -170,20 +180,19 @@ export default function SettingsPage() {
               />
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Info Box */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex gap-3">
-          <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <div>
-            <h3 className="text-sm font-medium text-blue-800">Hinweis</h3>
-            <p className="text-sm text-blue-700 mt-1">
-              Geschlossene Tage und Öffnungszeiten können jetzt unter <strong>Zeiten</strong> → <strong>Sondertage</strong> verwaltet werden.
-            </p>
+          {/* Info Box */}
+          <div className="mt-2 bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <div className="flex gap-3">
+              <svg className="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <h3 className="text-xs font-medium text-slate-700">Hinweis</h3>
+                <p className="text-xs text-slate-500 mt-1">
+                  Geschlossene Tage und Öffnungszeiten können unter <span className="font-medium">Zeiten</span> → <span className="font-medium">Sondertage</span> verwaltet werden.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -202,22 +211,25 @@ function SaveButton({ onClick, saving, saved }: SaveButtonProps) {
     <button
       onClick={onClick}
       disabled={saving}
-      className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+      className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
         saved
-          ? 'bg-green-100 text-green-700'
-          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          ? 'bg-emerald-50 border border-emerald-200 text-emerald-600'
+          : 'bg-gold/5 border border-gold/30 text-gold hover:bg-gold/15 hover:border-gold/50'
       }`}
     >
       {saving ? (
-        <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
       ) : saved ? (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
+        <>
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          <span>Gespeichert</span>
+        </>
       ) : (
-        'Speichern'
+        <span>Speichern</span>
       )}
     </button>
   );

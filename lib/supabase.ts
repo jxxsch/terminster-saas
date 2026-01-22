@@ -950,6 +950,25 @@ export async function createStaffTimeOff(
   return data;
 }
 
+export async function updateStaffTimeOff(
+  id: string,
+  updates: Partial<Omit<StaffTimeOff, 'id' | 'created_at'>>
+): Promise<StaffTimeOff | null> {
+  const { data, error } = await supabase
+    .from('staff_time_off')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating staff time off:', error);
+    return null;
+  }
+
+  return data;
+}
+
 export async function deleteStaffTimeOff(id: string): Promise<boolean> {
   const { error } = await supabase
     .from('staff_time_off')
@@ -978,6 +997,46 @@ export async function isStaffOnTimeOff(staffId: string, date: string): Promise<b
   }
 
   return (data?.length || 0) > 0;
+}
+
+// Berechnet die genommenen Urlaubstage pro Mitarbeiter für ein Jahr
+export async function getUsedVacationDays(year: number): Promise<Record<string, number>> {
+  const startOfYear = `${year}-01-01`;
+  const endOfYear = `${year}-12-31`;
+
+  const { data, error } = await supabase
+    .from('staff_time_off')
+    .select('staff_id, start_date, end_date')
+    .lte('start_date', endOfYear)
+    .gte('end_date', startOfYear);
+
+  if (error) {
+    console.error('Error fetching vacation days:', error);
+    return {};
+  }
+
+  const usedDays: Record<string, number> = {};
+
+  for (const entry of data || []) {
+    // Berechne Überlappung mit dem Jahr
+    const entryStart = new Date(entry.start_date);
+    const entryEnd = new Date(entry.end_date);
+    const yearStart = new Date(startOfYear);
+    const yearEnd = new Date(endOfYear);
+
+    // Effektives Start- und Enddatum innerhalb des Jahres
+    const effectiveStart = entryStart < yearStart ? yearStart : entryStart;
+    const effectiveEnd = entryEnd > yearEnd ? yearEnd : entryEnd;
+
+    // Anzahl der Tage berechnen (inklusiv)
+    const days = Math.floor((effectiveEnd.getTime() - effectiveStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    if (days > 0) {
+      usedDays[entry.staff_id] = (usedDays[entry.staff_id] || 0) + days;
+    }
+  }
+
+  return usedDays;
 }
 
 export async function getStaffTimeOffForDateRange(

@@ -8,6 +8,7 @@ import {
   deleteTeamMember,
   updateTeamOrder,
   uploadImage,
+  getUsedVacationDays,
   TeamMember,
 } from '@/lib/supabase';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
@@ -51,6 +52,7 @@ export default function TeamPage() {
   const [deleteTarget, setDeleteTarget] = useState<TeamMember | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [usedVacationDays, setUsedVacationDays] = useState<Record<string, number>>({});
 
   // Which format is currently being edited
   const [activeFormat, setActiveFormat] = useState<ImageFormat>('square');
@@ -97,19 +99,23 @@ export default function TeamPage() {
 
   useEffect(() => {
     let mounted = true;
-    async function loadTeam() {
-      const data = await getAllTeam();
+    async function loadData() {
+      const [teamData, vacationData] = await Promise.all([
+        getAllTeam(),
+        getUsedVacationDays(new Date().getFullYear())
+      ]);
       if (mounted) {
-        setTeam(data);
+        setTeam(teamData);
+        setUsedVacationDays(vacationData);
         setIsLoading(false);
       }
     }
-    loadTeam();
+    loadData();
     return () => { mounted = false; };
   }, []);
 
   const parsePosition = (posStr: string) => {
-    const match = posStr?.match(/(\d+)%\s+(\d+)%/);
+    const match = posStr?.match(/(-?\d+)%\s+(-?\d+)%/);
     if (match) {
       return { x: parseInt(match[1]), y: parseInt(match[2]) };
     }
@@ -146,14 +152,17 @@ export default function TeamPage() {
     const squarePos = parsePosition(member.image_position || '50% 50%');
     const portraitPos = parsePosition(member.image_position_portrait || '50% 50%');
 
+    const squareScale = member.image_scale || 1;
+    const portraitScale = member.image_scale_portrait || 1;
+
     setFormData({
       id: member.id,
       name: member.name,
       image: member.image || '',
       image_position: member.image_position || '50% 50%',
-      image_scale: member.image_scale || 1,
+      image_scale: squareScale,
       image_position_portrait: member.image_position_portrait || '50% 50%',
-      image_scale_portrait: member.image_scale_portrait || 1,
+      image_scale_portrait: portraitScale,
       active: member.active,
       phone: member.phone || '',
       birthday: member.birthday || '',
@@ -163,8 +172,8 @@ export default function TeamPage() {
 
     squareOffsetRef.current = squarePos;
     portraitOffsetRef.current = portraitPos;
-    squareScaleRef.current = member.image_scale || 1;
-    portraitScaleRef.current = member.image_scale_portrait || 1;
+    squareScaleRef.current = squareScale;
+    portraitScaleRef.current = portraitScale;
 
     setActiveFormat('square');
     activeFormatRef.current = 'square';
@@ -232,7 +241,7 @@ export default function TeamPage() {
 
   // Update slider thumb position via DOM
   const updateSliderDOM = useCallback((format: ImageFormat, scale: number) => {
-    const percent = ((scale - 0.5) / 2) * 100; // 0.5-2.5 -> 0-100%
+    const percent = ((scale - 1.0) / 2.0) * 100; // 1.0-3.0 -> 0-100%
     const thumbRef = format === 'square' ? squareSliderThumbRef : portraitSliderThumbRef;
     const displayRef = format === 'square' ? squareScaleDisplayRef : portraitScaleDisplayRef;
 
@@ -263,12 +272,13 @@ export default function TeamPage() {
         const offsetRef = format === 'square' ? squareOffsetRef : portraitOffsetRef;
         const scaleRef = format === 'square' ? squareScaleRef : portraitScaleRef;
 
-        // Increased sensitivity for horizontal movement
-        const deltaX = (e.clientX - dragStartRef.current.x) / 2;
-        const deltaY = (e.clientY - dragStartRef.current.y) / 2;
+        // Sensitivität für Bewegung (kleinerer Wert = schnellere Bewegung)
+        const deltaX = (e.clientX - dragStartRef.current.x) / 1.5;
+        const deltaY = (e.clientY - dragStartRef.current.y) / 1.5;
 
-        const newX = Math.max(0, Math.min(100, offsetRef.current.x - deltaX));
-        const newY = Math.max(0, Math.min(100, offsetRef.current.y - deltaY));
+        // Erweiterte Grenzen: -50% bis 150% für maximale Flexibilität
+        const newX = Math.max(-50, Math.min(150, offsetRef.current.x - deltaX));
+        const newY = Math.max(-50, Math.min(150, offsetRef.current.y - deltaY));
 
         offsetRef.current = { x: newX, y: newY };
         dragStartRef.current = { x: e.clientX, y: e.clientY };
@@ -287,7 +297,7 @@ export default function TeamPage() {
         if (sliderRef.current) {
           const rect = sliderRef.current.getBoundingClientRect();
           const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-          const newScale = 0.5 + (percent / 100) * 2; // 0-100% -> 0.5-2.5
+          const newScale = 1.0 + (percent / 100) * 2.0; // 0-100% -> 1.0-3.0
 
           scaleRef.current = newScale;
           updateSliderDOM(format, newScale);
@@ -367,7 +377,7 @@ export default function TeamPage() {
     if (sliderRef.current) {
       const rect = sliderRef.current.getBoundingClientRect();
       const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-      const newScale = 0.5 + (percent / 100) * 2;
+      const newScale = 1.0 + (percent / 100) * 2.0;
 
       scaleRef.current = newScale;
       updateSliderDOM(format, newScale);
@@ -463,7 +473,7 @@ export default function TeamPage() {
     const thumbRef = format === 'square' ? squareSliderThumbRef : portraitSliderThumbRef;
     const displayRef = format === 'square' ? squareScaleDisplayRef : portraitScaleDisplayRef;
 
-    const thumbPercent = ((scale - 0.5) / 2) * 100;
+    const thumbPercent = ((scale - 1.0) / 2.0) * 100;
 
     return (
       <div
@@ -713,14 +723,14 @@ export default function TeamPage() {
               {isCreating && <div className="mb-4">{editFormContent}</div>}
 
               {/* Header-Zeile */}
-              <div className="grid grid-cols-[auto_1fr_140px_90px_80px_100px_auto_auto] gap-4 px-4 py-2 text-xs font-medium text-slate-500 border-b border-slate-100">
-                <div className="w-10"></div>
+              <div className="grid grid-cols-[40px_minmax(100px,1fr)_140px_85px_70px_85px_44px_72px] gap-4 px-4 py-1.5 text-[11px] font-medium text-slate-400 border-b border-slate-100">
+                <div></div>
                 <div>Name</div>
                 <div>Telefon</div>
                 <div>Geburtstag</div>
-                <div>Urlaub</div>
+                <div>Urlaubstage</div>
                 <div>Dabei seit</div>
-                <div className="text-center">Status</div>
+                <div>Status</div>
                 <div></div>
               </div>
 
@@ -728,7 +738,7 @@ export default function TeamPage() {
               <div className="divide-y divide-slate-50">
                 {team.map((member, index) => (
                   <div key={member.id}>
-                    <div className={`grid grid-cols-[auto_1fr_140px_90px_80px_100px_auto_auto] gap-4 items-center px-4 py-3 transition-colors ${editingId === member.id ? 'bg-gold/5' : 'hover:bg-slate-50'}`}>
+                    <div className={`grid grid-cols-[40px_minmax(100px,1fr)_140px_85px_70px_85px_44px_72px] gap-4 items-center px-4 py-3 transition-colors ${editingId === member.id ? 'bg-gold/5' : 'hover:bg-slate-50'}`}>
                       {/* Bild */}
                       <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
                         {member.image ? (
@@ -759,8 +769,19 @@ export default function TeamPage() {
                           );
                         })() : '–'}
                       </div>
-                      {/* Urlaub */}
-                      <div className="text-sm text-slate-700">{member.vacation_days || 0} Tage</div>
+                      {/* Urlaubstage */}
+                      <div className="text-sm text-slate-700">
+                        {(() => {
+                          const total = member.vacation_days || 0;
+                          const used = usedVacationDays[member.id] || 0;
+                          const remaining = total - used;
+                          return (
+                            <span className={remaining < 5 ? 'text-amber-600' : ''}>
+                              {remaining}/{total}
+                            </span>
+                          );
+                        })()}
+                      </div>
                       {/* Dabei seit */}
                       <div className="text-sm text-slate-700">
                         {member.start_date ? new Date(member.start_date).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' }) : '–'}

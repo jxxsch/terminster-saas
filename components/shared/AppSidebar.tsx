@@ -63,8 +63,8 @@ const verwaltungItems: NavItem[] = [
     ),
   },
   {
-    href: '/admin/content',
-    label: 'Content',
+    href: '/admin/medien',
+    label: 'Medien',
     icon: (
       <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -100,23 +100,66 @@ interface AppSidebarProps {
 
 export function AppSidebar({ onLogout }: AppSidebarProps) {
   const pathname = usePathname();
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [verwaltungOpen, setVerwaltungOpen] = useState(false);
-  const [isPinUnlocked, setIsPinUnlocked] = useState(false);
-  const [showPinModal, setShowPinModal] = useState(false);
+
+  // Initiale States basierend auf localStorage (nur client-side)
+  const getInitialStates = () => {
+    if (typeof window === 'undefined') {
+      return { expanded: false, unlocked: false, menuOpen: false };
+    }
+    const pinSession = localStorage.getItem('admin_pin_session');
+    const previousPath = localStorage.getItem('admin_previous_path') || '';
+
+    // Prüfen ob Session gelöscht werden soll
+    if (previousPath.startsWith('/admin') && pathname === '/dashboard') {
+      localStorage.removeItem('admin_pin_session');
+      localStorage.removeItem('admin_previous_path');
+      return { expanded: false, unlocked: false, menuOpen: false };
+    }
+
+    const unlocked = pinSession === 'unlocked';
+    const inAdmin = pathname.startsWith('/admin');
+    return {
+      expanded: unlocked && inAdmin,
+      unlocked: unlocked,
+      menuOpen: unlocked && inAdmin
+    };
+  };
+
+  const initialStates = getInitialStates();
+  const [isExpanded, setIsExpanded] = useState(initialStates.expanded);
+  const [verwaltungOpen, setVerwaltungOpen] = useState(initialStates.menuOpen);
+  const [isPinUnlocked, setIsPinUnlocked] = useState(initialStates.unlocked);
+  const [showPinInput, setShowPinInput] = useState(false);
   const [showForgotPin, setShowForgotPin] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [pin, setPin] = useState(['', '', '', '']);
   const [pinError, setPinError] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const previousPathRef = useRef<string>(pathname);
 
-  // PIN zurücksetzen wenn man zum Kalender navigiert
+  // PIN und Menü-Status basierend auf Navigation steuern
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (pathname === '/dashboard') {
+    const wasInAdmin = previousPathRef.current.startsWith('/admin');
+    const isNowOnDashboard = pathname === '/dashboard';
+
+    // Session löschen wenn man VOM Admin-Bereich ZUM Dashboard navigiert
+    if (wasInAdmin && isNowOnDashboard) {
       setIsPinUnlocked(false);
       setVerwaltungOpen(false);
+      setIsExpanded(false);
+      localStorage.removeItem('admin_pin_session');
+    } else if (pathname.startsWith('/admin') && isPinUnlocked) {
+      // Im Admin-Bereich und PIN entsperrt → Menü offen halten
+      setVerwaltungOpen(true);
+      setIsExpanded(true);
     }
-  }, [pathname]);
+
+    // Vorherigen Pfad aktualisieren
+    previousPathRef.current = pathname;
+    localStorage.setItem('admin_previous_path', pathname);
+  }, [pathname, isPinUnlocked]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const isActive = (href: string) => {
     if (href === '/admin' && pathname === '/admin') return true;
@@ -132,14 +175,19 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
     if (isPinUnlocked) {
       setVerwaltungOpen(!verwaltungOpen);
     } else {
-      setShowPinModal(true);
-      setShowForgotPin(false);
-      setResetEmail('');
-      setPin(['', '', '', '']);
-      setPinError(false);
-      setTimeout(() => {
-        inputRefs.current[0]?.focus();
-      }, 100);
+      // PIN-Eingabe anzeigen/verstecken
+      const newShowPinInput = !showPinInput;
+      setShowPinInput(newShowPinInput);
+      if (newShowPinInput) {
+        setIsExpanded(true); // Sidebar ausfahren
+        setShowForgotPin(false);
+        setResetEmail('');
+        setPin(['', '', '', '']);
+        setPinError(false);
+        setTimeout(() => {
+          inputRefs.current[0]?.focus();
+        }, 100);
+      }
     }
   };
 
@@ -169,7 +217,7 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
       inputRefs.current[index - 1]?.focus();
     }
     if (e.key === 'Escape') {
-      setShowPinModal(false);
+      setShowPinInput(false);
       setShowForgotPin(false);
     }
   };
@@ -185,8 +233,11 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
 
       if (data.success) {
         setIsPinUnlocked(true);
-        setShowPinModal(false);
+        setShowPinInput(false);
         setVerwaltungOpen(true);
+        setIsExpanded(true); // Sidebar ausfahren
+        // PIN-Session in localStorage speichern
+        localStorage.setItem('admin_pin_session', 'unlocked');
       } else {
         setPinError(true);
         setPin(['', '', '', '']);
@@ -223,13 +274,14 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
       <aside
         onMouseEnter={() => setIsExpanded(true)}
         onMouseLeave={() => {
-          setIsExpanded(false);
-          if (!isPinUnlocked) {
+          // Sidebar bleibt ausgefahren wenn PIN entsperrt ist oder PIN-Eingabe offen ist
+          if (!isPinUnlocked && !showPinInput) {
+            setIsExpanded(false);
             setVerwaltungOpen(false);
           }
         }}
         className={`
-          bg-slate-50 flex flex-col py-5 rounded-3xl
+          h-full bg-slate-50 flex flex-col py-5 rounded-3xl
           shadow-[0_10px_30px_-10px_rgba(0,0,0,0.04)] border border-slate-200/50
           shrink-0 overflow-hidden
           transition-all duration-300 ease-in-out
@@ -329,6 +381,79 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
               )}
             </button>
 
+            {/* Inline PIN-Eingabe (nur sichtbar wenn nicht entsperrt und showPinInput aktiv) */}
+            <div
+              className={`
+                overflow-hidden transition-all duration-200 ease-in-out
+                ${showPinInput && isExpanded && !isPinUnlocked ? 'max-h-[140px] opacity-100 mt-2' : 'max-h-0 opacity-0'}
+              `}
+            >
+              <div className="px-3 py-3">
+                {showForgotPin ? (
+                  /* PIN vergessen Ansicht - inline */
+                  <div className="space-y-2">
+                    <input
+                      type="email"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      placeholder="E-Mail-Adresse"
+                      className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gold/50 focus:border-gold bg-white"
+                    />
+                    <div className="flex gap-1">
+                      <button
+                        onClick={handleForgotPin}
+                        className="flex-1 py-1.5 bg-gold text-black text-xs font-medium rounded-lg hover:bg-gold/90 transition-colors"
+                      >
+                        Senden
+                      </button>
+                      <button
+                        onClick={() => setShowForgotPin(false)}
+                        className="px-2 py-1.5 text-slate-400 text-xs hover:text-slate-600 transition-colors"
+                      >
+                        Zurück
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* PIN Eingabe - inline */
+                  <div className="space-y-2">
+                    <div className="flex justify-center gap-1.5">
+                      {[0, 1, 2, 3].map((index) => (
+                        <input
+                          key={index}
+                          ref={(el) => { inputRefs.current[index] = el; }}
+                          type="password"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={pin[index]}
+                          onChange={(e) => handlePinChange(index, e.target.value)}
+                          onKeyDown={(e) => handlePinKeyDown(index, e)}
+                          className={`
+                            w-10 h-10 text-center text-lg font-bold rounded-lg border-2
+                            focus:outline-none focus:ring-1 focus:ring-gold/50 transition-all
+                            ${pinError
+                              ? 'border-red-300 bg-red-50 text-red-600 animate-shake'
+                              : 'border-slate-200 bg-white text-slate-900 focus:border-gold'
+                            }
+                          `}
+                          style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
+                        />
+                      ))}
+                    </div>
+                    {pinError && (
+                      <p className="text-[10px] text-red-500 text-center">Falsche PIN</p>
+                    )}
+                    <button
+                      onClick={() => setShowForgotPin(true)}
+                      className="w-full text-[10px] text-slate-400 hover:text-gold transition-colors"
+                    >
+                      PIN vergessen?
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Verwaltung Unterpunkte (nur sichtbar wenn PIN eingegeben und ausgeklappt) */}
             <div
               className={`
@@ -406,101 +531,6 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
           )}
         </div>
       </aside>
-
-      {/* PIN Modal */}
-      {showPinModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => { setShowPinModal(false); setShowForgotPin(false); }}
-          />
-
-          {/* Modal - kompakt */}
-          <div className="relative bg-white rounded-2xl shadow-2xl p-6 mx-4 w-72">
-            {showForgotPin ? (
-              /* PIN vergessen Ansicht */
-              <>
-                <h2 className="text-base font-semibold text-center text-slate-900 mb-4">PIN zurücksetzen</h2>
-                <p className="text-xs text-slate-500 text-center mb-4">
-                  Gib deine E-Mail-Adresse ein, um die PIN zurückzusetzen.
-                </p>
-                <input
-                  type="email"
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  placeholder="E-Mail-Adresse"
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold mb-3"
-                />
-                <button
-                  onClick={handleForgotPin}
-                  className="w-full py-2 bg-gold text-black text-sm font-medium rounded-lg hover:bg-gold/90 transition-colors mb-2"
-                >
-                  PIN anfordern
-                </button>
-                <button
-                  onClick={() => setShowForgotPin(false)}
-                  className="w-full py-2 text-slate-500 text-sm hover:text-slate-700 transition-colors"
-                >
-                  Zurück
-                </button>
-              </>
-            ) : (
-              /* PIN Eingabe Ansicht */
-              <>
-                <div className="flex justify-center mb-4">
-                  <div className="w-10 h-10 bg-gold/10 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  </div>
-                </div>
-
-                <h2 className="text-base font-semibold text-center text-slate-900 mb-4">PIN eingeben</h2>
-
-                {/* PIN Input - verschlüsselt als Punkte */}
-                <div className="flex justify-center gap-2 mb-4">
-                  {[0, 1, 2, 3].map((index) => (
-                    <div key={index} className="relative">
-                      <input
-                        ref={(el) => { inputRefs.current[index] = el; }}
-                        type="password"
-                        inputMode="numeric"
-                        maxLength={1}
-                        value={pin[index]}
-                        onChange={(e) => handlePinChange(index, e.target.value)}
-                        onKeyDown={(e) => handlePinKeyDown(index, e)}
-                        className={`
-                          w-12 h-14 text-center text-2xl font-bold rounded-lg border-2
-                          focus:outline-none focus:ring-2 focus:ring-gold/50 transition-all
-                          ${pinError
-                            ? 'border-red-300 bg-red-50 text-red-600 animate-shake'
-                            : 'border-slate-200 bg-slate-50 text-slate-900 focus:border-gold'
-                          }
-                        `}
-                        style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                {/* Error Message */}
-                {pinError && (
-                  <p className="text-xs text-red-500 text-center mb-2">Falsche PIN</p>
-                )}
-
-                {/* PIN vergessen Link */}
-                <button
-                  onClick={() => setShowForgotPin(true)}
-                  className="w-full text-xs text-slate-400 hover:text-gold transition-colors"
-                >
-                  PIN vergessen?
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      )}
 
       <style jsx>{`
         @keyframes shake {

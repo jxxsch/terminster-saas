@@ -58,9 +58,7 @@ const ALL_TIME_SLOTS = generateAllTimeSlots();
 
 // Berechne den aktuellen Zeitslot (z.B. 16:10 -> "16:00")
 function getCurrentTimeSlot(): string | null {
-  // TEST: Simuliere 16:10 Uhr
-  const now = new Date(); now.setHours(16, 10, 0, 0);
-  // const now = new Date(); // Echte Zeit
+  const now = new Date();
 
   const hours = now.getHours();
   const minutes = now.getMinutes();

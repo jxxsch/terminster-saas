@@ -223,90 +223,109 @@ export default function MedienPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-medium text-black">Medien-Verwaltung</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Galerie und Website-Inhalte verwalten
-        </p>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-gray-200 pb-2">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => handleTabChange(tab.id)}
-            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${
-              activeTab === tab.id
-                ? 'bg-gold text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Gallery Tab */}
-      {activeTab === 'galerie' && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">
-              {images.length} Bilder · {images.filter(i => i.active).length} aktiv
-            </p>
+    <div className="h-full">
+      {/* Floating Panel - alles in einem Container */}
+      <div className="bg-white rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-slate-200/50 overflow-hidden">
+        {/* Header */}
+        <div className="px-8 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-gold/10 rounded-xl flex items-center justify-center">
+              <svg className="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">Medien-Verwaltung</h3>
+              <p className="text-xs text-slate-400">Galerie und Website-Inhalte</p>
+            </div>
+          </div>
+          {activeTab === 'galerie' && (
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-gold text-white text-sm font-medium rounded-lg hover:bg-gold/90 transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 bg-gold text-black text-xs font-semibold rounded-xl hover:bg-gold/90 transition-colors shadow-sm"
             >
-              + Bild hinzufügen
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Bild hinzufügen
             </button>
-          </div>
+          )}
+        </div>
 
-          <div className="flex gap-2">
+        {/* Gradient Divider */}
+        <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+
+        {/* Tabs */}
+        <div className="px-8 flex gap-6 border-b border-slate-100">
+          {TABS.map(tab => (
             <button
-              onClick={() => setFilterCategory('all')}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                filterCategory === 'all' ? 'bg-gold text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              key={tab.id}
+              onClick={() => handleTabChange(tab.id)}
+              className={`py-3 text-sm font-medium transition-colors relative ${
+                activeTab === tab.id
+                  ? 'text-gold'
+                  : 'text-slate-500 hover:text-slate-700'
               }`}
             >
-              Alle
+              {tab.label}
+              {activeTab === tab.id && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gold rounded-full" />
+              )}
             </button>
-            {CATEGORIES.map(cat => (
+          ))}
+        </div>
+
+        {/* Gallery Tab */}
+        {activeTab === 'galerie' && (
+          <div className="p-6">
+            <p className="text-xs text-slate-400 mb-4">
+              {images.length} Bilder · {images.filter(i => i.active).length} aktiv
+            </p>
+            {/* Filter Chips */}
+            <div className="flex gap-2 mb-6">
               <button
-                key={cat.value}
-                onClick={() => setFilterCategory(cat.value)}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                  filterCategory === cat.value ? 'bg-gold text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                onClick={() => setFilterCategory('all')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                  filterCategory === 'all' ? 'bg-gold text-black' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                {cat.label}
+                Alle
               </button>
-            ))}
-          </div>
-
-          {filteredImages.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
-              <svg className="w-12 h-12 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <p className="text-gray-500">Keine Bilder vorhanden</p>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="mt-4 px-4 py-2 bg-gold text-white text-sm font-medium rounded-lg hover:bg-gold/90 transition-colors"
-              >
-                Erstes Bild hinzufügen
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredImages.map((image, index) => (
-                <div
-                  key={image.id}
-                  className={`bg-white border rounded-lg overflow-hidden group ${
-                    image.active ? 'border-gray-200' : 'border-red-200 opacity-60'
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat.value}
+                  onClick={() => setFilterCategory(cat.value)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                    filterCategory === cat.value ? 'bg-gold text-black' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {filteredImages.length === 0 ? (
+              <div className="py-12 text-center">
+                <svg className="w-12 h-12 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p className="text-slate-500 text-sm">Keine Bilder vorhanden</p>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="mt-4 px-5 py-2.5 bg-gold text-black text-xs font-semibold rounded-xl hover:bg-gold/90 transition-colors"
+                >
+                  Erstes Bild hinzufügen
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {filteredImages.map((image, index) => (
+                  <div
+                    key={image.id}
+                    className={`bg-white border rounded-xl overflow-hidden group ${
+                      image.active ? 'border-slate-200' : 'border-red-200 opacity-60'
+                    }`}
+                  >
                   <div className="aspect-square relative bg-gray-100">
                     <img
                       src={image.url}
@@ -378,66 +397,67 @@ export default function MedienPage() {
                     </div>
                   </div>
                   <div className="p-2">
-                    <p className="text-xs text-gray-500 truncate">{image.alt_text || 'Kein Alt-Text'}</p>
+                    <p className="text-xs text-slate-500 truncate">{image.alt_text || 'Kein Alt-Text'}</p>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {(showAddModal || editingImage) && (
-            <ImageModal
-              image={editingImage}
-              onClose={() => {
-                setShowAddModal(false);
-                setEditingImage(null);
-              }}
-              onSave={async (data) => {
-                if (editingImage) {
-                  const updated = await updateGalleryImage(editingImage.id, data);
-                  if (updated) {
-                    setImages(prev => prev.map(img => img.id === editingImage.id ? updated : img));
+            {(showAddModal || editingImage) && (
+              <ImageModal
+                image={editingImage}
+                onClose={() => {
+                  setShowAddModal(false);
+                  setEditingImage(null);
+                }}
+                onSave={async (data) => {
+                  if (editingImage) {
+                    const updated = await updateGalleryImage(editingImage.id, data);
+                    if (updated) {
+                      setImages(prev => prev.map(img => img.id === editingImage.id ? updated : img));
+                    }
+                  } else {
+                    const created = await createGalleryImage({
+                      ...data,
+                      sort_order: images.length,
+                      active: true,
+                    });
+                    if (created) {
+                      setImages(prev => [...prev, created]);
+                    }
                   }
-                } else {
-                  const created = await createGalleryImage({
-                    ...data,
-                    sort_order: images.length,
-                    active: true,
-                  });
-                  if (created) {
-                    setImages(prev => [...prev, created]);
-                  }
-                }
-                setShowAddModal(false);
-                setEditingImage(null);
-              }}
+                  setShowAddModal(false);
+                  setEditingImage(null);
+                }}
+              />
+            )}
+
+            <ConfirmModal
+              isOpen={!!deleteConfirm}
+              title="Bild löschen"
+              message="Möchtest du dieses Bild wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
+              confirmLabel="Löschen"
+              variant="danger"
+              onConfirm={() => deleteConfirm && handleDelete(deleteConfirm.id)}
+              onCancel={() => setDeleteConfirm(null)}
             />
-          )}
+          </div>
+        )}
 
-          <ConfirmModal
-            isOpen={!!deleteConfirm}
-            title="Bild löschen"
-            message="Möchtest du dieses Bild wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
-            confirmLabel="Löschen"
-            variant="danger"
-            onConfirm={() => deleteConfirm && handleDelete(deleteConfirm.id)}
-            onCancel={() => setDeleteConfirm(null)}
-          />
-        </div>
-      )}
-
-      {/* Content Tab */}
-      {activeTab === 'content' && (
-        <div className="space-y-6">
-          <div className="flex flex-wrap gap-2 pb-4 border-b border-gray-200">
+        {/* Content Tab */}
+        {activeTab === 'content' && (
+          <div className="p-6 space-y-6">
+            {/* Section Navigation */}
+            <div className="flex flex-wrap gap-2 pb-4 border-b border-slate-200">
             {contentSections.map(section => (
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
-                className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
                   activeSection === section.id
-                    ? 'bg-gold text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-gold text-black'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 {section.label}
@@ -766,7 +786,8 @@ export default function MedienPage() {
             </ContentCard>
           )}
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -774,9 +795,13 @@ export default function MedienPage() {
 // Helper Components
 function ContentCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6">
-      <h2 className="text-lg font-medium text-black mb-4">{title}</h2>
-      {children}
+    <div className="bg-slate-50/50 rounded-xl border border-slate-200 overflow-hidden">
+      <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
+        <h2 className="text-sm font-medium text-slate-900">{title}</h2>
+      </div>
+      <div className="p-4 bg-white">
+        {children}
+      </div>
     </div>
   );
 }
@@ -823,13 +848,13 @@ function SettingField({ label, value, onChange, onSave, saving, saved, multiline
     return (
       <div>
         <div className="flex items-center justify-between mb-1 pr-1">
-          <label className="text-sm font-medium text-gray-700">{label}</label>
+          <label className="text-xs font-medium text-slate-600">{label}</label>
           <SaveButton onSave={onSave} saving={saving} saved={saved} />
         </div>
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none resize-none"
+          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none resize-none"
           rows={rows}
           placeholder={placeholder}
         />
@@ -839,13 +864,13 @@ function SettingField({ label, value, onChange, onSave, saving, saved, multiline
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
       <div className="relative">
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 pr-24 border border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none"
+          className="w-full px-3 py-2 pr-24 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
           placeholder={placeholder}
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -879,21 +904,21 @@ function ImageModal({ image, onClose, onSave }: ImageModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg w-full max-w-lg">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-medium text-black">
+      <div className="relative bg-white rounded-2xl w-full max-w-lg shadow-xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h2 className="text-sm font-semibold text-slate-900">
             {image ? 'Bild bearbeiten' : 'Bild hinzufügen'}
           </h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button onClick={onClose} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
+            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {url && (
-            <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+            <div className="aspect-video bg-slate-100 rounded-xl overflow-hidden">
               <img
                 src={url}
                 alt="Vorschau"
@@ -906,34 +931,34 @@ function ImageModal({ image, onClose, onSave }: ImageModalProps) {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Bild-URL *</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Bild-URL *</label>
             <input
               type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://example.com/bild.jpg"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Alt-Text</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Alt-Text</label>
             <input
               type="text"
               value={altText}
               onChange={(e) => setAltText(e.target.value)}
               placeholder="Beschreibung des Bildes"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Kategorie</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">Kategorie</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-gold focus:outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
             >
               {CATEGORIES.map(cat => (
                 <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -941,18 +966,18 @@ function ImageModal({ image, onClose, onSave }: ImageModalProps) {
             </select>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-2 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex-1 px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
             >
               Abbrechen
             </button>
             <button
               type="submit"
               disabled={isSaving || !url.trim()}
-              className="flex-1 px-4 py-2 bg-gold text-white text-sm font-medium rounded-lg hover:bg-gold/90 transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-gold text-black text-xs font-semibold rounded-lg hover:bg-gold/90 transition-colors disabled:opacity-50"
             >
               {isSaving ? 'Speichern...' : 'Speichern'}
             </button>

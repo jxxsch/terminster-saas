@@ -124,22 +124,45 @@ p {
   color: var(--color-black);
 }
 
-/* Scrollbar - Premium look */
+/* Scrollbar - Dynamic visibility (auto-hide) */
+/* Standard scrollbar for Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+*:hover {
+  scrollbar-color: rgba(180, 180, 180, 0.5) transparent;
+}
+
+/* Webkit scrollbar (Chrome, Safari, Edge) */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-gray-900);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-gold-dark);
+  background: transparent;
   border-radius: var(--radius-full);
+  transition: background 0.2s ease;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-gold);
+/* Show scrollbar on hover */
+*:hover::-webkit-scrollbar-thumb {
+  background: rgba(180, 180, 180, 0.5);
+}
+
+*:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(180, 180, 180, 0.8);
+}
+
+/* Active scrolling state */
+*::-webkit-scrollbar-thumb:active {
+  background: rgba(180, 180, 180, 0.8);
 }
 
 /* Focus States */
