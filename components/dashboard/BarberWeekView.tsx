@@ -39,6 +39,20 @@ function generateAllTimeSlots(): string[] {
 const DAY_NAMES = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 const ALL_TIME_SLOTS = generateAllTimeSlots();
 
+// Berechne den aktuellen Zeitslot (z.B. 16:10 -> "16:00")
+function getCurrentTimeSlot(): string | null {
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+
+  // Öffnungszeiten: 10:00 - 18:30
+  if (hours < 10 || hours > 18 || (hours === 18 && minutes > 30)) return null;
+
+  // Runde auf den aktuellen 30-Minuten-Slot ab
+  const slotMinutes = minutes < 30 ? '00' : '30';
+  return `${String(hours).padStart(2, '0')}:${slotMinutes}`;
+}
+
 
 // Helper: Format date as YYYY-MM-DD in local timezone
 function formatDateLocal(date: Date): string {
@@ -72,6 +86,7 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(initialBarberId || null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [moveToBarberInfo, setMoveToBarberInfo] = useState<BarberHeaderDropInfo | null>(null);
+  const [currentTimeSlot, setCurrentTimeSlot] = useState<string | null>(getCurrentTimeSlot());
 
   // Generate week days (Mo-Sa + verkaufsoffene Sonntage)
   const weekDays = useMemo(() => {
@@ -100,6 +115,15 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
     }
     return days;
   }, [monday, openSundays]);
+
+  // Update current time slot every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTimeSlot(getCurrentTimeSlot());
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Load all data
   useEffect(() => {
@@ -356,21 +380,28 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
 
             {/* Time Slots */}
             <tbody>
-              {ALL_TIME_SLOTS.map((slot, slotIndex) => (
+              {ALL_TIME_SLOTS.map((slot, slotIndex) => {
+                const isCurrentSlot = slot === currentTimeSlot;
+                const todayInWeek = weekDays.find(d => d.isToday);
+                const showCurrentMarker = isCurrentSlot && todayInWeek;
+
+                return (
                 <tr
                   key={slot}
                   className={slotIndex < ALL_TIME_SLOTS.length - 1 ? 'border-b border-gray-100' : ''}
                   style={{ height: `${100 / ALL_TIME_SLOTS.length}%` }}
                 >
                   {/* Time Label */}
-                  <td className="text-center align-middle border-r border-gray-200 py-0">
-                    <span className="text-[10px] font-mono text-gray-600 font-medium">
+                  <td
+                    className={`text-center align-middle py-0 border-r border-gray-200 ${showCurrentMarker ? 'bg-red-50/50 outline outline-1 outline-red-400 -outline-offset-1' : ''}`}
+                  >
+                    <span className={`text-[10px] font-mono font-medium ${showCurrentMarker ? 'text-red-500' : 'text-gray-600'}`}>
                       {slot}
                     </span>
                   </td>
 
                     {/* Day Slots */}
-                    {weekDays.map(day => {
+                    {weekDays.map((day, dayIndex) => {
                       const isClosed = isDayClosed(day.dateStr);
                       const barberTimeOff = isBarberOffOnDate(day.dateStr);
                       const key = `${day.dateStr}-${slot}`;
@@ -378,11 +409,13 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
                       const appointment = appointmentMap.get(key);
                       const seriesItem = seriesAppointments.get(key);
                       const isDisabled = isClosed || !!barberTimeOff;
+                      const isCurrentSlotToday = isCurrentSlot && day.isToday;
+                      const isLastDay = dayIndex === weekDays.length - 1;
 
                       return (
                         <td
                           key={key}
-                          className="border-r border-gray-200 p-0 relative"
+                          className={`border-r border-gray-200 p-0 relative ${isCurrentSlotToday ? 'bg-red-50/50 outline outline-1 outline-red-400 -outline-offset-1' : ''}`}
                         >
                           {/* Absolut positionierter Container verhindert Zellen-Dehnung */}
                           <div className="absolute inset-0 overflow-hidden">
@@ -430,7 +463,8 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
                       );
                     })}
                   </tr>
-                ))}
+                );
+              })}
             </tbody>
             </table>
           </div>
@@ -554,7 +588,7 @@ function BarberTabDroppable({ barber, isSelected, onSelectBarber }: BarberTabDro
           </div>
         )}
       </div>
-      <span className="text-xs font-medium">{barber.name}</span>
+      <span className="text-[14px] font-medium">{barber.name}</span>
       {isOver && (
         <span className="absolute -bottom-2 text-[8px] text-gold font-medium">loslassen</span>
       )}

@@ -15,31 +15,31 @@ interface ExpandableWidgetProps {
 
 const colorStyles = {
   default: {
-    bg: 'bg-white',
+    bg: 'bg-slate-50',
     iconBg: 'bg-slate-100',
     iconText: 'text-slate-600',
     expandedBorder: 'border-slate-300',
   },
   amber: {
-    bg: 'bg-white',
+    bg: 'bg-slate-50',
     iconBg: 'bg-amber-50',
     iconText: 'text-amber-600',
     expandedBorder: 'border-amber-300',
   },
   blue: {
-    bg: 'bg-white',
+    bg: 'bg-slate-50',
     iconBg: 'bg-blue-50',
     iconText: 'text-blue-600',
     expandedBorder: 'border-blue-300',
   },
   green: {
-    bg: 'bg-white',
+    bg: 'bg-slate-50',
     iconBg: 'bg-emerald-50',
     iconText: 'text-emerald-600',
     expandedBorder: 'border-emerald-300',
   },
   gold: {
-    bg: 'bg-white',
+    bg: 'bg-slate-50',
     iconBg: 'bg-gold/10',
     iconText: 'text-gold',
     expandedBorder: 'border-gold/50',

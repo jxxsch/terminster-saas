@@ -40,6 +40,20 @@ function isWithinBusinessHours(slot: string): boolean {
 const DAY_NAMES = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 const ALL_TIME_SLOTS = generateAllTimeSlots();
 
+// Berechne den aktuellen Zeitslot (z.B. 16:10 -> "16:00")
+function getCurrentTimeSlot(): string | null {
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+
+  // Öffnungszeiten: 9:00 - 20:00
+  if (hours < 9 || hours > 20) return null;
+
+  // Runde auf den aktuellen 30-Minuten-Slot ab
+  const slotMinutes = minutes < 30 ? '00' : '30';
+  return `${String(hours).padStart(2, '0')}:${slotMinutes}`;
+}
+
 // Helper: Format date as YYYY-MM-DD in local timezone
 function formatDateLocal(date: Date): string {
   const year = date.getFullYear();
@@ -75,6 +89,7 @@ export function FullWeekView({ monday }: FullWeekViewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSlot, setSelectedSlot] = useState<SlotInfo | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [currentTimeSlot, setCurrentTimeSlot] = useState<string | null>(getCurrentTimeSlot());
 
   // Generate week days (Mo-Sa, 6 Tage - ohne Sonntag)
   const weekDays = useMemo(() => {
@@ -96,6 +111,15 @@ export function FullWeekView({ monday }: FullWeekViewProps) {
     }
     return days;
   }, [monday]);
+
+  // Update current time slot every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTimeSlot(getCurrentTimeSlot());
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Load all data
   useEffect(() => {
@@ -337,6 +361,10 @@ export function FullWeekView({ monday }: FullWeekViewProps) {
             <tbody>
               {ALL_TIME_SLOTS.map((slot, slotIndex) => {
                 const isBusinessHours = isWithinBusinessHours(slot);
+                // Prüfe ob dieser Slot der aktuelle ist (nur relevant für heute)
+                const todayStr = formatDateLocal(new Date());
+                const isTodayInWeek = weekDays.some(d => d.dateStr === todayStr);
+                const isCurrentSlot = isTodayInWeek && slot === currentTimeSlot;
 
                 return (
                   <tr
@@ -345,20 +373,30 @@ export function FullWeekView({ monday }: FullWeekViewProps) {
                     style={{ height: `${100 / ALL_TIME_SLOTS.length}%` }}
                   >
                     {/* Time Label */}
-                    <td className={`text-center align-middle border-r border-gray-200 ${!isBusinessHours ? 'bg-gray-50' : ''}`}>
-                      <span className={`text-[10px] font-mono ${isBusinessHours ? 'text-gray-600' : 'text-gray-400'}`}>
+                    <td className={`text-center align-middle border-r border-gray-200 ${!isBusinessHours ? 'bg-gray-50' : ''} ${isCurrentSlot ? 'bg-red-50/50 border-y border-l border-red-400' : ''}`}>
+                      <span className={`text-[10px] font-mono ${isCurrentSlot ? 'text-red-500 font-semibold' : isBusinessHours ? 'text-gray-600' : 'text-gray-400'}`}>
                         {slot}
                       </span>
                     </td>
 
                     {/* Day Slots - Mini-Grid pro Tag mit allen Barbern */}
-                    {weekDays.map(day => {
+                    {weekDays.map((day, dayIndex) => {
                       const isClosed = isDayClosed(day.dateStr);
+                      const isCurrentSlotToday = isCurrentSlot && day.isToday;
+                      const isLastDay = dayIndex === weekDays.length - 1;
 
                       return (
                         <td
                           key={`${day.dateStr}-${slot}`}
-                          className={`border-r border-gray-200 p-0 ${isClosed ? 'bg-gray-100' : ''} ${!isBusinessHours ? 'bg-gray-50/50' : ''}`}
+                          className={`border-r border-gray-200 p-0 ${isClosed ? 'bg-gray-100' : ''} ${!isBusinessHours && !isCurrentSlotToday ? 'bg-gray-50/50' : ''}`}
+                          style={isCurrentSlotToday ? {
+                            backgroundColor: 'rgba(254, 242, 242, 0.5)',
+                            borderTopWidth: '1px',
+                            borderBottomWidth: '1px',
+                            borderTopColor: 'rgb(248, 113, 113)',
+                            borderBottomColor: 'rgb(248, 113, 113)',
+                            ...(isLastDay && { borderRightWidth: '1px', borderRightColor: 'rgb(248, 113, 113)' })
+                          } : undefined}
                         >
                           {!isClosed ? (
                             <div className="flex h-full">

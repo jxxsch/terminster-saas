@@ -686,9 +686,9 @@ export default function TeamPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-slate-200/50 overflow-hidden">
-        <div className="px-8 py-5 flex items-center justify-between">
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex-1 bg-white rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-slate-200/50 overflow-hidden flex flex-col min-h-0">
+        <div className="px-8 py-5 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-gold/10 rounded-xl flex items-center justify-center">
               <svg className="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -708,9 +708,9 @@ export default function TeamPage() {
           </button>
         </div>
 
-        <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+        <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent flex-shrink-0" />
 
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto p-6">
           {team.length === 0 && !isCreating ? (
             <div className="py-12 text-center text-slate-400">
               <svg className="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -17,8 +17,8 @@ import { ConfirmModal } from '@/components/admin/ConfirmModal';
 type TabId = 'galerie' | 'content';
 
 const TABS: { id: TabId; label: string }[] = [
-  { id: 'galerie', label: 'Galerie' },
   { id: 'content', label: 'Content' },
+  { id: 'galerie', label: 'Galerie' },
 ];
 
 const CATEGORIES = [
@@ -102,7 +102,7 @@ export default function MedienPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const tabParam = searchParams.get('tab') as TabId | null;
-  const [activeTab, setActiveTab] = useState<TabId>(tabParam && TABS.some(t => t.id === tabParam) ? tabParam : 'galerie');
+  const [activeTab, setActiveTab] = useState<TabId>(tabParam && TABS.some(t => t.id === tabParam) ? tabParam : 'content');
   const [isLoading, setIsLoading] = useState(true);
 
   // Gallery State
@@ -140,7 +140,7 @@ export default function MedienPage() {
 
   const handleTabChange = (tab: TabId) => {
     setActiveTab(tab);
-    router.replace(`/admin/medien?tab=${tab}`, { scroll: false });
+    router.replace(`/admin/content?tab=${tab}`, { scroll: false });
   };
 
   // === Gallery Handlers ===
@@ -223,11 +223,11 @@ export default function MedienPage() {
   }
 
   return (
-    <div className="h-full">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Floating Panel - alles in einem Container */}
-      <div className="bg-white rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-slate-200/50 overflow-hidden">
+      <div className="flex-1 bg-white rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-slate-200/50 overflow-hidden flex flex-col min-h-0">
         {/* Header */}
-        <div className="px-8 py-5 flex items-center justify-between">
+        <div className="px-8 py-5 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-gold/10 rounded-xl flex items-center justify-center">
               <svg className="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -253,10 +253,10 @@ export default function MedienPage() {
         </div>
 
         {/* Gradient Divider */}
-        <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+        <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent flex-shrink-0" />
 
         {/* Tabs */}
-        <div className="px-8 flex gap-6 border-b border-slate-100">
+        <div className="px-8 flex gap-6 border-b border-slate-100 flex-shrink-0">
           {TABS.map(tab => (
             <button
               key={tab.id}
@@ -275,6 +275,27 @@ export default function MedienPage() {
           ))}
         </div>
 
+        {/* Section Navigation - nur für Content Tab, fixiert */}
+        {activeTab === 'content' && (
+          <div className="px-8 pt-4 pb-3 flex flex-wrap gap-2 border-b border-slate-200 flex-shrink-0">
+            {contentSections.map(section => (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                  activeSection === section.id
+                    ? 'bg-gold text-black'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {section.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto">
         {/* Gallery Tab */}
         {activeTab === 'galerie' && (
           <div className="p-6">
@@ -447,24 +468,7 @@ export default function MedienPage() {
 
         {/* Content Tab */}
         {activeTab === 'content' && (
-          <div className="p-6 space-y-6">
-            {/* Section Navigation */}
-            <div className="flex flex-wrap gap-2 pb-4 border-b border-slate-200">
-            {contentSections.map(section => (
-              <button
-                key={section.id}
-                onClick={() => setActiveSection(section.id)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
-                  activeSection === section.id
-                    ? 'bg-gold text-black'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {section.label}
-              </button>
-            ))}
-          </div>
-
+          <div className="px-8 py-6 space-y-6">
           {/* Hero Section */}
           {activeSection === 'hero' && (
             <div className="space-y-6">
@@ -787,6 +791,7 @@ export default function MedienPage() {
           )}
         </div>
         )}
+        </div>
       </div>
     </div>
   );

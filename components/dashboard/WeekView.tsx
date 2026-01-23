@@ -346,7 +346,7 @@ export function WeekView({ monday, selectedDay, closedReason }: WeekViewProps) {
                             </div>
                           )}
                         </div>
-                        <span className={`text-xs font-medium ${timeOff ? 'text-gray-400' : 'text-gray-700'}`}>
+                        <span className={`text-[14px] font-medium ${timeOff ? 'text-gray-400' : 'text-gray-700'}`}>
                           {barber.name}
                         </span>
                         {timeOff && (

@@ -1685,48 +1685,62 @@ export interface WeekStats {
  * Holt Wochen-Statistiken für die letzten X Wochen
  */
 export async function getWeeklyStats(weeksBack: number = 8): Promise<WeekStats[]> {
-  const stats: WeekStats[] = [];
   const today = new Date();
 
+  // Berechne den frühesten Montag
+  const earliestDate = new Date(today);
+  earliestDate.setDate(earliestDate.getDate() - (weeksBack * 7));
+  const dow = earliestDate.getDay();
+  const monOffset = dow === 0 ? -6 : 1 - dow;
+  earliestDate.setDate(earliestDate.getDate() + monOffset);
+
+  const startStr = earliestDate.toISOString().split('T')[0];
+  const endStr = today.toISOString().split('T')[0];
+
+  // EINE Abfrage für alle Termine im Zeitraum
+  const { data: appointments, error } = await supabase
+    .from('appointments')
+    .select('date')
+    .gte('date', startStr)
+    .lte('date', endStr)
+    .eq('status', 'confirmed');
+
+  if (error) {
+    console.error('Error fetching weekly stats:', error);
+    return [];
+  }
+
+  // Gruppiere nach Woche
+  const weekCounts: Record<string, number> = {};
+  (appointments || []).forEach(apt => {
+    const date = new Date(apt.date);
+    const d = date.getDay();
+    const offset = d === 0 ? -6 : 1 - d;
+    const monday = new Date(date);
+    monday.setDate(date.getDate() + offset);
+    const key = monday.toISOString().split('T')[0];
+    weekCounts[key] = (weekCounts[key] || 0) + 1;
+  });
+
+  // Erstelle Stats für jede Woche
+  const stats: WeekStats[] = [];
   for (let i = 0; i < weeksBack; i++) {
-    // Berechne Start der Woche (Montag) für diese Woche
     const weekDate = new Date(today);
     weekDate.setDate(weekDate.getDate() - (i * 7));
-
-    // Finde den Montag dieser Woche
-    const dayOfWeek = weekDate.getDay();
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const d = weekDate.getDay();
+    const offset = d === 0 ? -6 : 1 - d;
     const monday = new Date(weekDate);
-    monday.setDate(weekDate.getDate() + mondayOffset);
-
-    // Sonntag der Woche
+    monday.setDate(weekDate.getDate() + offset);
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-
-    const startStr = monday.toISOString().split('T')[0];
-    const endStr = sunday.toISOString().split('T')[0];
-
-    // Kalenderwoche berechnen
-    const weekNumber = getWeekNumber(monday);
-
-    // Termine zählen
-    const { count, error } = await supabase
-      .from('appointments')
-      .select('id', { count: 'exact', head: true })
-      .gte('date', startStr)
-      .lte('date', endStr)
-      .eq('status', 'confirmed');
-
-    if (error) {
-      console.error('Error fetching weekly stats:', error);
-    }
+    const key = monday.toISOString().split('T')[0];
 
     stats.push({
-      weekNumber,
+      weekNumber: getWeekNumber(monday),
       year: monday.getFullYear(),
-      startDate: startStr,
-      endDate: endStr,
-      appointmentCount: count || 0,
+      startDate: key,
+      endDate: sunday.toISOString().split('T')[0],
+      appointmentCount: weekCounts[key] || 0,
     });
   }
 
@@ -1743,31 +1757,44 @@ export interface DayStats {
  * Holt Tages-Statistiken für die letzten X Tage
  */
 export async function getDailyStats(daysBack: number = 7): Promise<DayStats[]> {
-  const stats: DayStats[] = [];
   const today = new Date();
-
   const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 
+  // Berechne Startdatum
+  const startDate = new Date(today);
+  startDate.setDate(startDate.getDate() - (daysBack - 1));
+  const startStr = startDate.toISOString().split('T')[0];
+  const endStr = today.toISOString().split('T')[0];
+
+  // EINE Abfrage für alle Termine im Zeitraum
+  const { data: appointments, error } = await supabase
+    .from('appointments')
+    .select('date')
+    .gte('date', startStr)
+    .lte('date', endStr)
+    .eq('status', 'confirmed');
+
+  if (error) {
+    console.error('Error fetching daily stats:', error);
+  }
+
+  // Gruppiere nach Tag
+  const dayCounts: Record<string, number> = {};
+  (appointments || []).forEach(apt => {
+    dayCounts[apt.date] = (dayCounts[apt.date] || 0) + 1;
+  });
+
+  // Erstelle Stats für jeden Tag
+  const stats: DayStats[] = [];
   for (let i = 0; i < daysBack; i++) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
     const dateStr = date.toISOString().split('T')[0];
 
-    // Termine zählen
-    const { count, error } = await supabase
-      .from('appointments')
-      .select('id', { count: 'exact', head: true })
-      .eq('date', dateStr)
-      .eq('status', 'confirmed');
-
-    if (error) {
-      console.error('Error fetching daily stats:', error);
-    }
-
     stats.push({
       date: dateStr,
       dayName: dayNames[date.getDay()],
-      appointmentCount: count || 0,
+      appointmentCount: dayCounts[dateStr] || 0,
     });
   }
 
@@ -1881,81 +1908,55 @@ export async function getCustomerLoyaltyStats(days: number = 30): Promise<Custom
   const startStr = startDate.toISOString().split('T')[0];
   const today = new Date().toISOString().split('T')[0];
 
-  // Hole alle Termine der letzten X Tage
-  const { data: recentAppointments, error: recentError } = await supabase
-    .from('appointments')
-    .select('id, customer_id, customer_name, customer_phone, date')
-    .gte('date', startStr)
-    .lte('date', today)
-    .eq('status', 'confirmed');
+  // Hole ALLE bestätigten Termine (2 Abfragen statt N)
+  const [recentResult, historicResult] = await Promise.all([
+    // Termine der letzten X Tage
+    supabase
+      .from('appointments')
+      .select('customer_id, customer_name, customer_phone')
+      .gte('date', startStr)
+      .lte('date', today)
+      .eq('status', 'confirmed'),
+    // Termine VOR dem Zeitraum (für Stammkunden-Check)
+    supabase
+      .from('appointments')
+      .select('customer_id, customer_name, customer_phone')
+      .lt('date', startStr)
+      .eq('status', 'confirmed'),
+  ]);
 
-  if (recentError || !recentAppointments) {
-    console.error('Error fetching recent appointments:', recentError);
-    return {
-      totalAppointments: 0,
-      returningCustomers: 0,
-      newCustomers: 0,
-      loyaltyRate: 0,
-    };
+  if (recentResult.error || !recentResult.data) {
+    console.error('Error fetching recent appointments:', recentResult.error);
+    return { totalAppointments: 0, returningCustomers: 0, newCustomers: 0, loyaltyRate: 0 };
   }
 
-  const totalAppointments = recentAppointments.length;
+  const totalAppointments = recentResult.data.length;
   if (totalAppointments === 0) {
-    return {
-      totalAppointments: 0,
-      returningCustomers: 0,
-      newCustomers: 0,
-      loyaltyRate: 0,
-    };
+    return { totalAppointments: 0, returningCustomers: 0, newCustomers: 0, loyaltyRate: 0 };
   }
 
-  // Für jeden Kunden prüfen: Hatte er vor diesem Zeitraum schon mal einen Termin?
+  // Erstelle Set von historischen Kunden-Keys
+  const historicCustomers = new Set<string>();
+  (historicResult.data || []).forEach(apt => {
+    const key = apt.customer_id || `${apt.customer_name}|${apt.customer_phone || ''}`;
+    historicCustomers.add(key);
+  });
+
+  // Zähle Stammkunden vs Neukunden
   let returningCustomers = 0;
   let newCustomers = 0;
-
-  // Gruppiere nach Kunde (um doppelte nicht mehrfach zu zählen)
   const checkedCustomers = new Set<string>();
 
-  for (const apt of recentAppointments) {
+  for (const apt of recentResult.data) {
     const customerKey = apt.customer_id || `${apt.customer_name}|${apt.customer_phone || ''}`;
 
     if (checkedCustomers.has(customerKey)) {
-      // Dieser Kunde wurde bereits gezählt, zähle als "returning" für den Termin
       returningCustomers++;
       continue;
     }
-
     checkedCustomers.add(customerKey);
 
-    // Prüfe ob Kunde vor diesem Zeitraum schon mal da war
-    let hadPreviousVisit = false;
-
-    if (apt.customer_id) {
-      const { count } = await supabase
-        .from('appointments')
-        .select('id', { count: 'exact', head: true })
-        .eq('customer_id', apt.customer_id)
-        .eq('status', 'confirmed')
-        .lt('date', startStr);
-
-      hadPreviousVisit = (count || 0) > 0;
-    } else if (apt.customer_name) {
-      let query = supabase
-        .from('appointments')
-        .select('id', { count: 'exact', head: true })
-        .eq('customer_name', apt.customer_name)
-        .eq('status', 'confirmed')
-        .lt('date', startStr);
-
-      if (apt.customer_phone) {
-        query = query.eq('customer_phone', apt.customer_phone);
-      }
-
-      const { count } = await query;
-      hadPreviousVisit = (count || 0) > 0;
-    }
-
-    if (hadPreviousVisit) {
+    if (historicCustomers.has(customerKey)) {
       returningCustomers++;
     } else {
       newCustomers++;
@@ -1966,10 +1967,5 @@ export async function getCustomerLoyaltyStats(days: number = 30): Promise<Custom
     ? Math.round((returningCustomers / totalAppointments) * 100)
     : 0;
 
-  return {
-    totalAppointments,
-    returningCustomers,
-    newCustomers,
-    loyaltyRate,
-  };
+  return { totalAppointments, returningCustomers, newCustomers, loyaltyRate };
 }

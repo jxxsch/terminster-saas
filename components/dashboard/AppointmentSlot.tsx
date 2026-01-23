@@ -325,19 +325,16 @@ export function AppointmentSlot({
         onClick={handleSeriesClick}
         className="relative p-1 h-full cursor-pointer transition-colors bg-blue-50 hover:bg-blue-100"
       >
-        <div className="flex items-center justify-between gap-1 h-full">
+        <div className="flex items-center justify-between gap-1 h-full pl-1">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1">
               <svg className="w-2.5 h-2.5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              <span className="text-[10px] font-medium text-blue-700 truncate">
+              <span className="text-[13px] font-medium text-blue-700 truncate">
                 {series.customer_name}
               </span>
             </div>
-            {series.customer_phone && (
-              <span className="text-[9px] text-gray-400 truncate block">{series.customer_phone}</span>
-            )}
           </div>
           {/* Rotes X zum Stornieren dieses Termins */}
           <button
@@ -812,14 +809,11 @@ export function AppointmentSlot({
       }`}
       onClick={handleClick}
     >
-      <div className="flex items-center justify-between gap-1 h-full">
+      <div className="flex items-center justify-between gap-1 h-full pl-1">
         <div className="flex-1 min-w-0">
-          <span className={`text-[10px] font-medium truncate block ${isOnline ? 'text-green-700' : 'text-amber-800'}`}>
+          <span className={`text-[13px] font-medium truncate block ${isOnline ? 'text-green-700' : 'text-amber-800'}`}>
             {appointment?.customer_name}
           </span>
-          {appointment?.customer_phone && (
-            <span className="text-[9px] text-gray-400 truncate block">{appointment.customer_phone}</span>
-          )}
         </div>
         {/* Rotes X zum Stornieren */}
         <button

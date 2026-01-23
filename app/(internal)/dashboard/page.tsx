@@ -162,43 +162,46 @@ export default function DashboardPage() {
   if (!isAuthenticated) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="bg-white border border-slate-200/50 rounded-3xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.04)] p-8 w-full max-w-sm">
+        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 min-w-[320px]">
+          {/* Logo */}
           <div className="flex justify-center mb-6">
-            <div className="w-12 h-12 bg-gold rounded-xl flex items-center justify-center shadow-sm">
+            <div className="w-12 h-12 bg-gold rounded-xl flex items-center justify-center">
               <Image
                 src="/logo.png"
-                alt="Beban Logo"
-                width={32}
-                height={32}
+                alt="Beban"
+                width={28}
+                height={28}
                 className="object-contain"
                 priority
               />
             </div>
           </div>
 
-          <h1 className="text-xl font-bold text-center mb-1 text-slate-900">
+          {/* Text */}
+          <h1 className="text-lg font-semibold text-slate-900 text-center whitespace-nowrap">
             Willkommen zurück
           </h1>
-          <p className="text-sm text-slate-400 text-center mb-6">
+          <p className="text-sm text-slate-400 text-center mt-1 mb-6 whitespace-nowrap">
             Melde dich im Dashboard an
           </p>
 
+          {/* Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t('password')}
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none transition-all"
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none"
             />
             {error && (
               <p className="text-red-500 text-xs text-center">{error}</p>
             )}
             <button
               type="submit"
-              className="w-full py-3 bg-gold text-slate-900 text-sm font-bold tracking-wide uppercase hover:bg-gold/90 transition-colors rounded-xl shadow-sm"
+              className="w-full py-2.5 bg-gold text-slate-900 text-sm font-semibold rounded-lg hover:bg-gold/90 transition-colors"
             >
-              {t('login')}
+              Anmelden
             </button>
           </form>
         </div>

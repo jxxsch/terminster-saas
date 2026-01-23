@@ -217,11 +217,11 @@ export default function ZeitenPage() {
   const pastSundays = openSundays.filter(s => s.date < new Date().toISOString().split('T')[0]);
 
   return (
-    <div className="h-full">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Floating Panel - alles in einem Container */}
-      <div className="bg-white rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-slate-200/50 overflow-hidden">
+      <div className="flex-1 bg-white rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-slate-200/50 overflow-hidden flex flex-col min-h-0">
         {/* Header */}
-        <div className="px-8 py-5 flex items-center justify-between">
+        <div className="px-8 py-5 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-gold/10 rounded-xl flex items-center justify-center">
               <svg className="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -247,10 +247,10 @@ export default function ZeitenPage() {
         </div>
 
         {/* Gradient Divider */}
-        <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+        <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent flex-shrink-0" />
 
         {/* Tabs */}
-        <div className="px-8 flex gap-6 border-b border-slate-100">
+        <div className="px-8 flex gap-6 border-b border-slate-100 flex-shrink-0">
           {TABS.map(tab => (
             <button
               key={tab.id}
@@ -270,32 +270,32 @@ export default function ZeitenPage() {
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'slots' && (
-          <div className="p-6">
-            <h2 className="text-xs font-medium text-slate-500 mb-4">Aktive Zeitslots</h2>
-            <div className="flex flex-wrap gap-2">
+        <div className="flex-1 overflow-y-auto">
+          {activeTab === 'slots' && (
+            <div className="px-8 py-6">
+            <div className="grid grid-cols-8 gap-2">
               {activeSlots.map((slot) => (
                 <div
                   key={slot.id}
-                  className="group relative flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl"
+                  className="group relative flex items-center justify-between px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl"
                 >
                   <span className="text-sm font-medium text-emerald-700">{slot.time}</span>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-0.5 ml-3">
                     <button
                       onClick={() => handleToggleSlotActive(slot)}
-                      className="p-1 hover:bg-emerald-100 rounded-lg text-emerald-600"
+                      className="p-[3px] border border-slate-200 rounded text-slate-400 hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50 transition-colors"
                       title="Deaktivieren"
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                       </svg>
                     </button>
                     <button
                       onClick={() => setDeleteSlotTarget(slot)}
-                      className="p-1 hover:bg-red-100 rounded-lg text-red-500"
+                      className="p-[3px] border border-slate-200 rounded text-slate-400 hover:text-red-500 hover:border-red-300 hover:bg-red-50 transition-colors"
                       title="Löschen"
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
@@ -303,36 +303,36 @@ export default function ZeitenPage() {
                 </div>
               ))}
               {activeSlots.length === 0 && (
-                <p className="text-sm text-slate-400">Keine aktiven Zeitslots</p>
+                <p className="text-sm text-slate-400 col-span-8">Keine aktiven Zeitslots</p>
               )}
             </div>
 
             {inactiveSlots.length > 0 && (
               <>
                 <h2 className="text-xs font-medium text-slate-500 mt-6 mb-4">Inaktive Zeitslots</h2>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-8 gap-2">
                   {inactiveSlots.map((slot) => (
                     <div
                       key={slot.id}
-                      className="group relative flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                      className="group relative flex items-center justify-between px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl"
                     >
                       <span className="text-sm text-slate-500">{slot.time}</span>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-0.5 ml-3">
                         <button
                           onClick={() => handleToggleSlotActive(slot)}
-                          className="p-1 hover:bg-emerald-100 rounded-lg text-emerald-600"
+                          className="p-[3px] border border-slate-200 rounded text-slate-400 hover:text-emerald-600 hover:border-emerald-300 hover:bg-emerald-50 transition-colors"
                           title="Aktivieren"
                         >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
                         </button>
                         <button
                           onClick={() => setDeleteSlotTarget(slot)}
-                          className="p-1 hover:bg-red-100 rounded-lg text-red-500"
+                          className="p-[3px] border border-slate-200 rounded text-slate-400 hover:text-red-500 hover:border-red-300 hover:bg-red-50 transition-colors"
                           title="Löschen"
                         >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>
@@ -343,7 +343,7 @@ export default function ZeitenPage() {
               </>
             )}
 
-            {/* Info Box - Slate Design */}
+            {/* Info Box */}
             <div className="mt-6 bg-slate-50 border border-slate-200 rounded-xl p-4">
               <div className="flex gap-3">
                 <svg className="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -403,11 +403,11 @@ export default function ZeitenPage() {
               onConfirm={handleDeleteSlot}
               onCancel={() => setDeleteSlotTarget(null)}
             />
-          </div>
-        )}
+            </div>
+          )}
 
-      {activeTab === 'hours' && (
-        <div className="p-6">
+          {activeTab === 'hours' && (
+            <div className="px-8 py-6">
           {/* Header-Zeile */}
           <div className="grid grid-cols-[1fr_120px_120px_120px] gap-4 px-4 py-3 text-[11px] font-medium text-slate-400 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
             <div>Tag</div>
@@ -481,11 +481,11 @@ export default function ZeitenPage() {
               </div>
             </div>
           </div>
-        </div>
-      )}
+          </div>
+          )}
 
-      {activeTab === 'special' && (
-        <div className="p-6 space-y-8">
+          {activeTab === 'special' && (
+            <div className="px-8 py-6 space-y-8">
           {/* Verkaufsoffene Sonntage */}
           <div>
             <div className="mb-4">
@@ -683,17 +683,18 @@ export default function ZeitenPage() {
             </div>
           </div>
 
-          <ConfirmModal
-            isOpen={!!deleteClosedTarget}
-            title="Geschlossenen Tag löschen"
-            message={`Möchten Sie den ${deleteClosedTarget ? formatDate(deleteClosedTarget.date) : ''} wirklich aus der Liste entfernen?`}
-            confirmLabel="Löschen"
-            variant="danger"
-            onConfirm={handleDeleteClosedDate}
-            onCancel={() => setDeleteClosedTarget(null)}
-          />
+            <ConfirmModal
+              isOpen={!!deleteClosedTarget}
+              title="Geschlossenen Tag löschen"
+              message={`Möchten Sie den ${deleteClosedTarget ? formatDate(deleteClosedTarget.date) : ''} wirklich aus der Liste entfernen?`}
+              confirmLabel="Löschen"
+              variant="danger"
+              onConfirm={handleDeleteClosedDate}
+              onCancel={() => setDeleteClosedTarget(null)}
+            />
+            </div>
+          )}
         </div>
-        )}
       </div>
     </div>
   );

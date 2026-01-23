@@ -7,7 +7,7 @@ export default function GalleryRedirect() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/admin/medien?tab=galerie');
+    router.replace('/admin/content?tab=galerie');
   }, [router]);
 
   return (
