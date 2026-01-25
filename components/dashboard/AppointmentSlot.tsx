@@ -23,14 +23,22 @@ interface AppointmentSlotProps {
   timeSlot: string;
   servicesMap: Record<string, Service>;
   onClick: () => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string, deletedAppointment?: Appointment) => void;
   onUpdate?: (updated: Appointment) => void;
   onSeriesDelete?: (id: string) => void;
   onSeriesUpdate?: (updated: Series) => void;
   onAppointmentCreated?: (newAppointment: Appointment) => void;
+  onSeriesSingleCancelled?: (cancellationId: string) => void;
   isDisabled?: boolean;
   disabledReason?: string;
   isOutsideBusinessHours?: boolean;
+  // Selection Mode Props
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  isPreview?: boolean;
+  onToggleSelect?: (shiftKey?: boolean) => void;
+  // Name Display
+  formatName?: (name: string) => string;
 }
 
 export function AppointmentSlot({
@@ -46,8 +54,14 @@ export function AppointmentSlot({
   onSeriesDelete,
   onSeriesUpdate,
   onAppointmentCreated,
+  onSeriesSingleCancelled,
   isDisabled,
   isOutsideBusinessHours,
+  selectionMode = false,
+  isSelected = false,
+  isPreview = false,
+  onToggleSelect,
+  formatName = (name) => name,
 }: AppointmentSlotProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -105,7 +119,7 @@ export function AppointmentSlot({
     setIsCancelling(true);
     const success = await deleteAppointment(appointment.id);
     if (success) {
-      onDelete(appointment.id);
+      onDelete(appointment.id, appointment);
       setShowDetails(false);
       setShowCancelModal(false);
     }
@@ -119,7 +133,7 @@ export function AppointmentSlot({
     if (confirm('Termin endgültig löschen?')) {
       const success = await deleteAppointment(appointment.id);
       if (success) {
-        onDelete(appointment.id);
+        onDelete(appointment.id, appointment);
       }
     }
   };
@@ -144,6 +158,11 @@ export function AppointmentSlot({
   const handleClick = async (e: React.MouseEvent) => {
     if (appointment) {
       e.stopPropagation();
+      // Im Selection Mode: Auswahl toggle
+      if (selectionMode && onToggleSelect) {
+        onToggleSelect(e.shiftKey);
+        return;
+      }
       if (!showDetails) {
         // Berechne Position bevor Popup geöffnet wird
         calculatePopupPosition();
@@ -304,8 +323,14 @@ export function AppointmentSlot({
         series_id: series.id,
       });
 
-      if (cancelledAppointment && onAppointmentCreated) {
-        onAppointmentCreated(cancelledAppointment);
+      if (cancelledAppointment) {
+        if (onAppointmentCreated) {
+          onAppointmentCreated(cancelledAppointment);
+        }
+        // Für Undo: ID der Stornierung melden
+        if (onSeriesSingleCancelled) {
+          onSeriesSingleCancelled(cancelledAppointment.id);
+        }
       }
       setIsCancellingSingle(false);
       setShowSeriesCancelModal(false);
@@ -319,36 +344,86 @@ export function AppointmentSlot({
       monthly: 'Monatlich',
     };
 
+    // Im Selection Mode: Auswahl toggle statt Details
+    const handleSeriesSelectionClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (selectionMode && onToggleSelect) {
+        onToggleSelect(e.shiftKey);
+      } else {
+        handleSeriesClick(e);
+      }
+    };
+
     return (
       <div
         ref={slotRef}
-        onClick={handleSeriesClick}
-        className="relative p-1 h-full cursor-pointer transition-colors bg-blue-50 hover:bg-blue-100"
+        onClick={handleSeriesSelectionClick}
+        className={`relative p-1 h-full cursor-pointer transition-colors select-none ${
+          selectionMode
+            ? isSelected
+              ? 'bg-red-100 ring-2 ring-red-400 ring-inset'
+              : isPreview
+              ? 'bg-orange-100 ring-2 ring-orange-400 ring-inset'
+              : 'bg-blue-50 hover:bg-blue-100'
+            : 'bg-blue-50 hover:bg-blue-100'
+        }`}
       >
         <div className="flex items-center justify-between gap-1 h-full pl-1">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1">
-              <svg className="w-2.5 h-2.5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-2.5 h-2.5 flex-shrink-0 ${
+                selectionMode && isSelected
+                  ? 'text-red-500'
+                  : selectionMode && isPreview
+                  ? 'text-orange-500'
+                  : 'text-blue-500'
+              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              <span className="text-[13px] font-medium text-blue-700 truncate">
-                {series.customer_name}
+              <span className={`text-[13px] font-medium truncate ${
+                selectionMode && isSelected
+                  ? 'text-red-700'
+                  : selectionMode && isPreview
+                  ? 'text-orange-700'
+                  : 'text-blue-700'
+              }`}>
+                {formatName(series.customer_name)}
               </span>
             </div>
           </div>
-          {/* Rotes X zum Stornieren dieses Termins */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowSeriesCancelModal(true);
-            }}
-            className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded border border-red-300 bg-red-50 hover:bg-red-100 transition-colors"
-            title="Diesen Termin stornieren"
-          >
-            <svg className="w-2.5 h-2.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {/* Checkbox im Selection Mode - rechtsbündig */}
+          {selectionMode && (
+            <div
+              className={`flex-shrink-0 w-4 h-4 flex items-center justify-center rounded border-2 transition-colors ${
+                isSelected
+                  ? 'bg-red-500 border-red-500'
+                  : isPreview
+                  ? 'bg-orange-400 border-orange-400'
+                  : 'bg-white border-gray-300'
+              }`}
+            >
+              {(isSelected || isPreview) && (
+                <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+          )}
+          {/* Rotes X zum Stornieren dieses Termins - versteckt im Selection Mode */}
+          {!selectionMode && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowSeriesCancelModal(true);
+              }}
+              className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded border border-red-300 bg-red-50 hover:bg-red-100 transition-colors"
+              title="Diesen Termin stornieren"
+            >
+              <svg className="w-2.5 h-2.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* Details Popup für Serie */}
@@ -667,7 +742,7 @@ export function AppointmentSlot({
     setIsDeletingPause(true);
     const success = await deleteAppointment(appointment.id);
     if (success) {
-      onDelete(appointment.id);
+      onDelete(appointment.id, appointment);
     }
     setIsDeletingPause(false);
     setShowPauseDeleteModal(false);
@@ -676,7 +751,7 @@ export function AppointmentSlot({
   // Pause slot - special styling
   if (isPause) {
     return (
-      <div className="relative p-1 h-full transition-colors bg-gray-200 hover:bg-gray-300">
+      <div className="relative p-1 h-full transition-colors select-none bg-gray-200 hover:bg-gray-300">
         <div className="flex items-center justify-between gap-1 h-full">
           <div className="flex items-center gap-1">
             <svg className="w-3 h-3 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -771,18 +846,18 @@ export function AppointmentSlot({
       if (!appointment) return;
       const success = await deleteAppointment(appointment.id);
       if (success) {
-        onDelete(appointment.id);
+        onDelete(appointment.id, appointment);
       }
     };
 
     return (
       <div
         ref={slotRef}
-        className="relative p-1 h-full transition-colors bg-red-50/50 hover:bg-red-100/50"
+        className="relative p-1 h-full transition-colors select-none bg-red-50/50 hover:bg-red-100/50"
       >
         <div className="flex items-center justify-between gap-1 h-full">
           <span className="text-[10px] font-medium text-red-400 line-through truncate flex-1">
-            {appointment?.customer_name}
+            {appointment?.customer_name ? formatName(appointment.customer_name) : ''}
           </span>
           {/* X zum direkten Löschen */}
           <button
@@ -802,8 +877,16 @@ export function AppointmentSlot({
   return (
     <div
       ref={slotRef}
-      className={`relative p-1 h-full cursor-pointer transition-colors ${
-        isOnline
+      className={`relative p-1 h-full transition-colors select-none cursor-pointer ${
+        selectionMode
+          ? isSelected
+            ? 'bg-red-100 ring-2 ring-red-400 ring-inset'
+            : isPreview
+            ? 'bg-orange-100 ring-2 ring-orange-400 ring-inset'
+            : isOnline
+            ? 'bg-green-50 hover:bg-green-100'
+            : 'bg-gold/20 hover:bg-gold/30'
+          : isOnline
           ? 'bg-green-50 hover:bg-green-100'
           : 'bg-gold/20 hover:bg-gold/30'
       }`}
@@ -811,20 +894,48 @@ export function AppointmentSlot({
     >
       <div className="flex items-center justify-between gap-1 h-full pl-1">
         <div className="flex-1 min-w-0">
-          <span className={`text-[13px] font-medium truncate block ${isOnline ? 'text-green-700' : 'text-amber-800'}`}>
-            {appointment?.customer_name}
+          <span className={`text-[13px] font-medium truncate block select-none ${
+            selectionMode && isSelected
+              ? 'text-red-700'
+              : selectionMode && isPreview
+              ? 'text-orange-700'
+              : isOnline
+              ? 'text-green-700'
+              : 'text-amber-800'
+          }`}>
+            {appointment?.customer_name ? formatName(appointment.customer_name) : ''}
           </span>
         </div>
-        {/* Rotes X zum Stornieren */}
-        <button
-          onClick={openCancelModal}
-          className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded border border-red-300 bg-red-50 hover:bg-red-100 transition-colors"
-          title="Stornieren"
-        >
-          <svg className="w-2.5 h-2.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        {/* Checkbox im Selection Mode - rechtsbündig */}
+        {selectionMode && (
+          <div
+            className={`flex-shrink-0 w-4 h-4 flex items-center justify-center rounded border-2 transition-colors ${
+              isSelected
+                ? 'bg-red-500 border-red-500'
+                : isPreview
+                ? 'bg-orange-400 border-orange-400'
+                : 'bg-white border-gray-300'
+            }`}
+          >
+            {(isSelected || isPreview) && (
+              <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+        )}
+        {/* Rotes X zum Stornieren - versteckt im Selection Mode */}
+        {!selectionMode && (
+          <button
+            onClick={openCancelModal}
+            className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded border border-red-300 bg-red-50 hover:bg-red-100 transition-colors"
+            title="Stornieren"
+          >
+            <svg className="w-2.5 h-2.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Details Popup */}

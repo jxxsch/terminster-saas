@@ -17,6 +17,8 @@ import {
   getStaffTimeOffForDateRange,
   getClosedDates,
   getOpenSundays,
+  deleteAppointment,
+  createAppointment,
   Appointment,
   Series,
   TeamMember,
@@ -25,6 +27,8 @@ import {
   ClosedDate,
   OpenSunday,
 } from '@/lib/supabase';
+import { SelectionToolbar, SelectionFilter } from './SelectionToolbar';
+import { UndoToast } from './UndoToast';
 
 // Generiere Zeitslots nur für reguläre Öffnungszeiten (10:00 bis 18:30)
 function generateAllTimeSlots(): string[] {
@@ -65,6 +69,13 @@ function formatDateLocal(date: Date): string {
 interface BarberWeekViewProps {
   monday: Date;
   initialBarberId?: string;
+  formatName?: (name: string) => string;
+  selectionMode?: boolean;
+  selectedAppointments?: Set<string>;
+  onToggleSelect?: (id: string) => void;
+  onClearSelection?: () => void;
+  onExitSelectionMode?: () => void;
+  onSelectedAppointmentsChange?: (ids: Set<string>) => void;
 }
 
 interface SlotInfo {
@@ -73,7 +84,17 @@ interface SlotInfo {
   timeSlot: string;
 }
 
-export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps) {
+export function BarberWeekView({
+  monday,
+  initialBarberId,
+  formatName = (name) => name,
+  selectionMode = false,
+  selectedAppointments = new Set(),
+  onToggleSelect,
+  onClearSelection,
+  onExitSelectionMode,
+  onSelectedAppointmentsChange,
+}: BarberWeekViewProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [series, setSeries] = useState<Series[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
@@ -87,6 +108,35 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [moveToBarberInfo, setMoveToBarberInfo] = useState<BarberHeaderDropInfo | null>(null);
   const [currentTimeSlot, setCurrentTimeSlot] = useState<string | null>(getCurrentTimeSlot());
+  const [selectionFilter, setSelectionFilter] = useState<SelectionFilter>({
+    barberId: 'all',
+    timeFrom: '',
+    timeTo: '',
+  });
+  const [multiDeleteModal, setMultiDeleteModal] = useState<{ step: 1 | 2 } | null>(null);
+  const [isDeletingMultiple, setIsDeletingMultiple] = useState(false);
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
+
+  // Undo-Funktionalität
+  const [deletedItems, setDeletedItems] = useState<{
+    appointments: Appointment[];
+    seriesCancellations: string[]; // IDs der erstellten Stornierungen
+  } | null>(null);
+  const [showUndoToast, setShowUndoToast] = useState(false);
+
+  // Reset last selected wenn Selection Mode deaktiviert oder Auswahl geleert wird
+  useEffect(() => {
+    if (!selectionMode || selectedAppointments.size === 0) {
+      setLastSelectedId(null);
+    }
+  }, [selectionMode, selectedAppointments.size]);
+
+  // Barber-Tab wechseln wenn Barber im Filter ausgewählt wird
+  useEffect(() => {
+    if (selectionMode && selectionFilter.barberId !== 'all' && selectionFilter.barberId !== selectedBarberId) {
+      setSelectedBarberId(selectionFilter.barberId);
+    }
+  }, [selectionMode, selectionFilter.barberId]); // selectedBarberId bewusst ausgelassen um Zyklus zu vermeiden
 
   // Generate week days (Mo-Sa + verkaufsoffene Sonntage)
   const weekDays = useMemo(() => {
@@ -232,6 +282,87 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
     return map;
   }, [services]);
 
+  // Toolbar-Filter: Direkte Auswahl (ersetzt vorherige Auswahl)
+  useEffect(() => {
+    if (!selectionMode || !onSelectedAppointmentsChange || !selectedBarberId) {
+      return;
+    }
+
+    // Nur wenn Von oder Bis eingegeben wurde (Barber und Tag allein reichen nicht)
+    if (!selectionFilter.timeFrom && !selectionFilter.timeTo) {
+      return;
+    }
+
+    // Helper-Funktion für Zeit-Filter
+    const matchesTimeFilter = (timeSlot: string): boolean => {
+      const hasFrom = !!selectionFilter.timeFrom;
+      const hasTo = !!selectionFilter.timeTo;
+
+      if (hasFrom && hasTo) {
+        return timeSlot >= selectionFilter.timeFrom && timeSlot <= selectionFilter.timeTo;
+      } else if (hasFrom) {
+        return timeSlot === selectionFilter.timeFrom;
+      } else if (hasTo) {
+        return timeSlot === selectionFilter.timeTo;
+      }
+      return true;
+    };
+
+    const newSelection = new Set<string>();
+
+    // Bestimme die zu filternden Tage
+    const daysToFilter = selectionFilter.dayIndex !== undefined
+      ? [weekDays[selectionFilter.dayIndex]].filter(Boolean)
+      : weekDays;
+
+    // Für jeden gefilterten Tag
+    daysToFilter.forEach(day => {
+      if (!day) return;
+
+      // Normale Termine filtern
+      const dayAppointments = barberAppointments.filter(
+        apt => apt.date === day.dateStr && apt.status === 'confirmed'
+      );
+
+      // Normale Termine
+      dayAppointments.forEach(apt => {
+        // Zeit-Filter
+        if (!matchesTimeFilter(apt.time_slot)) {
+          return;
+        }
+        newSelection.add(apt.id);
+      });
+
+      // Serientermine (nur wenn kein normaler Termin an dieser Stelle existiert)
+      seriesAppointments.forEach((seriesItem, key) => {
+        // Key format: "date-time_slot"
+        const timeSlot = seriesItem.time_slot;
+        const date = key.slice(0, -(timeSlot.length + 1));
+
+        // Nur für diesen Tag
+        if (date !== day.dateStr) return;
+
+        // Prüfe ob bereits ein normaler Termin existiert
+        const hasAppointment = dayAppointments.some(
+          apt => apt.time_slot === seriesItem.time_slot
+        );
+        if (hasAppointment) return;
+
+        // Zeit-Filter
+        if (!matchesTimeFilter(seriesItem.time_slot)) {
+          return;
+        }
+
+        // Serie-ID mit Datum kombinieren für eindeutige Identifikation
+        const seriesKey = `series_${seriesItem.id}_${date}`;
+        newSelection.add(seriesKey);
+      });
+    });
+
+    // Auswahl direkt setzen (ersetzt vorherige Auswahl)
+    onSelectedAppointmentsChange(newSelection);
+  }, [selectionMode, selectionFilter, barberAppointments, seriesAppointments, weekDays, selectedBarberId, onSelectedAppointmentsChange]);
+
   // Helper: Prüfe ob Barber an einem Tag abwesend ist
   const isBarberOffOnDate = (dateStr: string): StaffTimeOff | undefined => {
     if (!selectedBarberId) return undefined;
@@ -249,8 +380,162 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
 
   const handleSlotClick = (dateStr: string, timeSlot: string) => {
     if (!selectedBarberId) return;
+    // Im Selection Mode nicht öffnen
+    if (selectionMode) return;
     setSelectedSlot({ barberId: selectedBarberId, date: dateStr, timeSlot });
   };
+
+  // Selection Mode: Termin auswählen/abwählen
+  const handleSelectAppointment = useCallback((appointmentId: string, dateStr: string, shiftKey?: boolean) => {
+    if (!onToggleSelect || !onSelectedAppointmentsChange || !selectedBarberId) return;
+
+    if (shiftKey && lastSelectedId) {
+      // Shift-Klick: Alle Termine zwischen lastSelectedId und appointmentId auswählen
+      // Alle Termine des Barbers in der Woche, sortiert nach Datum und Zeit
+      const allBarberAppointments = barberAppointments
+        .filter(apt => apt.status === 'confirmed')
+        .sort((a, b) => {
+          const dateCompare = a.date.localeCompare(b.date);
+          if (dateCompare !== 0) return dateCompare;
+          return a.time_slot.localeCompare(b.time_slot);
+        });
+
+      const lastIndex = allBarberAppointments.findIndex(apt => apt.id === lastSelectedId);
+      const currentIndex = allBarberAppointments.findIndex(apt => apt.id === appointmentId);
+
+      if (lastIndex !== -1 && currentIndex !== -1) {
+        const start = Math.min(lastIndex, currentIndex);
+        const end = Math.max(lastIndex, currentIndex);
+        const newSelection = new Set(selectedAppointments);
+        for (let i = start; i <= end; i++) {
+          newSelection.add(allBarberAppointments[i].id);
+        }
+        onSelectedAppointmentsChange(newSelection);
+        // Anker auf den neuen Termin setzen für weitere Shift-Klicks
+        setLastSelectedId(appointmentId);
+      }
+    } else {
+      // Normaler Klick: Einzelauswahl toggle
+      onToggleSelect(appointmentId);
+      setLastSelectedId(appointmentId);
+    }
+  }, [barberAppointments, lastSelectedId, onSelectedAppointmentsChange, onToggleSelect, selectedAppointments, selectedBarberId]);
+
+  // Multi-Delete Handler
+  const handleMultiDelete = async () => {
+    if (selectedAppointments.size === 0) return;
+    setIsDeletingMultiple(true);
+
+    const idsToDelete = Array.from(selectedAppointments);
+    const deletedAppointments: Appointment[] = [];
+    const createdCancellations: string[] = [];
+
+    for (const id of idsToDelete) {
+      // Prüfe ob es ein Serientermin ist (Format: series_<seriesId>_<date>)
+      if (id.startsWith('series_')) {
+        const parts = id.split('_');
+        // Format: series_<uuid>_<date> - UUID kann Bindestriche enthalten
+        const seriesId = parts.slice(1, -1).join('_'); // Alles zwischen "series_" und letztem "_"
+        const date = parts[parts.length - 1]; // Letzter Teil ist das Datum
+
+        // Finde den Serientermin in der Map
+        const seriesItem = Array.from(seriesAppointments.values()).find(s => s.id === seriesId);
+        if (seriesItem) {
+          // Erstelle einen stornierten Termin für dieses spezifische Datum
+          const cancelledAppointment = await createAppointment({
+            barber_id: seriesItem.barber_id,
+            date: date,
+            time_slot: seriesItem.time_slot,
+            service_id: seriesItem.service_id,
+            customer_name: seriesItem.customer_name,
+            customer_phone: seriesItem.customer_phone || null,
+            customer_email: null,
+            customer_id: null,
+            source: 'manual',
+            status: 'cancelled',
+            series_id: seriesItem.id,
+          });
+
+          if (cancelledAppointment) {
+            handleNewAppointmentFromSeries(cancelledAppointment);
+            createdCancellations.push(cancelledAppointment.id);
+          }
+        }
+      } else {
+        // Normaler Termin - speichern vor dem Löschen
+        const appointmentToDelete = appointments.find(apt => apt.id === id);
+        if (appointmentToDelete) {
+          deletedAppointments.push(appointmentToDelete);
+        }
+        const success = await deleteAppointment(id);
+        if (success) {
+          handleAppointmentDeletedInternal(id);
+        }
+      }
+    }
+
+    // Für Undo speichern
+    setDeletedItems({
+      appointments: deletedAppointments,
+      seriesCancellations: createdCancellations,
+    });
+
+    setIsDeletingMultiple(false);
+    setMultiDeleteModal(null);
+    onClearSelection?.();
+    onExitSelectionMode?.();
+    setShowUndoToast(true);
+  };
+
+  // Undo Handler
+  const handleUndo = useCallback(async () => {
+    if (!deletedItems) return;
+
+    // Normale Termine wiederherstellen
+    for (const apt of deletedItems.appointments) {
+      const restored = await createAppointment({
+        barber_id: apt.barber_id,
+        date: apt.date,
+        time_slot: apt.time_slot,
+        service_id: apt.service_id,
+        customer_name: apt.customer_name,
+        customer_phone: apt.customer_phone || null,
+        customer_email: apt.customer_email || null,
+        customer_id: apt.customer_id || null,
+        source: apt.source,
+        status: apt.status,
+        series_id: apt.series_id || null,
+      });
+      if (restored) {
+        setAppointments(prev => [...prev, restored]);
+      }
+    }
+
+    // Serien-Stornierungen löschen (macht Serie wieder sichtbar)
+    for (const cancellationId of deletedItems.seriesCancellations) {
+      const success = await deleteAppointment(cancellationId);
+      if (success) {
+        setAppointments(prev => prev.filter(apt => apt.id !== cancellationId));
+      }
+    }
+
+    setDeletedItems(null);
+    setShowUndoToast(false);
+    setToast({ message: 'Wiederhergestellt', type: 'success' });
+    setTimeout(() => setToast(null), 2000);
+  }, [deletedItems]);
+
+  // Undo abgelaufen
+  const handleUndoExpire = useCallback(() => {
+    setDeletedItems(null);
+    setShowUndoToast(false);
+  }, []);
+
+  // Auswahl aufheben und Filter zurücksetzen
+  const handleClearSelectionAndFilter = useCallback(() => {
+    onClearSelection?.();
+    setSelectionFilter({ barberId: 'all', timeFrom: '', timeTo: '', dayIndex: undefined });
+  }, [onClearSelection]);
 
   const handleCloseModal = () => {
     setSelectedSlot(null);
@@ -267,8 +552,23 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
   };
 
   // Handler für AppointmentSlot Callbacks
-  const handleAppointmentDeleted = (id: string) => {
+  // Interner Handler ohne Undo (für Multi-Delete)
+  const handleAppointmentDeletedInternal = (id: string) => {
     setAppointments(prev => prev.filter(apt => apt.id !== id));
+  };
+
+  // Handler für Einzellöschung mit Undo
+  const handleAppointmentDeleted = (id: string, deletedAppointment?: Appointment) => {
+    setAppointments(prev => prev.filter(apt => apt.id !== id));
+
+    // Undo-Toast nur bei Einzellöschung (nicht bei Multi-Delete)
+    if (deletedAppointment && !isDeletingMultiple) {
+      setDeletedItems({
+        appointments: [deletedAppointment],
+        seriesCancellations: [],
+      });
+      setShowUndoToast(true);
+    }
   };
 
   const handleAppointmentUpdated = (updated: Appointment) => {
@@ -281,6 +581,15 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
 
   const handleSeriesUpdated = (updated: Series) => {
     setSeries(prev => prev.map(s => s.id === updated.id ? updated : s));
+  };
+
+  // Handler für Serien-Einzelstornierung (für Undo)
+  const handleSeriesSingleCancelled = (cancellationId: string) => {
+    setDeletedItems({
+      appointments: [],
+      seriesCancellations: [cancellationId],
+    });
+    setShowUndoToast(true);
   };
 
   const handleNewAppointmentFromSeries = (newAppointment: Appointment) => {
@@ -325,6 +634,7 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
       onAppointmentMoved={handleAppointmentMoved}
       onMoveError={handleMoveError}
       onBarberHeaderDrop={handleBarberHeaderDrop}
+      disabled={selectionMode}
     >
       <div className="flex-1 flex flex-col min-h-0">
         {/* Toast Notification */}
@@ -344,6 +654,21 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
           selectedBarberId={selectedBarberId}
           onSelectBarber={setSelectedBarberId}
         />
+
+        {/* Selection Toolbar */}
+        {selectionMode && (
+          <SelectionToolbar
+            team={team}
+            timeSlots={ALL_TIME_SLOTS}
+            selectedCount={selectedAppointments.size}
+            filter={selectionFilter}
+            onFilterChange={setSelectionFilter}
+            onClearSelection={handleClearSelectionAndFilter}
+            onDelete={() => setMultiDeleteModal({ step: 1 })}
+            onCancel={onExitSelectionMode || (() => {})}
+            weekDays={weekDays.map(d => ({ dateStr: d.dateStr, dayName: d.dayName, dayNum: d.dayNum }))}
+          />
+        )}
 
         {/* Week Grid */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 min-h-0 overflow-hidden relative">
@@ -393,7 +718,8 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
                 >
                   {/* Time Label */}
                   <td
-                    className={`text-center align-middle py-0 border-r border-gray-200 ${showCurrentMarker ? 'bg-red-50/50 outline outline-1 outline-red-400 -outline-offset-1' : ''}`}
+                    className={`text-center align-middle py-0 border-r border-gray-200 ${showCurrentMarker ? 'bg-red-50/50 relative z-10' : ''}`}
+                    style={showCurrentMarker ? { boxShadow: 'inset 0 0 0 1px rgb(248, 113, 113)' } : undefined}
                   >
                     <span className={`text-[10px] font-mono font-medium ${showCurrentMarker ? 'text-red-500' : 'text-gray-600'}`}>
                       {slot}
@@ -415,13 +741,14 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
                       return (
                         <td
                           key={key}
-                          className={`border-r border-gray-200 p-0 relative ${isCurrentSlotToday ? 'bg-red-50/50 outline outline-1 outline-red-400 -outline-offset-1' : ''}`}
+                          className={`border-r border-gray-200 p-0 relative ${isCurrentSlotToday ? 'bg-red-50/50 z-10' : ''}`}
+                          style={isCurrentSlotToday ? { boxShadow: 'inset 0 0 0 1px rgb(248, 113, 113)' } : undefined}
                         >
                           {/* Absolut positionierter Container verhindert Zellen-Dehnung */}
                           <div className="absolute inset-0 overflow-hidden">
                             <DroppableCell id={dropId} disabled={isDisabled}>
                               {appointment && appointment.status === 'confirmed' ? (
-                                <DraggableSlot id={appointment.id} disabled={appointment.customer_name?.includes('Pause')}>
+                                <DraggableSlot id={appointment.id} disabled={appointment.customer_name?.includes('Pause') || selectionMode}>
                                   <AppointmentSlot
                                     appointment={appointment}
                                     series={seriesItem}
@@ -435,27 +762,45 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
                                     onSeriesDelete={handleSeriesDeleted}
                                     onSeriesUpdate={handleSeriesUpdated}
                                     onAppointmentCreated={handleNewAppointmentFromSeries}
+                                    onSeriesSingleCancelled={handleSeriesSingleCancelled}
                                     isDisabled={isDisabled}
                                     disabledReason={barberTimeOff?.reason || undefined}
+                                    formatName={formatName}
+                                    selectionMode={selectionMode}
+                                    isSelected={selectedAppointments.has(appointment.id)}
+                                    onToggleSelect={(shiftKey) => handleSelectAppointment(appointment.id, day.dateStr, shiftKey)}
                                   />
                                 </DraggableSlot>
                               ) : (
-                                <AppointmentSlot
-                                  appointment={appointment}
-                                  series={seriesItem}
-                                  barberId={selectedBarberId || ''}
-                                  date={day.dateStr}
-                                  timeSlot={slot}
-                                  servicesMap={servicesMap}
-                                  onClick={() => handleSlotClick(day.dateStr, slot)}
-                                  onDelete={handleAppointmentDeleted}
-                                  onUpdate={handleAppointmentUpdated}
-                                  onSeriesDelete={handleSeriesDeleted}
-                                  onSeriesUpdate={handleSeriesUpdated}
-                                  onAppointmentCreated={handleNewAppointmentFromSeries}
-                                  isDisabled={isDisabled}
-                                  disabledReason={barberTimeOff?.reason || undefined}
-                                />
+                                (() => {
+                                  // Für Serientermine: seriesKey berechnen
+                                  const seriesKey = seriesItem ? `series_${seriesItem.id}_${day.dateStr}` : null;
+                                  return (
+                                    <AppointmentSlot
+                                      appointment={appointment}
+                                      series={seriesItem}
+                                      barberId={selectedBarberId || ''}
+                                      date={day.dateStr}
+                                      timeSlot={slot}
+                                      servicesMap={servicesMap}
+                                      onClick={() => handleSlotClick(day.dateStr, slot)}
+                                      onDelete={handleAppointmentDeleted}
+                                      onUpdate={handleAppointmentUpdated}
+                                      onSeriesDelete={handleSeriesDeleted}
+                                      onSeriesUpdate={handleSeriesUpdated}
+                                      onAppointmentCreated={handleNewAppointmentFromSeries}
+                                      onSeriesSingleCancelled={handleSeriesSingleCancelled}
+                                      isDisabled={isDisabled}
+                                      disabledReason={barberTimeOff?.reason || undefined}
+                                      formatName={formatName}
+                                      selectionMode={selectionMode}
+                                      isSelected={appointment ? selectedAppointments.has(appointment.id) : (seriesKey ? selectedAppointments.has(seriesKey) : false)}
+                                      onToggleSelect={appointment
+                                        ? (shiftKey) => handleSelectAppointment(appointment.id, day.dateStr, shiftKey)
+                                        : (seriesKey ? (shiftKey) => handleSelectAppointment(seriesKey, day.dateStr, shiftKey) : undefined)}
+                                    />
+                                  );
+                                })()
                               )}
                             </DroppableCell>
                           </div>
@@ -523,6 +868,81 @@ export function BarberWeekView({ monday, initialBarberId }: BarberWeekViewProps)
             onError={handleMoveError}
           />
         )}
+
+        {/* Multi-Delete Modal */}
+        {multiDeleteModal && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
+            <div
+              className="absolute inset-0 bg-black/50"
+              onClick={() => !isDeletingMultiple && setMultiDeleteModal(null)}
+            />
+            <div
+              className="relative bg-white rounded-2xl shadow-2xl"
+              style={{ width: '420px', maxWidth: 'calc(100vw - 32px)' }}
+            >
+              <div className="p-6 flex flex-col" style={{ minHeight: '240px' }}>
+                <div className="flex items-start gap-3 mb-5">
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Termine löschen?</h3>
+                    <p className="text-gray-500 text-sm">Dieser Vorgang kann nicht rückgängig gemacht werden.</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-xl mb-5 flex-1">
+                  <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0 border-2 border-red-200">
+                    <span className="text-xl font-bold text-red-500">
+                      {selectedAppointments.size}
+                    </span>
+                  </div>
+                  <p className="text-gray-700">
+                    <strong className="text-gray-900">{selectedAppointments.size === 1 ? 'Termin' : 'Termine'}</strong> {selectedAppointments.size === 1 ? 'wird' : 'werden'} endgültig gelöscht
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setMultiDeleteModal(null)}
+                    disabled={isDeletingMultiple}
+                    className="flex-1 px-5 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    onClick={handleMultiDelete}
+                    disabled={isDeletingMultiple}
+                    className="flex-1 px-5 py-2.5 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isDeletingMultiple ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Löschen...
+                      </>
+                    ) : (
+                      'Endgültig löschen'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Undo Toast */}
+        <UndoToast
+          visible={showUndoToast}
+          onUndo={handleUndo}
+          onExpire={handleUndoExpire}
+          duration={5000}
+        />
       </div>
     </DragProvider>
   );

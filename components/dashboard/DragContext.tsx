@@ -77,6 +77,7 @@ interface DragProviderProps {
   onAppointmentMoved: (oldAppointment: Appointment, newAppointment: Appointment) => void;
   onMoveError: (error: string) => void;
   onBarberHeaderDrop?: (info: BarberHeaderDropInfo) => void;
+  disabled?: boolean;
 }
 
 export function DragProvider({
@@ -85,6 +86,7 @@ export function DragProvider({
   onAppointmentMoved,
   onMoveError,
   onBarberHeaderDrop,
+  disabled = false,
 }: DragProviderProps) {
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
   const [overBarberHeader, setOverBarberHeader] = useState<{ barberId: string; barberName: string; date: string } | null>(null);
@@ -105,13 +107,14 @@ export function DragProvider({
   );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
+    if (disabled) return;
     const { active } = event;
     const appointmentId = active.id as string;
     const appointment = appointments.find(apt => apt.id === appointmentId);
     if (appointment) {
       setActiveAppointment(appointment);
     }
-  }, [appointments]);
+  }, [appointments, disabled]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { over, active } = event;
