@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   getAllGalleryImages,
@@ -8,6 +8,7 @@ import {
   updateGalleryImage,
   deleteGalleryImage,
   updateGalleryOrder,
+  uploadImage,
   GalleryImage,
   getAllSettings,
   updateSetting,
@@ -471,55 +472,71 @@ export default function MedienPage() {
           <div className="px-8 py-6 space-y-6">
           {/* Hero Section */}
           {activeSection === 'hero' && (
-            <div className="space-y-6">
-              <ContentCard title="Haupttexte">
-                <div className="space-y-4">
-                  <SettingField
-                    label="Titel"
-                    value={settings.hero_title.de}
-                    onChange={(v) => setSettings(s => ({ ...s, hero_title: { ...s.hero_title, de: v } }))}
-                    onSave={() => saveField('hero_title')}
-                    saving={saving === 'hero_title'}
-                    saved={savedFields.has('hero_title')}
-                  />
-                  <SettingField
-                    label="Untertitel"
-                    value={settings.hero_subtitle.de}
-                    onChange={(v) => setSettings(s => ({ ...s, hero_subtitle: { ...s.hero_subtitle, de: v } }))}
-                    onSave={() => saveField('hero_subtitle')}
-                    saving={saving === 'hero_subtitle'}
-                    saved={savedFields.has('hero_subtitle')}
-                  />
-                </div>
-              </ContentCard>
-
-              <ContentCard title="Call-to-Action Button">
-                <div className="flex items-center gap-4 mb-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settings.hero_cta.enabled}
-                      onChange={(e) => setSettings(s => ({ ...s, hero_cta: { ...s.hero_cta, enabled: e.target.checked } }))}
-                      className="w-4 h-4 accent-gold"
+            <div className="space-y-8">
+              {/* Haupttexte */}
+              <div>
+                <SectionHeader title="Haupttexte" subtitle="Titel und Untertitel im Hero-Bereich" />
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
+                  <div className="divide-y divide-slate-200">
+                    <SettingField
+                      label="Titel"
+                      value={settings.hero_title.de}
+                      onChange={(v) => setSettings(s => ({ ...s, hero_title: { ...s.hero_title, de: v } }))}
+                      onSave={() => saveField('hero_title')}
+                      saving={saving === 'hero_title'}
+                      saved={savedFields.has('hero_title')}
                     />
-                    <span className="text-sm text-gray-700">Button anzeigen</span>
-                  </label>
+                    <SettingField
+                      label="Untertitel"
+                      value={settings.hero_subtitle.de}
+                      onChange={(v) => setSettings(s => ({ ...s, hero_subtitle: { ...s.hero_subtitle, de: v } }))}
+                      onSave={() => saveField('hero_subtitle')}
+                      saving={saving === 'hero_subtitle'}
+                      saved={savedFields.has('hero_subtitle')}
+                    />
+                  </div>
                 </div>
-                <SettingField
-                  label="Button-Text"
-                  value={settings.hero_cta.text.de}
-                  onChange={(v) => setSettings(s => ({ ...s, hero_cta: { ...s.hero_cta, text: { ...s.hero_cta.text, de: v } } }))}
-                  onSave={() => saveField('hero_cta')}
-                  saving={saving === 'hero_cta'}
-                  saved={savedFields.has('hero_cta')}
-                />
-              </ContentCard>
+              </div>
+
+              {/* Call-to-Action */}
+              <div>
+                <SectionHeader title="Call-to-Action" subtitle="Button im Hero-Bereich" />
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between py-2 border-b border-slate-200 mb-3">
+                    <span className="text-sm font-medium text-slate-900">Button anzeigen</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={settings.hero_cta.enabled}
+                        onChange={(e) => {
+                          setSettings(s => ({ ...s, hero_cta: { ...s.hero_cta, enabled: e.target.checked } }));
+                          setTimeout(() => saveField('hero_cta'), 100);
+                        }}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold"></div>
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-[1fr_200px_80px] gap-4 items-center py-2">
+                    <span className="text-sm font-medium text-slate-900">Button-Text</span>
+                    <input
+                      type="text"
+                      value={settings.hero_cta.text.de}
+                      onChange={(e) => setSettings(s => ({ ...s, hero_cta: { ...s.hero_cta, text: { ...s.hero_cta.text, de: e.target.value } } }))}
+                      className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                    />
+                    <div className="flex justify-end">
+                      <SaveButton onSave={() => saveField('hero_cta')} saving={saving === 'hero_cta'} saved={savedFields.has('hero_cta')} />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
           {/* Sections */}
           {activeSection === 'sections' && (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {(['about', 'services', 'team', 'gallery', 'contact'] as const).map(section => {
                 const key = `section_${section}` as SettingKey;
                 const sectionData = settings[key] as SectionSettings;
@@ -532,32 +549,35 @@ export default function MedienPage() {
                 };
 
                 return (
-                  <ContentCard key={section} title={`Sektion: ${labels[section]}`}>
-                    <div className="space-y-4">
-                      <SettingField
-                        label="Titel"
-                        value={sectionData.title.de}
-                        onChange={(v) => setSettings(s => ({
-                          ...s,
-                          [key]: { ...sectionData, title: { ...sectionData.title, de: v } }
-                        }))}
-                        onSave={() => saveField(key)}
-                        saving={saving === key}
-                        saved={savedFields.has(key)}
-                      />
-                      <SettingField
-                        label="Untertitel"
-                        value={sectionData.subtitle.de}
-                        onChange={(v) => setSettings(s => ({
-                          ...s,
-                          [key]: { ...sectionData, subtitle: { ...sectionData.subtitle, de: v } }
-                        }))}
-                        onSave={() => saveField(key)}
-                        saving={saving === key}
-                        saved={savedFields.has(key)}
-                      />
+                  <div key={section}>
+                    <SectionHeader title={labels[section]} subtitle="Titel und Untertitel der Sektion" />
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
+                      <div className="divide-y divide-slate-200">
+                        <SettingField
+                          label="Titel"
+                          value={sectionData.title.de}
+                          onChange={(v) => setSettings(s => ({
+                            ...s,
+                            [key]: { ...sectionData, title: { ...sectionData.title, de: v } }
+                          }))}
+                          onSave={() => saveField(key)}
+                          saving={saving === key}
+                          saved={savedFields.has(key)}
+                        />
+                        <SettingField
+                          label="Untertitel"
+                          value={sectionData.subtitle.de}
+                          onChange={(v) => setSettings(s => ({
+                            ...s,
+                            [key]: { ...sectionData, subtitle: { ...sectionData.subtitle, de: v } }
+                          }))}
+                          onSave={() => saveField(key)}
+                          saving={saving === key}
+                          saved={savedFields.has(key)}
+                        />
+                      </div>
                     </div>
-                  </ContentCard>
+                  </div>
                 );
               })}
             </div>
@@ -565,102 +585,117 @@ export default function MedienPage() {
 
           {/* About */}
           {activeSection === 'about' && (
-            <ContentCard title="Über uns - Text">
-              <SettingField
-                label="Text"
-                value={settings.about_text.de}
-                onChange={(v) => setSettings(s => ({ ...s, about_text: { ...s.about_text, de: v } }))}
-                onSave={() => saveField('about_text')}
-                saving={saving === 'about_text'}
-                saved={savedFields.has('about_text')}
-                multiline
-                rows={20}
-              />
-            </ContentCard>
+            <div>
+              <SectionHeader title="Über uns" subtitle="Beschreibungstext für die Über-uns-Sektion" />
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <SettingField
+                  label="Text"
+                  value={settings.about_text.de}
+                  onChange={(v) => setSettings(s => ({ ...s, about_text: { ...s.about_text, de: v } }))}
+                  onSave={() => saveField('about_text')}
+                  saving={saving === 'about_text'}
+                  saved={savedFields.has('about_text')}
+                  multiline
+                  rows={15}
+                />
+              </div>
+            </div>
           )}
 
           {/* Contact */}
           {activeSection === 'contact' && (
-            <div className="space-y-6">
-              <ContentCard title="Adresse">
-                <div className="grid grid-cols-2 gap-4">
-                  <SettingField
-                    label="Straße & Hausnummer"
-                    value={settings.contact_address.street}
-                    onChange={(v) => setSettings(s => ({ ...s, contact_address: { ...s.contact_address, street: v } }))}
-                    onSave={() => saveField('contact_address')}
-                    saving={saving === 'contact_address'}
-                    saved={savedFields.has('contact_address')}
-                    placeholder="Musterstraße 123"
-                  />
-                  <SettingField
-                    label="PLZ & Stadt"
-                    value={settings.contact_address.city}
-                    onChange={(v) => setSettings(s => ({ ...s, contact_address: { ...s.contact_address, city: v } }))}
-                    onSave={() => saveField('contact_address')}
-                    saving={saving === 'contact_address'}
-                    saved={savedFields.has('contact_address')}
-                    placeholder="12345 Musterstadt"
-                  />
+            <div className="space-y-8">
+              {/* Adresse */}
+              <div>
+                <SectionHeader title="Adresse" subtitle="Standort des Geschäfts" />
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
+                  <div className="divide-y divide-slate-200">
+                    <SettingField
+                      label="Straße & Hausnummer"
+                      value={settings.contact_address.street}
+                      onChange={(v) => setSettings(s => ({ ...s, contact_address: { ...s.contact_address, street: v } }))}
+                      onSave={() => saveField('contact_address')}
+                      saving={saving === 'contact_address'}
+                      saved={savedFields.has('contact_address')}
+                      placeholder="Musterstraße 123"
+                    />
+                    <SettingField
+                      label="PLZ & Stadt"
+                      value={settings.contact_address.city}
+                      onChange={(v) => setSettings(s => ({ ...s, contact_address: { ...s.contact_address, city: v } }))}
+                      onSave={() => saveField('contact_address')}
+                      saving={saving === 'contact_address'}
+                      saved={savedFields.has('contact_address')}
+                      placeholder="12345 Musterstadt"
+                    />
+                  </div>
                 </div>
-              </ContentCard>
+              </div>
 
-              <ContentCard title="Kontaktdaten">
-                <div className="grid grid-cols-2 gap-4">
-                  <SettingField
-                    label="Telefon"
-                    value={settings.contact_phone.value}
-                    onChange={(v) => setSettings(s => ({ ...s, contact_phone: { value: v } }))}
-                    onSave={() => saveField('contact_phone')}
-                    saving={saving === 'contact_phone'}
-                    saved={savedFields.has('contact_phone')}
-                    placeholder="+49 123 456789"
-                  />
-                  <SettingField
-                    label="E-Mail"
-                    value={settings.contact_email.value}
-                    onChange={(v) => setSettings(s => ({ ...s, contact_email: { value: v } }))}
-                    onSave={() => saveField('contact_email')}
-                    saving={saving === 'contact_email'}
-                    saved={savedFields.has('contact_email')}
-                    placeholder="info@beispiel.de"
-                  />
+              {/* Kontaktdaten */}
+              <div>
+                <SectionHeader title="Kontaktdaten" subtitle="Telefon und E-Mail" />
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
+                  <div className="divide-y divide-slate-200">
+                    <SettingField
+                      label="Telefon"
+                      value={settings.contact_phone.value}
+                      onChange={(v) => setSettings(s => ({ ...s, contact_phone: { value: v } }))}
+                      onSave={() => saveField('contact_phone')}
+                      saving={saving === 'contact_phone'}
+                      saved={savedFields.has('contact_phone')}
+                      placeholder="+49 123 456789"
+                    />
+                    <SettingField
+                      label="E-Mail"
+                      value={settings.contact_email.value}
+                      onChange={(v) => setSettings(s => ({ ...s, contact_email: { value: v } }))}
+                      onSave={() => saveField('contact_email')}
+                      saving={saving === 'contact_email'}
+                      saved={savedFields.has('contact_email')}
+                      placeholder="info@beispiel.de"
+                    />
+                  </div>
                 </div>
-              </ContentCard>
+              </div>
             </div>
           )}
 
           {/* Social Media */}
           {activeSection === 'social' && (
-            <ContentCard title="Social Media Links">
-              <div className="space-y-4">
-                <SettingField
-                  label="Instagram URL"
-                  value={settings.social_instagram.value}
-                  onChange={(v) => setSettings(s => ({ ...s, social_instagram: { value: v } }))}
-                  onSave={() => saveField('social_instagram')}
-                  saving={saving === 'social_instagram'}
-                  saved={savedFields.has('social_instagram')}
-                  placeholder="https://instagram.com/..."
-                />
-                <SettingField
-                  label="Facebook URL"
-                  value={settings.social_facebook.value}
-                  onChange={(v) => setSettings(s => ({ ...s, social_facebook: { value: v } }))}
-                  onSave={() => saveField('social_facebook')}
-                  saving={saving === 'social_facebook'}
-                  saved={savedFields.has('social_facebook')}
-                  placeholder="https://facebook.com/..."
-                />
+            <div>
+              <SectionHeader title="Social Media" subtitle="Links zu sozialen Netzwerken" />
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
+                <div className="divide-y divide-slate-200">
+                  <SettingField
+                    label="Instagram URL"
+                    value={settings.social_instagram.value}
+                    onChange={(v) => setSettings(s => ({ ...s, social_instagram: { value: v } }))}
+                    onSave={() => saveField('social_instagram')}
+                    saving={saving === 'social_instagram'}
+                    saved={savedFields.has('social_instagram')}
+                    placeholder="https://instagram.com/..."
+                  />
+                  <SettingField
+                    label="Facebook URL"
+                    value={settings.social_facebook.value}
+                    onChange={(v) => setSettings(s => ({ ...s, social_facebook: { value: v } }))}
+                    onSave={() => saveField('social_facebook')}
+                    saving={saving === 'social_facebook'}
+                    saved={savedFields.has('social_facebook')}
+                    placeholder="https://facebook.com/..."
+                  />
+                </div>
               </div>
-            </ContentCard>
+            </div>
           )}
 
           {/* SEO */}
           {activeSection === 'seo' && (
-            <div className="space-y-6">
-              <ContentCard title="Meta-Informationen">
-                <div className="space-y-4">
+            <div>
+              <SectionHeader title="Meta-Informationen" subtitle="Suchmaschinenoptimierung" />
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
+                <div className="divide-y divide-slate-200">
                   <SettingField
                     label="Meta-Titel"
                     value={settings.seo_meta.title.de}
@@ -670,16 +705,7 @@ export default function MedienPage() {
                     saved={savedFields.has('seo_meta')}
                   />
                   <SettingField
-                    label="Meta-Beschreibung"
-                    value={settings.seo_meta.description.de}
-                    onChange={(v) => setSettings(s => ({ ...s, seo_meta: { ...s.seo_meta, description: { ...s.seo_meta.description, de: v } } }))}
-                    onSave={() => saveField('seo_meta')}
-                    saving={saving === 'seo_meta'}
-                    saved={savedFields.has('seo_meta')}
-                    multiline
-                  />
-                  <SettingField
-                    label="Keywords (kommagetrennt)"
+                    label="Keywords"
                     value={settings.seo_meta.keywords}
                     onChange={(v) => setSettings(s => ({ ...s, seo_meta: { ...s.seo_meta, keywords: v } }))}
                     onSave={() => saveField('seo_meta')}
@@ -688,106 +714,137 @@ export default function MedienPage() {
                     placeholder="barbershop, friseur, ..."
                   />
                 </div>
-              </ContentCard>
+              </div>
+              <div className="mt-4 bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <SettingField
+                  label="Meta-Beschreibung"
+                  value={settings.seo_meta.description.de}
+                  onChange={(v) => setSettings(s => ({ ...s, seo_meta: { ...s.seo_meta, description: { ...s.seo_meta.description, de: v } } }))}
+                  onSave={() => saveField('seo_meta')}
+                  saving={saving === 'seo_meta'}
+                  saved={savedFields.has('seo_meta')}
+                  multiline
+                  rows={4}
+                />
+              </div>
             </div>
           )}
 
           {/* Legal */}
           {activeSection === 'legal' && (
-            <div className="space-y-6">
-              <ContentCard title="Impressum">
-                <SettingField
-                  label="Impressum"
-                  value={settings.legal_imprint.content.de}
-                  onChange={(v) => setSettings(s => ({ ...s, legal_imprint: { content: { ...s.legal_imprint.content, de: v } } }))}
-                  onSave={() => saveField('legal_imprint')}
-                  saving={saving === 'legal_imprint'}
-                  saved={savedFields.has('legal_imprint')}
-                  multiline
-                  rows={10}
-                />
-              </ContentCard>
+            <div className="space-y-8">
+              {/* Impressum */}
+              <div>
+                <SectionHeader title="Impressum" subtitle="Rechtlich erforderliche Angaben" />
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                  <SettingField
+                    label="Impressum-Text"
+                    value={settings.legal_imprint.content.de}
+                    onChange={(v) => setSettings(s => ({ ...s, legal_imprint: { content: { ...s.legal_imprint.content, de: v } } }))}
+                    onSave={() => saveField('legal_imprint')}
+                    saving={saving === 'legal_imprint'}
+                    saved={savedFields.has('legal_imprint')}
+                    multiline
+                    rows={10}
+                  />
+                </div>
+              </div>
 
-              <ContentCard title="Datenschutzerklärung">
-                <SettingField
-                  label="Datenschutz"
-                  value={settings.legal_privacy.content.de}
-                  onChange={(v) => setSettings(s => ({ ...s, legal_privacy: { content: { ...s.legal_privacy.content, de: v } } }))}
-                  onSave={() => saveField('legal_privacy')}
-                  saving={saving === 'legal_privacy'}
-                  saved={savedFields.has('legal_privacy')}
-                  multiline
-                  rows={10}
-                />
-              </ContentCard>
+              {/* Datenschutz */}
+              <div>
+                <SectionHeader title="Datenschutzerklärung" subtitle="Informationen zur Datenverarbeitung" />
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                  <SettingField
+                    label="Datenschutz-Text"
+                    value={settings.legal_privacy.content.de}
+                    onChange={(v) => setSettings(s => ({ ...s, legal_privacy: { content: { ...s.legal_privacy.content, de: v } } }))}
+                    onSave={() => saveField('legal_privacy')}
+                    saving={saving === 'legal_privacy'}
+                    saved={savedFields.has('legal_privacy')}
+                    multiline
+                    rows={10}
+                  />
+                </div>
+              </div>
             </div>
           )}
 
           {/* Footer */}
           {activeSection === 'footer' && (
-            <ContentCard title="Footer-Einstellungen">
-              <div className="space-y-4">
-                <SettingField
-                  label="Copyright-Text"
-                  value={settings.footer.copyright}
-                  onChange={(v) => setSettings(s => ({ ...s, footer: { ...s.footer, copyright: v } }))}
-                  onSave={() => saveField('footer')}
-                  saving={saving === 'footer'}
-                  saved={savedFields.has('footer')}
-                  placeholder="© 2024 Firma. Alle Rechte vorbehalten."
-                />
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={settings.footer.show_social}
-                      onChange={(e) => setSettings(s => ({ ...s, footer: { ...s.footer, show_social: e.target.checked } }))}
-                      className="w-4 h-4 accent-gold"
-                    />
-                    <span className="text-sm text-gray-700">Social-Media-Links im Footer anzeigen</span>
-                  </label>
-                  <button
-                    onClick={() => saveField('footer')}
-                    className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                  >
-                    Speichern
-                  </button>
+            <div>
+              <SectionHeader title="Footer" subtitle="Einstellungen für den Seitenfuß" />
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
+                <div className="divide-y divide-slate-200">
+                  <SettingField
+                    label="Copyright-Text"
+                    value={settings.footer.copyright}
+                    onChange={(v) => setSettings(s => ({ ...s, footer: { ...s.footer, copyright: v } }))}
+                    onSave={() => saveField('footer')}
+                    saving={saving === 'footer'}
+                    saved={savedFields.has('footer')}
+                    placeholder="© 2024 Firma. Alle Rechte vorbehalten."
+                  />
+                  <div className="grid grid-cols-[1fr_auto_80px] gap-4 items-center py-3 px-4">
+                    <span className="text-sm font-medium text-slate-900">Social-Media-Links anzeigen</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={settings.footer.show_social}
+                        onChange={(e) => {
+                          setSettings(s => ({ ...s, footer: { ...s.footer, show_social: e.target.checked } }));
+                          setTimeout(() => saveField('footer'), 100);
+                        }}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold"></div>
+                    </label>
+                    <div></div>
+                  </div>
                 </div>
               </div>
-            </ContentCard>
+            </div>
           )}
 
           {/* Branding */}
           {activeSection === 'branding' && (
-            <ContentCard title="Logo">
-              <div className="flex items-start gap-6">
-                <div className="w-24 h-24 bg-gray-900 rounded-lg flex items-center justify-center overflow-hidden">
-                  {settings.logo_url.value ? (
-                    <img
-                      src={settings.logo_url.value}
-                      alt="Logo"
-                      className="w-full h-full object-contain p-2"
-                    />
-                  ) : (
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <SettingField
-                    label="Logo URL"
-                    value={settings.logo_url.value}
-                    onChange={(v) => setSettings(s => ({ ...s, logo_url: { value: v } }))}
-                    onSave={() => saveField('logo_url')}
-                    saving={saving === 'logo_url'}
-                    saved={savedFields.has('logo_url')}
-                    placeholder="/logo.png"
-                  />
-                  <p className="text-xs text-gray-400 mt-2">Unterstützte Formate: PNG, SVG</p>
+            <div>
+              <SectionHeader title="Branding" subtitle="Logo und visuelle Identität" />
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <div className="flex items-start gap-6">
+                  <div className="w-20 h-20 bg-slate-900 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
+                    {settings.logo_url.value ? (
+                      <img
+                        src={settings.logo_url.value}
+                        alt="Logo"
+                        className="w-full h-full object-contain p-2"
+                      />
+                    ) : (
+                      <svg className="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="grid grid-cols-[1fr_80px] gap-4 items-center">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-900 mb-1">Logo URL</label>
+                        <input
+                          type="text"
+                          value={settings.logo_url.value}
+                          onChange={(e) => setSettings(s => ({ ...s, logo_url: { value: e.target.value } }))}
+                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                          placeholder="/logo.png"
+                        />
+                        <p className="text-[11px] text-slate-400 mt-1">Unterstützte Formate: PNG, SVG</p>
+                      </div>
+                      <div className="flex justify-end pt-5">
+                        <SaveButton onSave={() => saveField('logo_url')} saving={saving === 'logo_url'} saved={savedFields.has('logo_url')} />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </ContentCard>
+            </div>
           )}
         </div>
         )}
@@ -798,15 +855,11 @@ export default function MedienPage() {
 }
 
 // Helper Components
-function ContentCard({ title, children }: { title: string; children: React.ReactNode }) {
+function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div className="bg-slate-50/50 rounded-xl border border-slate-200 overflow-hidden">
-      <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
-        <h2 className="text-sm font-medium text-slate-900">{title}</h2>
-      </div>
-      <div className="p-4 bg-white">
-        {children}
-      </div>
+    <div className="mb-2">
+      <h3 className="text-xs font-medium text-slate-500">{title}</h3>
+      {subtitle && <p className="text-[11px] text-slate-400 mt-0.5">{subtitle}</p>}
     </div>
   );
 }
@@ -828,10 +881,10 @@ function SaveButton({ onSave, saving, saved }: { onSave: () => void; saving: boo
     <button
       onClick={onSave}
       disabled={saving}
-      className={`flex items-center gap-1 rounded border transition-all duration-200 px-2.5 py-1 text-xs ${
+      className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
         saved
-          ? 'bg-green-50 border-green-200 text-green-600'
-          : 'bg-gold/5 border-gold/30 text-gold hover:bg-gold/15 hover:border-gold/50'
+          ? 'bg-emerald-50 border border-emerald-200 text-emerald-600'
+          : 'bg-gold/5 border border-gold/30 text-gold hover:bg-gold/15 hover:border-gold/50'
       }`}
     >
       {saving ? (
@@ -839,11 +892,15 @@ function SaveButton({ onSave, saving, saved }: { onSave: () => void; saving: boo
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
         </svg>
       ) : saved ? (
-        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
-      ) : null}
-      <span>{saved ? 'Gespeichert' : 'Speichern'}</span>
+        <>
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          <span>Gespeichert</span>
+        </>
+      ) : (
+        <span>Speichern</span>
+      )}
     </button>
   );
 }
@@ -852,14 +909,14 @@ function SettingField({ label, value, onChange, onSave, saving, saved, multiline
   if (multiline) {
     return (
       <div>
-        <div className="flex items-center justify-between mb-1 pr-1">
-          <label className="text-xs font-medium text-slate-600">{label}</label>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-slate-900">{label}</span>
           <SaveButton onSave={onSave} saving={saving} saved={saved} />
         </div>
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none resize-none"
+          className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none resize-none"
           rows={rows}
           placeholder={placeholder}
         />
@@ -868,19 +925,21 @@ function SettingField({ label, value, onChange, onSave, saving, saved, multiline
   }
 
   return (
-    <div>
-      <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
-      <div className="relative">
+    <div className="grid grid-cols-[1fr_200px_80px] gap-4 items-center py-3 px-4">
+      <div>
+        <span className="text-sm font-medium text-slate-900">{label}</span>
+      </div>
+      <div>
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full px-3 py-2 pr-24 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
           placeholder={placeholder}
         />
-        <div className="absolute right-2 top-1/2 -translate-y-1/2">
-          <SaveButton onSave={onSave} saving={saving} saved={saved} />
-        </div>
+      </div>
+      <div className="flex justify-end">
+        <SaveButton onSave={onSave} saving={saving} saved={saved} />
       </div>
     </div>
   );
@@ -897,6 +956,53 @@ function ImageModal({ image, onClose, onSave }: ImageModalProps) {
   const [altText, setAltText] = useState(image?.alt_text || '');
   const [category, setCategory] = useState(image?.category || 'general');
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFileUpload(file: File) {
+    if (!file.type.startsWith('image/')) {
+      alert('Bitte nur Bilddateien hochladen');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Bild darf maximal 5MB groß sein');
+      return;
+    }
+
+    setIsUploading(true);
+    const uploadedUrl = await uploadImage(file, 'gallery');
+    setIsUploading(false);
+
+    if (uploadedUrl) {
+      setUrl(uploadedUrl);
+      // Auto-fill alt text from filename if empty
+      if (!altText) {
+        const name = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+        setAltText(name);
+      }
+    } else {
+      alert('Fehler beim Hochladen');
+    }
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileUpload(file);
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -909,7 +1015,7 @@ function ImageModal({ image, onClose, onSave }: ImageModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl w-full max-w-lg shadow-xl">
+      <div className="relative bg-white rounded-2xl w-[500px] max-w-[calc(100vw-2rem)] shadow-xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <h2 className="text-sm font-semibold text-slate-900">
             {image ? 'Bild bearbeiten' : 'Bild hinzufügen'}
@@ -922,29 +1028,56 @@ function ImageModal({ image, onClose, onSave }: ImageModalProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {url && (
-            <div className="aspect-video bg-slate-100 rounded-xl overflow-hidden">
-              <img
-                src={url}
-                alt="Vorschau"
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
-            </div>
-          )}
-
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Bild-URL *</label>
+          {/* Upload Area */}
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onClick={() => fileInputRef.current?.click()}
+            className={`relative aspect-video rounded-xl border-2 border-dashed transition-all cursor-pointer overflow-hidden ${
+              isDragging
+                ? 'border-gold bg-gold/10'
+                : url
+                ? 'border-slate-200 bg-slate-50'
+                : 'border-slate-300 bg-slate-50 hover:border-gold hover:bg-gold/5'
+            }`}
+          >
             <input
-              type="text"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://example.com/bild.jpg"
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
-              required
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFileUpload(file);
+              }}
+              className="hidden"
             />
+
+            {isUploading ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="w-8 h-8 border-2 border-gold border-t-transparent rounded-full animate-spin mb-2" />
+                <span className="text-sm text-slate-500">Wird hochgeladen...</span>
+              </div>
+            ) : url ? (
+              <>
+                <img
+                  src={url}
+                  alt="Vorschau"
+                  className="w-full h-full object-contain"
+                />
+                <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <span className="text-white text-sm font-medium">Klicken um zu ändern</span>
+                </div>
+              </>
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <svg className="w-10 h-10 text-slate-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="text-sm font-medium text-slate-600">Bild hochladen</span>
+                <span className="text-xs text-slate-400 mt-1">Klicken oder hierher ziehen</span>
+              </div>
+            )}
           </div>
 
           <div>
@@ -981,7 +1114,7 @@ function ImageModal({ image, onClose, onSave }: ImageModalProps) {
             </button>
             <button
               type="submit"
-              disabled={isSaving || !url.trim()}
+              disabled={isSaving || isUploading || !url.trim()}
               className="flex-1 px-4 py-2 bg-gold text-black text-xs font-semibold rounded-lg hover:bg-gold/90 transition-colors disabled:opacity-50"
             >
               {isSaving ? 'Speichern...' : 'Speichern'}

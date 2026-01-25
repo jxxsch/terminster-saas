@@ -189,8 +189,8 @@ export default function AdminDashboard() {
             </svg>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-slate-900">Dashboard</h3>
-            <p className="text-xs text-slate-400">Übersicht und Statistiken</p>
+            <h3 className="text-sm font-semibold text-slate-900">Statistiken</h3>
+            <p className="text-xs text-slate-400">Übersicht und Auswertungen</p>
           </div>
         </div>
 

@@ -19,9 +19,17 @@ import {
   createClosedDate,
   deleteClosedDate,
   ClosedDate,
+  getOpenHolidays,
+  createOpenHoliday,
+  deleteOpenHoliday,
+  OpenHoliday,
+  getSetting,
+  updateSetting,
 } from '@/lib/supabase';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
 import { SundayPicker } from '@/components/admin/SundayPicker';
+import { DatePicker } from '@/components/admin/DatePicker';
+import { BUNDESLAENDER, Bundesland, getHolidaysList } from '@/lib/holidays';
 
 type TabId = 'slots' | 'hours' | 'special';
 
@@ -67,20 +75,29 @@ export default function ZeitenPage() {
   const [newClosedReason, setNewClosedReason] = useState('');
   const [deleteClosedTarget, setDeleteClosedTarget] = useState<ClosedDate | null>(null);
 
+  // Bundesland & Feiertage State
+  const [bundesland, setBundesland] = useState<Bundesland>('NW');
+  const [openHolidays, setOpenHolidays] = useState<OpenHoliday[]>([]);
+  const [savingBundesland, setSavingBundesland] = useState(false);
+
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
-      const [slotsData, hoursData, sundaysData, closedData] = await Promise.all([
+      const [slotsData, hoursData, sundaysData, closedData, openHolidaysData, bundeslandData] = await Promise.all([
         getAllTimeSlots(),
         getOpeningHours(),
         getOpenSundays(),
         getClosedDates(),
+        getOpenHolidays(),
+        getSetting<Bundesland>('bundesland'),
       ]);
       setTimeSlots(slotsData);
       setHours(hoursData);
       setOpenSundays(sundaysData);
       setClosedDates(closedData);
+      setOpenHolidays(openHolidaysData);
+      if (bundeslandData) setBundesland(bundeslandData);
       setIsLoading(false);
     }
     loadData();
@@ -166,7 +183,6 @@ export default function ZeitenPage() {
   }
 
   async function handleDeleteOpenSunday(id: number) {
-    if (!confirm('Verkaufsoffenen Sonntag wirklich löschen?')) return;
     const success = await deleteOpenSunday(id);
     if (success) {
       setOpenSundays(openSundays.filter(s => s.id !== id));
@@ -191,6 +207,28 @@ export default function ZeitenPage() {
       setClosedDates(closedDates.filter(d => d.id !== deleteClosedTarget.id));
     }
     setDeleteClosedTarget(null);
+  }
+
+  // === Bundesland & Feiertage Handlers ===
+  async function handleBundeslandChange(newBundesland: Bundesland) {
+    setBundesland(newBundesland);
+    setSavingBundesland(true);
+    await updateSetting('bundesland', newBundesland);
+    setSavingBundesland(false);
+  }
+
+  async function handleAddOpenHoliday(date: string, holidayName: string) {
+    const created = await createOpenHoliday(date, holidayName);
+    if (created) {
+      setOpenHolidays([...openHolidays, created].sort((a, b) => a.date.localeCompare(b.date)));
+    }
+  }
+
+  async function handleDeleteOpenHoliday(id: number) {
+    const success = await deleteOpenHoliday(id);
+    if (success) {
+      setOpenHolidays(openHolidays.filter(h => h.id !== id));
+    }
   }
 
   function formatDate(dateStr: string): string {
@@ -361,30 +399,49 @@ export default function ZeitenPage() {
             {isCreatingSlot && (
               <div className="fixed inset-0 z-50 flex items-center justify-center">
                 <div className="absolute inset-0 bg-black/50" onClick={() => setIsCreatingSlot(false)} />
-                <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 p-6">
-                  <h3 className="text-sm font-semibold text-slate-900 mb-4">Neuer Zeitslot</h3>
-                  <form onSubmit={handleCreateSlot} className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 mb-1">Uhrzeit</label>
-                      <input
-                        type="time"
+                <div className="relative bg-white rounded-2xl shadow-xl mx-4 p-5 animate-in zoom-in-95 fade-in duration-200">
+                  <form onSubmit={handleCreateSlot}>
+                    <div className="flex items-start gap-4">
+                      {/* Icon */}
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-gold/20 text-gold">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base font-semibold text-slate-900">Neuer Zeitslot</h3>
+                        <p className="text-sm text-slate-500 mt-1">Uhrzeit für den neuen Slot wählen</p>
+                      </div>
+                      {/* Time Select */}
+                      <select
                         value={newTime}
                         onChange={(e) => setNewTime(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                        className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-9"
                         required
-                      />
+                      >
+                        {Array.from({ length: 25 }, (_, i) => {
+                          const hour = Math.floor(i / 2) + 8;
+                          const minute = i % 2 === 0 ? '00' : '30';
+                          const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                          return (
+                            <option key={time} value={time}>{time} Uhr</option>
+                          );
+                        })}
+                      </select>
                     </div>
-                    <div className="flex justify-end gap-2 pt-4">
+                    {/* Buttons */}
+                    <div className="flex justify-end gap-2 mt-5">
                       <button
                         type="button"
                         onClick={() => setIsCreatingSlot(false)}
-                        className="px-4 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
                       >
                         Abbrechen
                       </button>
                       <button
                         type="submit"
-                        className="px-4 py-2 bg-gold text-black text-xs font-semibold rounded-lg hover:bg-gold/90 transition-colors"
+                        className="px-4 py-2 bg-gold text-black text-sm font-medium rounded-lg hover:bg-gold/90 transition-colors"
                       >
                         Erstellen
                       </button>
@@ -408,21 +465,29 @@ export default function ZeitenPage() {
 
           {activeTab === 'hours' && (
             <div className="px-8 py-6">
-          {/* Header-Zeile */}
-          <div className="grid grid-cols-[1fr_120px_120px_120px] gap-4 px-4 py-3 text-[11px] font-medium text-slate-400 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
-            <div>Tag</div>
-            <div>Status</div>
-            <div>Öffnung</div>
-            <div>Schließung</div>
+          {/* Header */}
+          <div className="mb-4">
+            <h3 className="text-sm font-semibold text-slate-900">Öffnungszeiten</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Reguläre Öffnungszeiten pro Wochentag</p>
           </div>
 
-          {/* Tage-Liste */}
-          <div className="divide-y divide-slate-100 border border-slate-200 rounded-b-xl overflow-hidden">
-            {[...hours].sort(sortDays).map((hour) => (
-              <div
-                key={hour.day_of_week}
-                className={`grid grid-cols-[1fr_120px_120px_120px] gap-4 items-center px-4 py-3 transition-colors ${hour.is_closed ? 'bg-slate-50/50' : 'bg-white hover:bg-slate-50/50'} ${savingHour === hour.day_of_week ? 'opacity-50' : ''}`}
-              >
+          {/* Tabelle im grauen Container */}
+          <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
+            {/* Header-Zeile */}
+            <div className="grid grid-cols-[1fr_120px_120px_120px] gap-4 px-4 py-3 text-[11px] font-medium text-slate-400 border-b border-slate-200">
+              <div>Tag</div>
+              <div>Status</div>
+              <div>Öffnung</div>
+              <div>Schließung</div>
+            </div>
+
+            {/* Tage-Liste */}
+            <div className="divide-y divide-slate-200">
+              {[...hours].sort(sortDays).map((hour) => (
+                <div
+                  key={hour.day_of_week}
+                  className={`grid grid-cols-[1fr_120px_120px_120px] gap-4 items-center px-4 py-3 transition-colors ${hour.is_closed ? 'bg-slate-100/50' : 'bg-white/50 hover:bg-white'} ${savingHour === hour.day_of_week ? 'opacity-50' : ''}`}
+                >
                 <div>
                   <span className={`text-sm font-medium ${hour.is_closed ? 'text-slate-400' : 'text-slate-900'}`}>
                     {DAY_NAMES[hour.day_of_week]}
@@ -443,28 +508,41 @@ export default function ZeitenPage() {
                 </div>
                 <div>
                   {!hour.is_closed && (
-                    <input
-                      type="time"
-                      value={hour.open_time || '10:00'}
+                    <select
+                      value={hour.open_time?.slice(0, 5) || '10:00'}
                       onChange={(e) => handleUpdateHours(hour.day_of_week, { open_time: e.target.value })}
                       disabled={savingHour === hour.day_of_week}
-                      className="px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
-                    />
+                      className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.4rem_center] bg-no-repeat pr-7"
+                    >
+                      {Array.from({ length: 29 }, (_, i) => {
+                        const h = Math.floor(i / 2) + 6;
+                        const minute = i % 2 === 0 ? '00' : '30';
+                        const time = `${h.toString().padStart(2, '0')}:${minute}`;
+                        return <option key={time} value={time}>{time}</option>;
+                      })}
+                    </select>
                   )}
                 </div>
                 <div>
                   {!hour.is_closed && (
-                    <input
-                      type="time"
-                      value={hour.close_time || '19:00'}
+                    <select
+                      value={hour.close_time?.slice(0, 5) || '19:00'}
                       onChange={(e) => handleUpdateHours(hour.day_of_week, { close_time: e.target.value })}
                       disabled={savingHour === hour.day_of_week}
-                      className="px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
-                    />
+                      className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.4rem_center] bg-no-repeat pr-7"
+                    >
+                      {Array.from({ length: 29 }, (_, i) => {
+                        const h = Math.floor(i / 2) + 6;
+                        const minute = i % 2 === 0 ? '00' : '30';
+                        const time = `${h.toString().padStart(2, '0')}:${minute}`;
+                        return <option key={time} value={time}>{time}</option>;
+                      })}
+                    </select>
                   )}
                 </div>
               </div>
-            ))}
+              ))}
+            </div>
           </div>
 
           {/* Info Box */}
@@ -528,23 +606,35 @@ export default function ZeitenPage() {
                 </div>
                 <div className="w-28">
                   <label className="block text-xs font-medium text-slate-600 mb-1">Öffnung</label>
-                  <input
-                    type="time"
+                  <select
                     value={newSundayOpenTime}
                     onChange={(e) => setNewSundayOpenTime(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-7"
                     required
-                  />
+                  >
+                    {Array.from({ length: 29 }, (_, i) => {
+                      const hour = Math.floor(i / 2) + 6;
+                      const minute = i % 2 === 0 ? '00' : '30';
+                      const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                      return <option key={time} value={time}>{time}</option>;
+                    })}
+                  </select>
                 </div>
                 <div className="w-28">
                   <label className="block text-xs font-medium text-slate-600 mb-1">Schließung</label>
-                  <input
-                    type="time"
+                  <select
                     value={newSundayCloseTime}
                     onChange={(e) => setNewSundayCloseTime(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-7"
                     required
-                  />
+                  >
+                    {Array.from({ length: 29 }, (_, i) => {
+                      const hour = Math.floor(i / 2) + 6;
+                      const minute = i % 2 === 0 ? '00' : '30';
+                      const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                      return <option key={time} value={time}>{time}</option>;
+                    })}
+                  </select>
                 </div>
                 <button
                   type="submit"
@@ -626,72 +716,83 @@ export default function ZeitenPage() {
           {/* Trennlinie */}
           <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
 
-          {/* Geschlossene Tage */}
+          {/* Feiertage */}
           <div>
-            <div className="mb-4">
-              <h3 className="text-sm font-semibold text-slate-900">Geschlossene Tage</h3>
-              <p className="text-xs text-slate-400 mt-0.5">Feiertage, Betriebsurlaub oder andere Schließtage</p>
-            </div>
-
-            <div>
-              {/* Add Form */}
-              <form onSubmit={handleAddClosedDate} className="flex gap-3 mb-6">
-                <input
-                  type="date"
-                  value={newClosedDate}
-                  onChange={(e) => setNewClosedDate(e.target.value)}
-                  className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
-                  required
-                />
-                <input
-                  type="text"
-                  value={newClosedReason}
-                  onChange={(e) => setNewClosedReason(e.target.value)}
-                  placeholder="Grund (optional)"
-                  className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 bg-gold text-black text-xs font-semibold rounded-xl hover:bg-gold/90 transition-colors"
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-900">Feiertage</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Automatisch blockiert im Buchungssystem</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={bundesland}
+                  onChange={(e) => handleBundeslandChange(e.target.value as Bundesland)}
+                  disabled={savingBundesland}
+                  className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.4rem_center] bg-no-repeat pr-7"
                 >
-                  Hinzufügen
-                </button>
-              </form>
-
-              {closedDates.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-8">Keine geschlossenen Tage eingetragen</p>
-              ) : (
-                <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden">
-                  {closedDates.map((closedDate) => (
-                    <div key={closedDate.id} className="flex items-center justify-between px-4 py-3 bg-white hover:bg-slate-50/50 transition-colors">
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">{formatDate(closedDate.date)}</p>
-                        {closedDate.reason && <p className="text-xs text-slate-500">{closedDate.reason}</p>}
-                      </div>
-                      <button
-                        onClick={() => setDeleteClosedTarget(closedDate)}
-                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
+                  {BUNDESLAENDER.map(bl => (
+                    <option key={bl.value} value={bl.value}>{bl.label}</option>
                   ))}
-                </div>
-              )}
+                </select>
+                {savingBundesland && (
+                  <svg className="w-4 h-4 text-gold animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                )}
+              </div>
             </div>
-          </div>
 
-            <ConfirmModal
-              isOpen={!!deleteClosedTarget}
-              title="Geschlossenen Tag löschen"
-              message={`Möchten Sie den ${deleteClosedTarget ? formatDate(deleteClosedTarget.date) : ''} wirklich aus der Liste entfernen?`}
-              confirmLabel="Löschen"
-              variant="danger"
-              onConfirm={handleDeleteClosedDate}
-              onCancel={() => setDeleteClosedTarget(null)}
-            />
+            {/* Feiertage Liste */}
+            {(() => {
+              const currentYear = new Date().getFullYear();
+              const todayStr = new Date().toISOString().split('T')[0];
+              const holidays = [
+                ...getHolidaysList(currentYear, bundesland),
+                ...getHolidaysList(currentYear + 1, bundesland),
+              ].filter(h => h.date >= todayStr);
+              const openHolidayDates = new Set(openHolidays.map(h => h.date));
+
+              return holidays.length > 0 ? (
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
+                  <div className="divide-y divide-slate-200 max-h-64 overflow-y-auto">
+                    {holidays.map(holiday => {
+                      const isOpen = openHolidayDates.has(holiday.date);
+                      return (
+                        <div key={holiday.date} className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors ${isOpen ? 'bg-emerald-50' : 'bg-slate-50'}`}>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-slate-900">{holiday.name}</span>
+                            <span className="text-xs text-slate-400">
+                              {new Date(holiday.date).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })}
+                            </span>
+                          </div>
+                          {isOpen ? (
+                            <button
+                              onClick={() => {
+                                const oh = openHolidays.find(h => h.date === holiday.date);
+                                if (oh) handleDeleteOpenHoliday(oh.id);
+                              }}
+                              className="px-2.5 py-1 text-xs font-medium text-emerald-600 bg-emerald-100 hover:bg-emerald-200 rounded-lg transition-colors"
+                            >
+                              Geöffnet
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleAddOpenHoliday(holiday.date, holiday.name)}
+                              className="px-2.5 py-1 text-xs font-medium text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                            >
+                              Geschlossen
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 text-center py-4">Keine kommenden Feiertage gefunden.</p>
+              );
+            })()}
+          </div>
             </div>
           )}
         </div>

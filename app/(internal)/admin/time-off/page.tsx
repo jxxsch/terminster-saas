@@ -7,10 +7,12 @@ import {
   updateStaffTimeOff,
   deleteStaffTimeOff,
   getAllTeam,
+  getUsedVacationDays,
   StaffTimeOff,
   TeamMember,
 } from '@/lib/supabase';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
+import { DatePicker, getWorkingDays } from '@/components/admin/DatePicker';
 
 const ABSENCE_TYPES = [
   { value: 'Urlaub', label: 'Urlaub' },
@@ -22,10 +24,12 @@ const ABSENCE_TYPES = [
 export default function TimeOffPage() {
   const [timeOffs, setTimeOffs] = useState<StaffTimeOff[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
+  const [usedVacationDays, setUsedVacationDays] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<StaffTimeOff | null>(null);
+  const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
 
   // Form state
   const [formData, setFormData] = useState({
@@ -34,20 +38,24 @@ export default function TimeOffPage() {
     end_date: '',
     reason: 'Urlaub',
   });
+  const [autoOpenEndDate, setAutoOpenEndDate] = useState(false);
 
   useEffect(() => {
     let mounted = true;
 
     async function loadData() {
-      const [timeOffData, teamData] = await Promise.all([
+      const currentYear = new Date().getFullYear();
+      const [timeOffData, teamData, vacationData] = await Promise.all([
         getStaffTimeOff(),
         getAllTeam(),
+        getUsedVacationDays(currentYear),
       ]);
       if (mounted) {
         // Chronologisch sortieren (nächster zuerst)
         const sorted = timeOffData.sort((a, b) => a.start_date.localeCompare(b.start_date));
         setTimeOffs(sorted);
         setTeam(teamData);
+        setUsedVacationDays(vacationData);
         setIsLoading(false);
       }
     }
@@ -151,11 +159,17 @@ export default function TimeOffPage() {
     return `${startDate.toLocaleDateString('de-DE', formatOptions)} – ${endDate.toLocaleDateString('de-DE', formatOptions)}`;
   }
 
-  function getDaysCount(start: string, end: string): number {
+  // Kalendertage (für Anzeige des Zeitraums)
+  function getCalendarDays(start: string, end: string): number {
     const startDate = new Date(start);
     const endDate = new Date(end);
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  }
+
+  // Werktage (Mo-Sa ohne Feiertage) - für Urlaubsberechnung
+  function getWorkingDaysCount(start: string, end: string): number {
+    return getWorkingDays(start, end);
   }
 
   function getTimeUntilStart(startDate: string, endDate: string): { label: string; status: 'upcoming' | 'active' | 'past' } {
@@ -198,8 +212,8 @@ export default function TimeOffPage() {
 
   // Inline Edit Form (wie bei Team-Seite)
   const editFormContent = (
-    <div className="overflow-hidden rounded-xl border border-gold/50 shadow-md animate-slideDown mt-1">
-      <div className="bg-white">
+    <div className="rounded-xl border border-gold/50 shadow-md animate-slideDown mt-1">
+      <div className="bg-white rounded-xl overflow-visible">
         <div className="p-4">
           <form onSubmit={handleSubmit}>
             {/* Zeile 1: Mitarbeiter, Art */}
@@ -241,37 +255,63 @@ export default function TimeOffPage() {
               </div>
             </div>
 
-            {/* Zeile 2: Von, Bis, Tage-Vorschau */}
-            <div className="grid grid-cols-3 gap-3 mb-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Von</label>
-                <input
-                  type="date"
+            {/* Zeile 2: Von/Bis, Werktage, Resturlaub */}
+            <div className="grid grid-cols-[1fr_auto_auto] gap-3 mb-3">
+              {/* Von & Bis zusammen */}
+              <div className="grid grid-cols-2 gap-2">
+                <DatePicker
+                  label="Von"
                   value={formData.start_date}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                  onChange={(date) => {
+                    setFormData({ ...formData, start_date: date, end_date: date });
+                    setAutoOpenEndDate(true);
+                  }}
                   required
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Bis</label>
-                <input
-                  type="date"
+                <DatePicker
+                  label="Bis"
                   value={formData.end_date}
-                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                  onChange={(date) => setFormData({ ...formData, end_date: date })}
+                  onClose={() => setAutoOpenEndDate(false)}
                   min={formData.start_date}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                  autoOpen={autoOpenEndDate}
+                  initialMonth={formData.start_date}
                   required
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Dauer</label>
-                <div className="px-3 py-2 bg-gold/10 border border-gold/30 rounded-lg text-sm font-medium text-gold">
+              {/* Werktage */}
+              <div className="w-20">
+                <label className="block text-xs font-medium text-slate-600 mb-1">Werktage</label>
+                <div className="px-3 py-2 bg-gold/10 border border-gold/30 rounded-lg text-sm font-medium text-gold text-center">
                   {formData.start_date && formData.end_date
-                    ? `${getDaysCount(formData.start_date, formData.end_date)} Tage`
+                    ? getWorkingDaysCount(formData.start_date, formData.end_date)
                     : '–'
                   }
                 </div>
+              </div>
+              {/* Resturlaub */}
+              <div className="w-24">
+                <label className="block text-xs font-medium text-slate-600 mb-1">Resturlaub</label>
+                {(() => {
+                  const member = getTeamMember(formData.staff_id);
+                  const total = member?.vacation_days || 0;
+                  const used = usedVacationDays[formData.staff_id] || 0;
+                  const current = formData.start_date && formData.end_date && formData.reason === 'Urlaub'
+                    ? getWorkingDaysCount(formData.start_date, formData.end_date)
+                    : 0;
+                  const remaining = total - used - current;
+                  const isNegative = remaining < 0;
+
+                  return (
+                    <div className={`px-3 py-2 border rounded-lg text-sm font-medium text-center ${
+                      isNegative
+                        ? 'bg-red-50 border-red-300 text-red-600'
+                        : 'bg-emerald-50 border-emerald-300 text-emerald-600'
+                    }`}>
+                      {remaining}/{total}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </form>
@@ -306,8 +346,25 @@ export default function TimeOffPage() {
     );
   }
 
-  const upcomingTimeOffs = timeOffs.filter(t => isUpcoming(t.end_date));
-  const pastTimeOffs = timeOffs.filter(t => !isUpcoming(t.end_date)).reverse();
+  // Sortierte Listen
+  const upcomingTimeOffs = timeOffs.filter(t => isUpcoming(t.end_date)).sort((a, b) => {
+    if (sortBy === 'name') {
+      const nameA = getTeamMember(a.staff_id)?.name || '';
+      const nameB = getTeamMember(b.staff_id)?.name || '';
+      return nameA.localeCompare(nameB);
+    }
+    // Default: nach Datum (kommende zuerst)
+    return a.start_date.localeCompare(b.start_date);
+  });
+  const pastTimeOffs = timeOffs.filter(t => !isUpcoming(t.end_date)).sort((a, b) => {
+    if (sortBy === 'name') {
+      const nameA = getTeamMember(a.staff_id)?.name || '';
+      const nameB = getTeamMember(b.staff_id)?.name || '';
+      return nameA.localeCompare(nameB);
+    }
+    // Default: nach Datum (neueste zuerst)
+    return b.start_date.localeCompare(a.start_date);
+  });
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -355,11 +412,27 @@ export default function TimeOffPage() {
           ) : (
             <>
               {/* Header-Zeile */}
-              <div className="grid grid-cols-[40px_minmax(100px,1fr)_200px_70px_100px_72px] gap-4 px-4 py-1.5 text-[11px] font-medium text-slate-400 border-b border-slate-100">
+              <div className="grid grid-cols-[40px_minmax(100px,1fr)_200px_80px_100px_72px] gap-4 px-4 py-1.5 text-[11px] font-medium text-slate-400 border-b border-slate-100">
                 <div></div>
-                <div>Mitarbeiter</div>
-                <div>Zeitraum</div>
-                <div>Tage</div>
+                <button
+                  onClick={() => setSortBy('name')}
+                  className={`flex items-center gap-1 hover:text-slate-600 transition-colors text-left ${sortBy === 'name' ? 'text-gold' : ''}`}
+                >
+                  Mitarbeiter
+                  <svg className={`w-3 h-3 ${sortBy === 'name' ? 'text-gold' : 'text-slate-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setSortBy('date')}
+                  className={`flex items-center gap-1 hover:text-slate-600 transition-colors text-left ${sortBy === 'date' ? 'text-gold' : ''}`}
+                >
+                  Zeitraum
+                  <svg className={`w-3 h-3 ${sortBy === 'date' ? 'text-gold' : 'text-slate-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div>Werktage</div>
                 <div>Art</div>
                 <div></div>
               </div>
@@ -368,12 +441,12 @@ export default function TimeOffPage() {
               <div className="divide-y divide-slate-50">
                 {upcomingTimeOffs.map((timeOff) => {
                   const member = getTeamMember(timeOff.staff_id);
-                  const days = getDaysCount(timeOff.start_date, timeOff.end_date);
+                  const days = getWorkingDaysCount(timeOff.start_date, timeOff.end_date);
                   const timeInfo = getTimeUntilStart(timeOff.start_date, timeOff.end_date);
 
                   return (
                     <div key={timeOff.id}>
-                      <div className={`grid grid-cols-[40px_minmax(100px,1fr)_200px_70px_100px_72px] gap-4 items-center px-4 py-3 transition-colors ${editingId === timeOff.id ? 'bg-gold/5' : 'hover:bg-slate-50'}`}>
+                      <div className={`grid grid-cols-[40px_minmax(100px,1fr)_200px_80px_100px_72px] gap-4 items-center px-4 py-3 transition-colors ${editingId === timeOff.id ? 'bg-gold/5' : 'hover:bg-slate-50'}`}>
                         {/* Avatar */}
                         <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
                           {member?.image ? (
@@ -409,9 +482,9 @@ export default function TimeOffPage() {
                           </div>
                         </div>
 
-                        {/* Tage */}
+                        {/* Werktage */}
                         <div className="text-sm text-slate-700">
-                          {days} {days === 1 ? 'Tag' : 'Tage'}
+                          {days}
                         </div>
 
                         {/* Art */}
@@ -473,30 +546,31 @@ export default function TimeOffPage() {
               <div className="divide-y divide-slate-50">
                 {pastTimeOffs.slice(0, 10).map((timeOff) => {
                   const member = getTeamMember(timeOff.staff_id);
-                  const days = getDaysCount(timeOff.start_date, timeOff.end_date);
+                  const days = getWorkingDaysCount(timeOff.start_date, timeOff.end_date);
 
                   return (
                     <div
                       key={timeOff.id}
-                      className="grid grid-cols-[32px_minmax(100px,1fr)_180px_60px_80px] gap-4 items-center px-4 py-2.5 opacity-50"
+                      className="grid grid-cols-[40px_minmax(100px,1fr)_200px_80px_100px_72px] gap-4 items-center px-4 py-2.5 opacity-50"
                     >
                       {/* Avatar */}
-                      <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-200">
+                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-200">
                         {member?.image ? (
                           <img
                             src={member.image}
                             alt={member.name}
                             className="w-full h-full object-cover grayscale"
+                            style={{ objectPosition: member.image_position || 'center' }}
                           />
                         ) : (
-                          <div className="w-full h-full bg-slate-300 flex items-center justify-center text-white font-bold text-xs">
+                          <div className="w-full h-full bg-slate-300 flex items-center justify-center text-white font-bold text-sm">
                             {member?.name?.charAt(0) || '?'}
                           </div>
                         )}
                       </div>
 
                       {/* Name */}
-                      <div className="text-sm font-medium text-slate-600 truncate">
+                      <div className="font-medium text-slate-600 truncate">
                         {member?.name || timeOff.staff_id}
                       </div>
 
@@ -505,15 +579,20 @@ export default function TimeOffPage() {
                         {formatDateRange(timeOff.start_date, timeOff.end_date)}
                       </div>
 
-                      {/* Tage */}
+                      {/* Werktage */}
                       <div className="text-sm text-slate-500">
-                        {days} {days === 1 ? 'Tag' : 'Tage'}
+                        {days}
                       </div>
 
                       {/* Art */}
-                      <div className="text-xs text-slate-400">
-                        {timeOff.reason || 'Urlaub'}
+                      <div>
+                        <span className="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 text-slate-500">
+                          {timeOff.reason || 'Urlaub'}
+                        </span>
                       </div>
+
+                      {/* Leer (Aktionen-Spalte) */}
+                      <div></div>
                     </div>
                   );
                 })}

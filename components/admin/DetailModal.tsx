@@ -13,13 +13,13 @@ interface DetailModalProps {
 }
 
 const maxWidthClasses = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
-  '2xl': 'max-w-2xl',
-  '3xl': 'max-w-3xl',
-  '4xl': 'max-w-4xl',
+  sm: 'w-[384px]',
+  md: 'w-[448px]',
+  lg: 'w-[512px]',
+  xl: 'w-[576px]',
+  '2xl': 'w-[672px]',
+  '3xl': 'w-[768px]',
+  '4xl': 'w-[896px]',
 };
 
 export function DetailModal({
@@ -39,7 +39,7 @@ export function DetailModal({
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       {/* Modal */}
-      <div className={`relative bg-white rounded-xl shadow-xl w-full ${maxWidthClasses[maxWidth]} max-h-[85vh] overflow-hidden flex flex-col`}>
+      <div className={`relative bg-white rounded-xl shadow-xl ${maxWidthClasses[maxWidth]} max-w-[calc(100vw-2rem)] max-h-[85vh] overflow-hidden flex flex-col`}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-3">

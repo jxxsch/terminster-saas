@@ -545,7 +545,7 @@ export default function TeamPage() {
         {/* Kompaktes Formular */}
         <div className="p-4">
           <form onSubmit={handleSubmit}>
-            {/* Zeile 1: Name, Handynummer, Geburtstag */}
+            {/* Zeile 1: Name, Handynummer, Urlaubstage */}
             <div className="grid grid-cols-3 gap-3 mb-3">
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Name</label>
@@ -569,19 +569,6 @@ export default function TeamPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Geburtstag</label>
-                <input
-                  type="date"
-                  value={formData.birthday}
-                  onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Zeile 2: Urlaubstage, Firmenzugehörigkeit, Status */}
-            <div className="grid grid-cols-3 gap-3 mb-3">
-              <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Urlaubstage/Jahr</label>
                 <input
                   type="number"
@@ -589,6 +576,19 @@ export default function TeamPage() {
                   max="365"
                   value={formData.vacation_days}
                   onChange={(e) => setFormData({ ...formData, vacation_days: parseInt(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Zeile 2: Geburtstag, Dabei seit, Aktiv + Bild */}
+            <div className="grid grid-cols-3 gap-3 items-end">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Geburtstag</label>
+                <input
+                  type="date"
+                  value={formData.birthday}
+                  onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
                 />
               </div>
@@ -601,40 +601,29 @@ export default function TeamPage() {
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
                 />
               </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Status</label>
-                <label className="flex items-center justify-between px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100">
-                  <span className="text-xs text-slate-600">Aktiv</span>
-                  <div className={`relative w-9 h-5 rounded-full transition-colors ${formData.active ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${formData.active ? 'left-4' : 'left-0.5'}`} />
+              <div className="flex items-center gap-2">
+                <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100">
+                  <div className={`relative w-8 h-[18px] rounded-full transition-colors ${formData.active ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                    <div className={`absolute top-[3px] w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${formData.active ? 'left-[14px]' : 'left-[3px]'}`} />
                     <input type="checkbox" checked={formData.active} onChange={(e) => setFormData({ ...formData, active: e.target.checked })} className="sr-only" />
                   </div>
+                  <span className="text-xs text-slate-600">Aktiv</span>
                 </label>
+                <label className="flex-1 cursor-pointer">
+                  <input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploading} className="sr-only" />
+                  <span className={`w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium ${isUploading ? 'bg-slate-100 text-slate-400' : 'bg-gold text-black hover:bg-gold/90'}`}>
+                    {isUploading ? (
+                      <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    )}
+                    Bild
+                    {formData.image && <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
+                  </span>
+                </label>
+                {uploadError && <span className="text-xs text-red-500">{uploadError}</span>}
               </div>
             </div>
-
-            {/* Zeile 3: Bild Upload */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={formData.image}
-                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
-                placeholder="Bild-URL oder hochladen..."
-              />
-              <label className="cursor-pointer shrink-0">
-                <input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploading} className="sr-only" />
-                <span className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium ${isUploading ? 'bg-slate-100 text-slate-400' : 'bg-gold text-black hover:bg-gold/90'}`}>
-                  {isUploading ? (
-                    <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-                  ) : (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                  )}
-                  Bild
-                </span>
-              </label>
-            </div>
-            {uploadError && <p className="text-xs text-red-500 mt-1">{uploadError}</p>}
           </form>
         </div>
 
@@ -723,12 +712,12 @@ export default function TeamPage() {
               {isCreating && <div className="mb-4">{editFormContent}</div>}
 
               {/* Header-Zeile */}
-              <div className="grid grid-cols-[40px_minmax(100px,1fr)_140px_85px_70px_85px_44px_72px] gap-4 px-4 py-1.5 text-[11px] font-medium text-slate-400 border-b border-slate-100">
+              <div className="grid grid-cols-[48px_1.5fr_1.2fr_1fr_0.8fr_1fr_60px_80px] gap-6 px-4 py-2 text-[11px] font-medium text-slate-400 border-b border-slate-100">
                 <div></div>
                 <div>Name</div>
                 <div>Telefon</div>
                 <div>Geburtstag</div>
-                <div>Urlaubstage</div>
+                <div>Urlaub</div>
                 <div>Dabei seit</div>
                 <div>Status</div>
                 <div></div>
@@ -738,9 +727,9 @@ export default function TeamPage() {
               <div className="divide-y divide-slate-50">
                 {team.map((member, index) => (
                   <div key={member.id}>
-                    <div className={`grid grid-cols-[40px_minmax(100px,1fr)_140px_85px_70px_85px_44px_72px] gap-4 items-center px-4 py-3 transition-colors ${editingId === member.id ? 'bg-gold/5' : 'hover:bg-slate-50'}`}>
+                    <div className={`grid grid-cols-[48px_1.5fr_1.2fr_1fr_0.8fr_1fr_60px_80px] gap-6 items-center px-4 py-3.5 transition-colors ${editingId === member.id ? 'bg-gold/5' : 'hover:bg-slate-50'}`}>
                       {/* Bild */}
-                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
+                      <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
                         {member.image ? (
                           <img src={member.image} alt={member.name} className="w-full h-full object-cover" style={{ objectPosition: member.image_position || 'center', transform: `scale(${member.image_scale || 1})` }} />
                         ) : (
@@ -748,9 +737,9 @@ export default function TeamPage() {
                         )}
                       </div>
                       {/* Name */}
-                      <div className="font-medium text-slate-900 truncate">{member.name}</div>
+                      <div className="font-medium text-slate-900">{member.name}</div>
                       {/* Telefon */}
-                      <div className="text-sm text-slate-700 truncate">{member.phone || '–'}</div>
+                      <div className="text-sm text-slate-600">{member.phone || '–'}</div>
                       {/* Geburtstag */}
                       <div className="text-sm">
                         {member.birthday ? (() => {
@@ -758,7 +747,7 @@ export default function TeamPage() {
                           const isToday = days === 0;
                           const isClose = days <= 7;
                           return (
-                            <div className="flex flex-col">
+                            <div className="flex flex-col gap-0.5">
                               <span className={isToday ? 'text-amber-600 font-medium' : 'text-slate-700'}>
                                 {new Date(member.birthday).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
                               </span>
@@ -767,32 +756,33 @@ export default function TeamPage() {
                               </span>
                             </div>
                           );
-                        })() : '–'}
+                        })() : <span className="text-slate-400">–</span>}
                       </div>
                       {/* Urlaubstage */}
-                      <div className="text-sm text-slate-700">
+                      <div className="text-sm">
                         {(() => {
                           const total = member.vacation_days || 0;
                           const used = usedVacationDays[member.id] || 0;
                           const remaining = total - used;
                           return (
-                            <span className={remaining < 5 ? 'text-amber-600' : ''}>
-                              {remaining}/{total}
+                            <span className={remaining < 5 ? 'text-amber-600 font-medium' : 'text-slate-700'}>
+                              {remaining}<span className="text-slate-400">/{total}</span>
                             </span>
                           );
                         })()}
                       </div>
                       {/* Dabei seit */}
-                      <div className="text-sm text-slate-700">
-                        {member.start_date ? new Date(member.start_date).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' }) : '–'}
+                      <div className="text-sm text-slate-600">
+                        {member.start_date ? new Date(member.start_date).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' }) : <span className="text-slate-400">–</span>}
                       </div>
-                      {/* Status & Aktionen */}
-                      <div className="flex items-center gap-3">
-                        <button onClick={() => handleToggleActive(member)} className={`relative w-10 h-5 rounded-full transition-colors ${member.active ? 'bg-emerald-500' : 'bg-slate-200'}`}>
-                          <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${member.active ? 'left-5' : 'left-0.5'}`} />
+                      {/* Status */}
+                      <div>
+                        <button onClick={() => handleToggleActive(member)} className={`relative w-11 h-6 rounded-full transition-colors ${member.active ? 'bg-emerald-500' : 'bg-slate-200'}`}>
+                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${member.active ? 'left-6' : 'left-1'}`} />
                         </button>
                       </div>
-                      <div className="flex items-center gap-1">
+                      {/* Aktionen */}
+                      <div className="flex items-center gap-1 justify-end">
                         <button onClick={() => openEditForm(member)} className="p-1.5 rounded-lg transition-colors text-slate-400 hover:text-slate-600 hover:bg-slate-100">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                         </button>

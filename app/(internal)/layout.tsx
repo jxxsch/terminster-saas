@@ -25,12 +25,12 @@ export default function InternalLayout({
     <NextIntlClientProvider messages={messages} locale="de">
       <div className="h-screen flex overflow-hidden bg-white">
         {/* Gemeinsame Sidebar - volle Höhe mit gleichmäßigen Rändern */}
-        <div className="py-6 pl-6 pr-3 flex">
+        <div className="py-5 pl-5 pr-2 flex">
           <AppSidebar onLogout={handleLogout} />
         </div>
 
         {/* Main Content Area */}
-        <main className="flex-1 py-6 pr-6 overflow-hidden">
+        <main className="flex-1 py-5 pr-5 overflow-hidden">
           {children}
         </main>
       </div>

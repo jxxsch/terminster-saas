@@ -281,28 +281,28 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
           }
         }}
         className={`
-          h-full bg-slate-50 flex flex-col py-5 rounded-3xl
+          h-full bg-slate-50 flex flex-col py-4 rounded-3xl
           shadow-[0_10px_30px_-10px_rgba(0,0,0,0.04)] border border-slate-200/50
           shrink-0 overflow-hidden
           transition-all duration-300 ease-in-out
-          ${isExpanded ? 'w-64 px-4' : 'w-[72px] px-3'}
+          ${isExpanded ? 'w-56 px-3' : 'w-[64px] px-2'}
         `}
       >
         {/* Logo */}
-        <div className="flex justify-center mb-6">
-          <Link href="/dashboard" className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+        <div className="flex justify-center mb-4">
+          <Link href="/dashboard" className="w-9 h-9 flex items-center justify-center flex-shrink-0">
             <Image
               src="/logo.png"
               alt="Beban"
-              width={32}
-              height={32}
+              width={28}
+              height={28}
               className="object-contain"
             />
           </Link>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 overflow-y-auto">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto">
           {/* Hauptmenü Items */}
           {mainNavItems.map((item) => {
             const active = isActive(item.href);
@@ -312,10 +312,10 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
                 href={item.href}
                 title={!isExpanded ? item.label : undefined}
                 className={`
-                  flex items-center py-2.5 rounded-xl transition-all group no-underline
-                  ${isExpanded ? 'px-4 gap-3' : 'justify-center'}
+                  flex items-center py-2 rounded-lg transition-all group no-underline
+                  ${isExpanded ? 'px-3 gap-2.5' : 'justify-center'}
                   ${active
-                    ? 'bg-white text-slate-900 font-semibold shadow-sm'
+                    ? 'bg-white text-slate-900 font-medium shadow-sm'
                     : 'text-slate-500 hover:text-slate-900 hover:bg-white/60'
                   }
                 `}
@@ -324,7 +324,7 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
                   {item.icon}
                 </span>
                 {isExpanded && (
-                  <span className="text-sm whitespace-nowrap">
+                  <span className="text-[13px] whitespace-nowrap">
                     {item.label}
                   </span>
                 )}
@@ -333,16 +333,16 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
           })}
 
           {/* Verwaltung - PIN-geschützte Gruppe */}
-          <div className="pt-4">
+          <div className="pt-3">
             {/* Verwaltung Header (klickbar zum Ausklappen/PIN eingeben) */}
             <button
               onClick={handleVerwaltungClick}
               title={!isExpanded ? 'Verwaltung' : undefined}
               className={`
-                w-full flex items-center py-2.5 rounded-xl transition-all group
-                ${isExpanded ? 'px-4 gap-3' : 'justify-center'}
+                w-full flex items-center py-2 rounded-lg transition-all group
+                ${isExpanded ? 'px-3 gap-2.5' : 'justify-center'}
                 ${isVerwaltungActive && !verwaltungOpen
-                  ? 'bg-white text-slate-900 font-semibold shadow-sm'
+                  ? 'bg-white text-slate-900 font-medium shadow-sm'
                   : 'text-slate-500 hover:text-slate-900 hover:bg-white/60'
                 }
               `}
@@ -360,12 +360,12 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
               </span>
               {isExpanded && (
                 <>
-                  <span className="text-sm whitespace-nowrap flex-1 text-left">
+                  <span className="text-[13px] whitespace-nowrap flex-1 text-left">
                     Verwaltung
                   </span>
                   {isPinUnlocked ? (
                     <svg
-                      className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${verwaltungOpen ? 'rotate-180' : ''}`}
+                      className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${verwaltungOpen ? 'rotate-180' : ''}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -373,7 +373,7 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   ) : (
-                    <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   )}
@@ -385,10 +385,10 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
             <div
               className={`
                 overflow-hidden transition-all duration-200 ease-in-out
-                ${showPinInput && isExpanded && !isPinUnlocked ? 'max-h-[140px] opacity-100 mt-2' : 'max-h-0 opacity-0'}
+                ${showPinInput && isExpanded && !isPinUnlocked ? 'max-h-[140px] opacity-100 mt-1.5' : 'max-h-0 opacity-0'}
               `}
             >
-              <div className="px-3 py-3">
+              <div className="px-2 py-2">
                 {showForgotPin ? (
                   /* PIN vergessen Ansicht - inline */
                   <div className="space-y-2">
@@ -458,7 +458,7 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
             <div
               className={`
                 overflow-hidden transition-all duration-200 ease-in-out
-                ${verwaltungOpen && isExpanded && isPinUnlocked ? 'max-h-[500px] opacity-100 mt-1' : 'max-h-0 opacity-0'}
+                ${verwaltungOpen && isExpanded && isPinUnlocked ? 'max-h-[500px] opacity-100 mt-0.5' : 'max-h-0 opacity-0'}
               `}
             >
               {verwaltungItems.map((item) => {
@@ -468,10 +468,10 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
                     key={item.href}
                     href={item.href}
                     className={`
-                      flex items-center py-2 rounded-xl transition-all group no-underline ml-4
-                      ${isExpanded ? 'px-4 gap-3' : 'justify-center'}
+                      flex items-center py-1.5 rounded-lg transition-all group no-underline ml-3
+                      ${isExpanded ? 'px-3 gap-2.5' : 'justify-center'}
                       ${active
-                        ? 'bg-white text-slate-900 font-semibold shadow-sm'
+                        ? 'bg-white text-slate-900 font-medium shadow-sm'
                         : 'text-slate-500 hover:text-slate-900 hover:bg-white/60'
                       }
                     `}
@@ -479,7 +479,7 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
                     <span className={`flex-shrink-0 ${active ? 'text-gold' : 'text-slate-400 group-hover:text-slate-600'}`}>
                       {item.icon}
                     </span>
-                    <span className="text-sm whitespace-nowrap">
+                    <span className="text-[13px] whitespace-nowrap">
                       {item.label}
                     </span>
                   </Link>
@@ -490,21 +490,21 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
         </nav>
 
         {/* Footer Links */}
-        <div className="mt-auto pt-4 border-t border-slate-200/60">
+        <div className="mt-auto pt-3 border-t border-slate-200/60">
           <Link
             href="/"
             title={!isExpanded ? 'Zur Website' : undefined}
             className={`
-              flex items-center py-2.5 rounded-xl transition-all group no-underline
+              flex items-center py-2 rounded-lg transition-all group no-underline
               text-slate-500 hover:text-slate-900 hover:bg-white/60
-              ${isExpanded ? 'px-4 gap-3' : 'justify-center'}
+              ${isExpanded ? 'px-3 gap-2.5' : 'justify-center'}
             `}
           >
             <svg className="w-5 h-5 flex-shrink-0 text-slate-400 group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
             {isExpanded && (
-              <span className="text-sm whitespace-nowrap">
+              <span className="text-[13px] whitespace-nowrap">
                 Zur Website
               </span>
             )}
@@ -515,15 +515,15 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
               onClick={onLogout}
               title={!isExpanded ? 'Abmelden' : undefined}
               className={`
-                flex items-center py-2 text-slate-400 hover:text-red-500 transition-colors w-full rounded-xl
-                ${isExpanded ? 'px-4 gap-3' : 'justify-center'}
+                flex items-center py-2 text-slate-400 hover:text-red-500 transition-colors w-full rounded-lg
+                ${isExpanded ? 'px-3 gap-2.5' : 'justify-center'}
               `}
             >
               <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
               {isExpanded && (
-                <span className="text-sm font-medium whitespace-nowrap">
+                <span className="text-[13px] font-medium whitespace-nowrap">
                   Abmelden
                 </span>
               )}

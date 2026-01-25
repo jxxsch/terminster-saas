@@ -14,16 +14,20 @@ import {
   getClosedDates,
   getOpenSundays,
   getStaffTimeOffForDateRange,
+  getOpenHolidays,
+  getSetting,
   TeamMember,
   Service,
   Appointment,
   ClosedDate,
   OpenSunday,
+  OpenHoliday,
   StaffTimeOff
 } from '@/lib/supabase';
 import { sendBookingConfirmationEmail } from '@/lib/email-client';
 import { useAuth } from '@/context/AuthContext';
 import { CustomerPortal } from '@/components/sections/CustomerPortal';
+import { Bundesland, isHoliday, getHolidayName } from '@/lib/holidays';
 
 // Constants for getWeekDays function (outside component, can't use hooks)
 const DAY_NAMES_SHORT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
@@ -54,7 +58,13 @@ function getWeekNumber(date: Date): number {
 }
 
 // Generate week days (Mo-So) for a given week offset
-function getWeekDays(weekOffset: number, closedDatesList: ClosedDate[] = [], openSundaysList: OpenSunday[] = []) {
+function getWeekDays(
+  weekOffset: number,
+  closedDatesList: ClosedDate[] = [],
+  openSundaysList: OpenSunday[] = [],
+  bundesland: Bundesland = 'NW',
+  openHolidaysList: OpenHoliday[] = []
+) {
   const now = new Date();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -110,9 +120,18 @@ function getWeekDays(weekOffset: number, closedDatesList: ClosedDate[] = [], ope
     const day = date.getDate();
     const month = date.getMonth();
 
-    // Prüfe ob Tag geschlossen ist (Feiertag etc.)
+    // Prüfe ob Tag manuell geschlossen ist
     const closedDate = closedDatesList.find(cd => cd.date === dateStr);
-    const isClosed = !!closedDate;
+    const isManualClosed = !!closedDate;
+
+    // Prüfe ob Tag ein Feiertag ist (basierend auf Bundesland)
+    const holidayName = isHoliday(dateStr, bundesland) ? getHolidayName(dateStr, bundesland) : null;
+    const isHolidayOpen = openHolidaysList.some(oh => oh.date === dateStr);
+    const isHolidayClosed = !!holidayName && !isHolidayOpen;
+
+    // Tag ist geschlossen wenn manuell geschlossen ODER Feiertag (ohne Sonderöffnung)
+    const isClosed = isManualClosed || isHolidayClosed;
+    const closedReason = closedDate?.reason || holidayName || undefined;
 
     days.push({
       date,
@@ -129,7 +148,7 @@ function getWeekDays(weekOffset: number, closedDatesList: ClosedDate[] = [], ope
       openSundayCloseTime: openSundayData?.close_time,
       isTooFarInFuture,
       isClosed,
-      closedReason: closedDate?.reason || undefined,
+      closedReason,
       isDisabled: isPast || isSunday || isTooFarInFuture || isClosed,
     });
   }
@@ -193,6 +212,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
   const [bookedAppointments, setBookedAppointments] = useState<Appointment[]>([]);
   const [closedDates, setClosedDates] = useState<ClosedDate[]>([]);
   const [openSundays, setOpenSundays] = useState<OpenSunday[]>([]);
+  const [openHolidays, setOpenHolidays] = useState<OpenHoliday[]>([]);
+  const [bundesland, setBundesland] = useState<Bundesland>('NW');
+  const [maxWeeks, setMaxWeeks] = useState(2);
   const [staffTimeOff, setStaffTimeOff] = useState<StaffTimeOff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -233,7 +255,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     }
   }, [isAuthenticated, customer]);
 
-  const { days, weekNumber, monday } = useMemo(() => getWeekDays(currentWeekOffset, closedDates, openSundays), [currentWeekOffset, closedDates, openSundays]);
+  const { days, weekNumber, monday } = useMemo(() => getWeekDays(currentWeekOffset, closedDates, openSundays, bundesland, openHolidays), [currentWeekOffset, closedDates, openSundays, bundesland, openHolidays]);
 
   // Verhindere Scrollen der Seite wenn Modal offen ist
   useEffect(() => {
@@ -257,15 +279,19 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       // Berechne Datumsbereich für Termine (4 Wochen in die Zukunft)
       const today = new Date();
       const startDate = formatDateLocal(today);
-      const endDate = formatDateLocal(new Date(today.getTime() + 28 * 24 * 60 * 60 * 1000));
+      // Load appointments for up to 12 weeks (max possible setting)
+      const endDate = formatDateLocal(new Date(today.getTime() + 12 * 7 * 24 * 60 * 60 * 1000));
 
-      const [teamData, servicesData, timeSlotsData, appointmentsData, closedDatesData, openSundaysData, staffTimeOffData] = await Promise.all([
+      const [teamData, servicesData, timeSlotsData, appointmentsData, closedDatesData, openSundaysData, openHolidaysData, bundeslandData, advanceWeeksData, staffTimeOffData] = await Promise.all([
         getTeam(),
         getServices(),
         getTimeSlotsArray(),
         getAppointments(startDate, endDate),
         getClosedDates(),
         getOpenSundays(),
+        getOpenHolidays(),
+        getSetting<Bundesland>('bundesland'),
+        getSetting<{ value: number }>('booking_advance_weeks'),
         getStaffTimeOffForDateRange(startDate, endDate),
       ]);
       setTeam(teamData);
@@ -274,6 +300,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       setBookedAppointments(appointmentsData);
       setClosedDates(closedDatesData);
       setOpenSundays(openSundaysData);
+      setOpenHolidays(openHolidaysData);
+      if (bundeslandData) setBundesland(bundeslandData);
+      if (advanceWeeksData?.value) setMaxWeeks(advanceWeeksData.value);
       setStaffTimeOff(staffTimeOffData);
       setIsLoading(false);
     }
@@ -619,8 +648,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                 </div>
 
                 <button
-                  onClick={() => setCurrentWeekOffset(prev => prev + 1)}
-                  className="p-1 hover:bg-white rounded-full transition-colors"
+                  onClick={() => setCurrentWeekOffset(prev => Math.min(maxWeeks - 1, prev + 1))}
+                  disabled={currentWeekOffset >= maxWeeks - 1}
+                  className="p-1 hover:bg-white rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

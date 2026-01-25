@@ -1969,3 +1969,83 @@ export async function getCustomerLoyaltyStats(days: number = 30): Promise<Custom
 
   return { totalAppointments, returningCustomers, newCustomers, loyaltyRate };
 }
+
+// ============================================
+// OPEN HOLIDAYS - Feiertage mit Sonderöffnung
+// ============================================
+
+export interface OpenHoliday {
+  id: number;
+  date: string;
+  holiday_name: string;
+  open_time: string;
+  close_time: string;
+  created_at: string;
+}
+
+export async function getOpenHolidays(): Promise<OpenHoliday[]> {
+  const { data, error } = await supabase
+    .from('open_holidays')
+    .select('*')
+    .order('date');
+
+  if (error) {
+    console.error('Error fetching open holidays:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function createOpenHoliday(
+  date: string,
+  holidayName: string,
+  openTime: string = '10:00',
+  closeTime: string = '19:00'
+): Promise<OpenHoliday | null> {
+  const { data, error } = await supabase
+    .from('open_holidays')
+    .insert({
+      date,
+      holiday_name: holidayName,
+      open_time: openTime,
+      close_time: closeTime,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating open holiday:', error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function deleteOpenHoliday(id: number): Promise<boolean> {
+  const { error } = await supabase
+    .from('open_holidays')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting open holiday:', error);
+    return false;
+  }
+
+  return true;
+}
+
+export async function isOpenHoliday(date: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('open_holidays')
+    .select('id')
+    .eq('date', date);
+
+  if (error) {
+    console.error('Error checking open holiday:', error);
+    return false;
+  }
+
+  return (data?.length || 0) > 0;
+}
