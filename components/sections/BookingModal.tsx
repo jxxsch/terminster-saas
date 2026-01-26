@@ -1398,6 +1398,8 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       justifyContent: 'center',
       padding: '3rem 2rem',
       textAlign: 'center' as const,
+      maxWidth: '320px',
+      margin: '0 auto',
     },
     successIcon: {
       width: '4rem',
@@ -1522,7 +1524,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                 </button>
                 <button
                   onClick={handleClose}
-                  style={{ ...styles.submitBtn, backgroundColor: 'transparent', border: '1px solid #e2e8f0', color: '#64748b' }}
+                  style={{ ...styles.submitBtn, backgroundColor: 'transparent', border: '1px solid #e2e8f0', color: '#64748b', justifyContent: 'center' }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#d4a853'; e.currentTarget.style.color = '#d4a853'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#64748b'; }}
                 >
