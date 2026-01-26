@@ -15,7 +15,6 @@ type Tab = 'login' | 'register' | 'forgot';
 
 export function LoginModal({ onClose, onSuccess }: LoginModalProps) {
   const t = useTranslations('auth');
-  const tCommon = useTranslations('common');
   const { signIn, signUp } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('login');
   const [email, setEmail] = useState('');
@@ -24,10 +23,12 @@ export function LoginModal({ onClose, onSuccess }: LoginModalProps) {
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [birthDate, setBirthDate] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [closeHover, setCloseHover] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -79,6 +80,10 @@ export function LoginModal({ onClose, onSuccess }: LoginModalProps) {
     }
     if (password.length < 6) {
       setError(t('errors.passwordTooShort'));
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Die Passwörter stimmen nicht überein.');
       return;
     }
 
@@ -140,136 +145,313 @@ export function LoginModal({ onClose, onSuccess }: LoginModalProps) {
 
   if (!mounted) return null;
 
-  const modalContent = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+  // Inline styles for portal (Tailwind doesn't work in portal)
+  const styles = {
+    overlay: {
+      position: 'fixed' as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 9999,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1rem',
+    },
+    backdrop: {
+      position: 'absolute' as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modal: {
+      position: 'relative' as const,
+      backgroundColor: '#f8fafc', // slate-50
+      width: '100%',
+      maxWidth: '28rem',
+      borderRadius: '1rem',
+      overflow: 'hidden',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      border: '1px solid #e2e8f0', // slate-200
+      animation: 'modalFadeIn 0.2s ease-out',
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '1rem 1.25rem',
+      borderBottom: '1px solid #e2e8f0',
+      backgroundColor: 'white',
+    },
+    title: {
+      fontSize: '1.125rem',
+      fontWeight: 700,
+      color: '#0f172a', // slate-900
+    },
+    closeButton: {
+      padding: '0.5rem',
+      borderRadius: '0.5rem',
+      cursor: 'pointer',
+      background: closeHover ? '#f1f5f9' : 'transparent',
+      border: 'none',
+      transition: 'all 0.15s ease',
+      transform: closeHover ? 'scale(1.1)' : 'scale(1)',
+    },
+    closeIcon: {
+      width: '1.25rem',
+      height: '1.25rem',
+      color: closeHover ? '#ef4444' : '#64748b',
+      transition: 'color 0.15s ease',
+    },
+    content: {
+      padding: '1.5rem 1.25rem',
+      backgroundColor: 'white',
+    },
+    tabs: {
+      display: 'flex',
+      gap: '0.5rem',
+      marginBottom: '1.5rem',
+      padding: '0.25rem',
+      backgroundColor: '#f1f5f9', // slate-100
+      borderRadius: '0.75rem',
+    },
+    tab: (isActive: boolean) => ({
+      flex: 1,
+      padding: '0.625rem 1rem',
+      borderRadius: '0.5rem',
+      border: 'none',
+      cursor: 'pointer',
+      fontSize: '0.75rem',
+      fontWeight: 600,
+      transition: 'all 0.15s ease',
+      backgroundColor: isActive ? 'white' : 'transparent',
+      color: isActive ? '#0f172a' : '#64748b',
+      boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+    }),
+    inputGroup: {
+      marginBottom: '1rem',
+    },
+    label: {
+      display: 'block',
+      fontSize: '0.6875rem',
+      fontWeight: 600,
+      color: '#64748b', // slate-500
+      marginBottom: '0.5rem',
+      textTransform: 'uppercase' as const,
+      letterSpacing: '0.05em',
+    },
+    input: {
+      width: '100%',
+      padding: '0.75rem 1rem',
+      backgroundColor: '#f8fafc', // slate-50
+      border: '1px solid #e2e8f0',
+      borderRadius: '0.75rem',
+      fontSize: '0.875rem',
+      color: '#0f172a',
+      outline: 'none',
+      transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+    },
+    primaryButton: {
+      padding: '0.75rem 1.5rem',
+      backgroundColor: '#d4a853', // gold
+      color: '#0f172a',
+      border: 'none',
+      borderRadius: '0.75rem',
+      fontSize: '0.75rem',
+      fontWeight: 700,
+      cursor: 'pointer',
+      transition: 'all 0.15s ease',
+    },
+    secondaryButton: {
+      padding: '0.5rem',
+      backgroundColor: 'transparent',
+      color: '#64748b',
+      border: 'none',
+      borderRadius: '0.5rem',
+      fontSize: '0.75rem',
+      cursor: 'pointer',
+      transition: 'color 0.15s ease',
+    },
+    errorBox: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      padding: '0.75rem 1rem',
+      backgroundColor: '#fef2f2',
+      border: '1px solid #fecaca',
+      borderRadius: '0.75rem',
+      marginBottom: '1rem',
+      fontSize: '0.75rem',
+      color: '#dc2626',
+    },
+    successBox: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      padding: '0.75rem 1rem',
+      backgroundColor: '#f0fdf4',
+      border: '1px solid #bbf7d0',
+      borderRadius: '0.75rem',
+      marginBottom: '1rem',
+      fontSize: '0.75rem',
+      color: '#16a34a',
+    },
+    footer: {
+      padding: '1rem 1.25rem',
+      backgroundColor: '#f8fafc',
+      borderTop: '1px solid #e2e8f0',
+    },
+  };
 
-      <div className="relative bg-white w-full max-w-sm rounded-lg overflow-hidden">
+  const modalContent = (
+    <div style={styles.overlay}>
+      <style>{`
+        @keyframes modalFadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .login-input:focus {
+          border-color: #d4a853 !important;
+          box-shadow: 0 0 0 3px rgba(212, 168, 83, 0.1) !important;
+        }
+        .login-input::placeholder {
+          color: #94a3b8;
+        }
+        .primary-btn:hover:not(:disabled) {
+          background-color: #c49a4a !important;
+          transform: translateY(-1px);
+        }
+        .primary-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .secondary-btn:hover {
+          color: #d4a853 !important;
+        }
+      `}</style>
+
+      <div style={styles.backdrop} onClick={onClose} />
+
+      <div style={styles.modal}>
         {/* Header */}
-        <div className="border-b border-gray-100 px-4 py-2 flex items-center justify-between">
-          <span className="text-sm font-light text-gold tracking-[0.2em] uppercase">{t('customerArea')}</span>
-          <button onClick={onClose} className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+        <div style={styles.header}>
+          <span style={styles.title}>Kundenbereich</span>
+          <button
+            onClick={onClose}
+            onMouseEnter={() => setCloseHover(true)}
+            onMouseLeave={() => setCloseHover(false)}
+            style={styles.closeButton}
+          >
+            <svg style={styles.closeIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Tabs */}
-        {activeTab !== 'forgot' && (
-          <div className="px-4 py-3 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              {[
-                { id: 'login', label: t('login') },
-                { id: 'register', label: t('register') },
-              ].map((tab, index, arr) => (
-                <div key={tab.id} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center flex-1">
-                    <button
-                      onClick={() => { setActiveTab(tab.id as Tab); resetForm(); }}
-                      className={`text-xs font-medium mb-1 transition-colors ${
-                        activeTab === tab.id ? 'text-gold' : 'text-gray-400 hover:text-gray-600'
-                      }`}
-                    >
-                      {index + 1}. {tab.label}
-                    </button>
-                    <div className="w-full h-1 rounded-full bg-gray-200 overflow-hidden">
-                      <div className={`h-full transition-all duration-300 ${
-                        activeTab === tab.id ? 'bg-gold w-full' : 'w-0'
-                      }`} />
-                    </div>
-                  </div>
-                  {index < arr.length - 1 && <div className="w-4" />}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Forgot Password Header */}
-        {activeTab === 'forgot' && (
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-            <button
-              onClick={() => { setActiveTab('login'); resetForm(); }}
-              className="p-1 hover:bg-gray-100 rounded transition-colors text-gray-400"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <span className="text-xs font-medium text-gray-600">{t('resetPassword')}</span>
-          </div>
-        )}
-
         {/* Content */}
-        <div className="p-5 space-y-4 flex flex-col">
-          {/* Success Message */}
-          {successMessage && (
-            <div className="flex items-center gap-2 text-green-700 text-[10px] bg-green-50 border border-green-200 rounded-sm px-3 py-2">
-              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-              </svg>
-              <span>{successMessage}</span>
+        <div style={styles.content}>
+          {/* Tabs */}
+          {activeTab !== 'forgot' && (
+            <div style={styles.tabs}>
+              <button
+                onClick={() => { setActiveTab('login'); resetForm(); }}
+                style={styles.tab(activeTab === 'login')}
+              >
+                Anmelden
+              </button>
+              <button
+                onClick={() => { setActiveTab('register'); resetForm(); }}
+                style={styles.tab(activeTab === 'register')}
+              >
+                Registrieren
+              </button>
+            </div>
+          )}
+
+          {/* Forgot Password Back Button */}
+          {activeTab === 'forgot' && (
+            <div style={{ marginBottom: '1rem' }}>
+              <button
+                onClick={() => { setActiveTab('login'); resetForm(); }}
+                className="secondary-btn"
+                style={{ ...styles.secondaryButton, display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+              >
+                <svg style={{ width: '1rem', height: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                Zurück
+              </button>
             </div>
           )}
 
           {/* Error Message */}
           {error && (
-            <div className="flex items-center gap-2 text-red-600 text-[10px] bg-red-50 border border-red-200 rounded-sm px-3 py-2">
-              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div style={styles.errorBox}>
+              <svg style={{ width: '1rem', height: '1rem', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span>{error}</span>
             </div>
           )}
 
+          {/* Success Message */}
+          {successMessage && (
+            <div style={styles.successBox}>
+              <svg style={{ width: '1rem', height: '1rem', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <span>{successMessage}</span>
+            </div>
+          )}
+
           {/* Login Form */}
           {activeTab === 'login' && !successMessage && (
-            <form onSubmit={handleLogin} className="flex-1 flex flex-col space-y-4">
-              <div>
-                <div className="flex items-baseline gap-1.5 mb-2">
-                  <span className="text-[8px] text-gray-400">1.</span>
-                  <h3 className="text-[8px] text-gray-500">{t('email')}</h3>
-                </div>
+            <form onSubmit={handleLogin}>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>E-Mail</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="deine@email.de"
-                  className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
+                  className="login-input"
+                  style={styles.input}
                   required
                 />
               </div>
 
-              <div>
-                <div className="flex items-baseline gap-1.5 mb-2">
-                  <span className="text-[8px] text-gray-400">2.</span>
-                  <h3 className="text-[8px] text-gray-500">{t('password')}</h3>
-                </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Passwort</label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
+                  className="login-input"
+                  style={styles.input}
                   required
                 />
               </div>
 
-              <div className="pt-2 flex items-center justify-between">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1.5rem' }}>
                 <button
                   type="button"
                   onClick={() => { setActiveTab('forgot'); resetForm(); }}
-                  className="text-xs text-gray-400 hover:text-gold transition-colors"
+                  className="secondary-btn"
+                  style={styles.secondaryButton}
                 >
-                  {t('forgotPassword')}
+                  Passwort vergessen?
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !email || !password}
-                  className="px-6 py-2.5 bg-black text-white text-xs font-light tracking-[0.15em] uppercase hover:bg-gold transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-black"
+                  className="primary-btn"
+                  style={styles.primaryButton}
                 >
-                  {isSubmitting ? t('loggingIn') : t('login')}
+                  {isSubmitting ? 'Wird geladen...' : 'Anmelden'}
                 </button>
               </div>
             </form>
@@ -277,87 +459,114 @@ export function LoginModal({ onClose, onSuccess }: LoginModalProps) {
 
           {/* Register Form */}
           {activeTab === 'register' && !successMessage && (
-            <form onSubmit={handleRegister} className="flex-1 flex flex-col space-y-4">
-              <div>
-                <div className="flex items-baseline gap-1.5 mb-2">
-                  <span className="text-[8px] text-gray-400">1.</span>
-                  <h3 className="text-[8px] text-gray-500">{t('firstName')} & {t('lastName')}</h3>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
+            <form onSubmit={handleRegister}>
+              {/* Zeile 1: Vorname, Nachname */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={styles.label}>Vorname</label>
                   <input
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    placeholder={t('firstName')}
-                    className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
+                    placeholder="Max"
+                    className="login-input"
+                    style={styles.input}
                     required
                   />
+                </div>
+                <div>
+                  <label style={styles.label}>Nachname</label>
                   <input
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    placeholder={t('lastName')}
-                    className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                    required
-                  />
-                  <input
-                    type="date"
-                    value={birthDate}
-                    onChange={(e) => setBirthDate(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
+                    placeholder="Mustermann"
+                    className="login-input"
+                    style={styles.input}
                     required
                   />
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-baseline gap-1.5 mb-2">
-                  <span className="text-[8px] text-gray-400">2.</span>
-                  <h3 className="text-[8px] text-gray-500">{t('phone')} & {t('email')}</h3>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
+              {/* Zeile 2: E-Mail (volle Breite) */}
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>E-Mail</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="deine@email.de"
+                  className="login-input"
+                  style={styles.input}
+                  required
+                />
+              </div>
+
+              {/* Zeile 3: Telefon, Geburtstag */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={styles.label}>Telefon</label>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder={t('phone')}
-                    className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
+                    placeholder="0176 123456"
+                    className="login-input"
+                    style={styles.input}
                     required
                   />
+                </div>
+                <div>
+                  <label style={styles.label}>Geburtstag</label>
                   <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t('email')}
-                    className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
+                    type="date"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className="login-input"
+                    style={styles.input}
                     required
                   />
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-baseline gap-1.5 mb-2">
-                  <span className="text-[8px] text-gray-400">3.</span>
-                  <h3 className="text-[8px] text-gray-500">{t('password')}</h3>
+              {/* Zeile 4: Passwort, Passwort bestätigen */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={styles.label}>Passwort</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Min. 6 Zeichen"
+                    className="login-input"
+                    style={styles.input}
+                    required
+                    minLength={6}
+                  />
                 </div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={t('passwordMinLength')}
-                  className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                  required
-                  minLength={6}
-                />
+                <div>
+                  <label style={styles.label}>Passwort bestätigen</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Passwort wiederholen"
+                    className="login-input"
+                    style={styles.input}
+                    required
+                    minLength={6}
+                  />
+                </div>
               </div>
 
-              <div className="pt-2 flex items-center justify-end">
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
                 <button
                   type="submit"
-                  disabled={isSubmitting || !firstName || !lastName || !birthDate || !phone || !email || !password || password.length < 6}
-                  className="px-6 py-2.5 bg-black text-white text-xs font-light tracking-[0.15em] uppercase hover:bg-gold transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-black"
+                  disabled={isSubmitting || !firstName || !lastName || !birthDate || !phone || !email || !password || password.length < 6 || !confirmPassword}
+                  className="primary-btn"
+                  style={styles.primaryButton}
                 >
-                  {isSubmitting ? t('registering') : t('register')}
+                  {isSubmitting ? 'Wird geladen...' : 'Registrieren'}
                 </button>
               </div>
             </form>
@@ -365,25 +574,32 @@ export function LoginModal({ onClose, onSuccess }: LoginModalProps) {
 
           {/* Forgot Password Form */}
           {activeTab === 'forgot' && !successMessage && (
-            <form onSubmit={handleForgotPassword} className="flex-1 flex flex-col space-y-4">
-              <p className="text-xs text-gray-500">
-                {t('resetDescription')}
+            <form onSubmit={handleForgotPassword}>
+              <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '1rem' }}>
+                Gib deine E-Mail-Adresse ein und wir senden dir einen Link zum Zurücksetzen deines Passworts.
               </p>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('email')}
-                className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                required
-              />
-              <div className="pt-2 flex justify-end">
+
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>E-Mail</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="deine@email.de"
+                  className="login-input"
+                  style={styles.input}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
                 <button
                   type="submit"
                   disabled={isSubmitting || !email}
-                  className="px-6 py-2.5 bg-black text-white text-xs font-light tracking-[0.15em] uppercase hover:bg-gold transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-black"
+                  className="primary-btn"
+                  style={styles.primaryButton}
                 >
-                  {isSubmitting ? t('sendingLink') : t('sendResetLink')}
+                  {isSubmitting ? 'Wird gesendet...' : 'Link senden'}
                 </button>
               </div>
             </form>
@@ -391,15 +607,23 @@ export function LoginModal({ onClose, onSuccess }: LoginModalProps) {
 
           {/* Back to Login after success */}
           {successMessage && activeTab !== 'login' && (
-            <div className="pt-2 flex justify-end">
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button
                 onClick={() => { setActiveTab('login'); resetForm(); }}
-                className="px-6 py-2.5 bg-black text-white text-xs font-light tracking-[0.15em] uppercase hover:bg-gold transition-all"
+                className="primary-btn"
+                style={styles.primaryButton}
               >
-                {t('goToLogin')}
+                Zum Login
               </button>
             </div>
           )}
+        </div>
+
+        {/* Footer */}
+        <div style={styles.footer}>
+          <p style={{ fontSize: '0.6875rem', color: '#94a3b8', textAlign: 'center' }}>
+            Mit der Anmeldung akzeptierst du unsere Datenschutzrichtlinien.
+          </p>
         </div>
       </div>
     </div>

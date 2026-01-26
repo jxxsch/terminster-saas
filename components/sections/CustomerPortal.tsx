@@ -39,6 +39,8 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [closeHover, setCloseHover] = useState(false);
+  const [logoutHover, setLogoutHover] = useState(false);
 
   // Profile editing - alle Felder
   const [editFirstName, setEditFirstName] = useState(customer?.first_name || '');
@@ -236,285 +238,541 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
     { id: 'profile' as Tab, label: t('profile'), count: null },
   ];
 
-  const modalContent = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+  // Inline styles for portal (Tailwind doesn't work in portal)
+  const styles = {
+    overlay: {
+      position: 'fixed' as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 9999,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1rem',
+    },
+    backdrop: {
+      position: 'absolute' as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modal: {
+      position: 'relative' as const,
+      zIndex: 10,
+      backgroundColor: '#f8fafc',
+      width: '100%',
+      maxWidth: '40rem',
+      height: '70vh',
+      minHeight: '500px',
+      borderRadius: '1rem',
+      overflow: 'hidden',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      border: '1px solid #e2e8f0',
+      animation: 'modalFadeIn 0.2s ease-out',
+      display: 'flex',
+      flexDirection: 'column' as const,
+    },
+    header: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: '1rem 1.25rem',
+      borderBottom: '1px solid #e2e8f0',
+      backgroundColor: 'white',
+    },
+    title: {
+      fontSize: '1.125rem',
+      fontWeight: 700,
+      color: '#0f172a',
+    },
+    headerButtons: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.25rem',
+    },
+    iconButton: (isHover: boolean, isLogout: boolean = false) => ({
+      padding: '0.5rem',
+      borderRadius: '0.5rem',
+      cursor: 'pointer',
+      background: isHover ? (isLogout ? '#fef2f2' : '#f1f5f9') : 'transparent',
+      border: 'none',
+      transition: 'all 0.15s ease',
+      transform: isHover ? 'scale(1.1)' : 'scale(1)',
+    }),
+    iconButtonIcon: (isHover: boolean, isLogout: boolean = false) => ({
+      width: '1.25rem',
+      height: '1.25rem',
+      color: isHover ? (isLogout ? '#ef4444' : '#ef4444') : '#64748b',
+      transition: 'color 0.15s ease',
+    }),
+    content: {
+      flex: 1,
+      minHeight: 0,
+      overflow: 'hidden',
+      backgroundColor: 'white',
+      display: 'flex',
+      flexDirection: 'column' as const,
+    },
+    tabs: {
+      display: 'flex',
+      gap: '0.5rem',
+      padding: '1rem 1.25rem',
+      borderBottom: '1px solid #e2e8f0',
+      backgroundColor: '#f8fafc',
+    },
+    tab: (isActive: boolean) => ({
+      flex: 1,
+      padding: '0.625rem 1rem',
+      borderRadius: '0.5rem',
+      border: 'none',
+      cursor: 'pointer',
+      fontSize: '0.75rem',
+      fontWeight: 600,
+      transition: 'all 0.15s ease',
+      backgroundColor: isActive ? 'white' : 'transparent',
+      color: isActive ? '#0f172a' : '#64748b',
+      boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+    }),
+    scrollArea: {
+      flex: 1,
+      padding: '1.25rem',
+      overflowY: 'auto' as const,
+    },
+    label: {
+      display: 'block',
+      fontSize: '0.6875rem',
+      fontWeight: 600,
+      color: '#64748b',
+      marginBottom: '0.5rem',
+      textTransform: 'uppercase' as const,
+      letterSpacing: '0.05em',
+    },
+    input: {
+      width: '100%',
+      padding: '0.75rem 1rem',
+      backgroundColor: '#f8fafc',
+      border: '1px solid #e2e8f0',
+      borderRadius: '0.75rem',
+      fontSize: '0.875rem',
+      color: '#0f172a',
+      outline: 'none',
+      transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+    },
+    inputDisabled: {
+      width: '100%',
+      padding: '0.75rem 1rem',
+      backgroundColor: '#f1f5f9',
+      border: '1px solid #e2e8f0',
+      borderRadius: '0.75rem',
+      fontSize: '0.875rem',
+      color: '#94a3b8',
+      cursor: 'not-allowed',
+    },
+    primaryButton: {
+      padding: '0.75rem 1.5rem',
+      backgroundColor: '#d4a853',
+      color: '#0f172a',
+      border: 'none',
+      borderRadius: '0.75rem',
+      fontSize: '0.75rem',
+      fontWeight: 700,
+      cursor: 'pointer',
+      transition: 'all 0.15s ease',
+    },
+    outlineButton: {
+      padding: '0.75rem 1.5rem',
+      backgroundColor: 'transparent',
+      color: '#d4a853',
+      border: '1px solid #d4a853',
+      borderRadius: '0.75rem',
+      fontSize: '0.75rem',
+      fontWeight: 700,
+      cursor: 'pointer',
+      transition: 'all 0.15s ease',
+    },
+    cancelButton: {
+      padding: '0.5rem 0.75rem',
+      backgroundColor: 'transparent',
+      color: '#ef4444',
+      border: '1px solid #fecaca',
+      borderRadius: '0.5rem',
+      fontSize: '0.6875rem',
+      fontWeight: 600,
+      cursor: 'pointer',
+      transition: 'all 0.15s ease',
+    },
+    appointmentCard: {
+      padding: '1rem',
+      backgroundColor: '#f8fafc',
+      border: '1px solid #e2e8f0',
+      borderRadius: '0.75rem',
+      marginBottom: '0.75rem',
+      transition: 'border-color 0.15s ease',
+    },
+    appointmentCardCancelled: {
+      padding: '1rem',
+      backgroundColor: '#fef2f2',
+      border: '1px solid #fecaca',
+      borderRadius: '0.75rem',
+      marginBottom: '0.75rem',
+    },
+    errorBox: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      padding: '0.75rem 1rem',
+      backgroundColor: '#fef2f2',
+      border: '1px solid #fecaca',
+      borderRadius: '0.75rem',
+      marginBottom: '1rem',
+      fontSize: '0.75rem',
+      color: '#dc2626',
+    },
+    successBox: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      padding: '0.75rem 1rem',
+      backgroundColor: '#f0fdf4',
+      border: '1px solid #bbf7d0',
+      borderRadius: '0.75rem',
+      marginBottom: '1rem',
+      fontSize: '0.75rem',
+      color: '#16a34a',
+    },
+    emptyState: {
+      textAlign: 'center' as const,
+      padding: '3rem 1rem',
+      color: '#94a3b8',
+    },
+    footer: {
+      padding: '1rem 1.25rem',
+      backgroundColor: '#f8fafc',
+      borderTop: '1px solid #e2e8f0',
+    },
+  };
 
-      <div className="relative bg-white w-full max-w-6xl h-[80vh] rounded-lg overflow-hidden flex flex-col">
+  const modalContent = (
+    <div style={styles.overlay}>
+      <style>{`
+        @keyframes modalFadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .portal-input:focus {
+          border-color: #d4a853 !important;
+          box-shadow: 0 0 0 3px rgba(212, 168, 83, 0.1) !important;
+        }
+        .portal-input::placeholder {
+          color: #94a3b8;
+        }
+        .primary-btn:hover:not(:disabled) {
+          background-color: #c49a4a !important;
+          transform: translateY(-1px);
+        }
+        .primary-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .outline-btn:hover {
+          background-color: rgba(212, 168, 83, 0.1) !important;
+        }
+        .cancel-btn:hover:not(:disabled) {
+          background-color: #fef2f2 !important;
+        }
+        .cancel-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+        .apt-card:hover {
+          border-color: #d4a853 !important;
+        }
+      `}</style>
+
+      <div style={styles.backdrop} onClick={onClose} />
+
+      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="border-b border-gray-100 px-4 py-2 flex items-center justify-between flex-shrink-0">
-          <span className="text-sm font-light text-gold tracking-[0.2em] uppercase">{t('title')}</span>
-          <div className="flex items-center gap-1">
+        <div style={styles.header}>
+          <span style={styles.title}>Mein Bereich</span>
+          <div style={styles.headerButtons}>
             <button
               onClick={() => {
                 signOut();
                 onClose();
               }}
-              className="p-1.5 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              onMouseEnter={() => setLogoutHover(true)}
+              onMouseLeave={() => setLogoutHover(false)}
+              style={styles.iconButton(logoutHover, true)}
               title={tAuth('logout')}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              <svg style={styles.iconButtonIcon(logoutHover, true)} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
             </button>
-            <button onClick={onClose} className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+            <button
+              onClick={onClose}
+              onMouseEnter={() => setCloseHover(true)}
+              onMouseLeave={() => setCloseHover(false)}
+              style={styles.iconButton(closeHover)}
+            >
+              <svg style={styles.iconButtonIcon(closeHover)} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
         </div>
 
-        {/* Tabs - wie BookingModal Progress Steps */}
-        <div className="px-4 py-3 border-b border-gray-100 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            {tabs.map((tab, index, arr) => (
-              <div key={tab.id} className="flex items-center flex-1">
-                <div className="flex flex-col items-center flex-1">
-                  <button
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`text-xs font-medium mb-1 transition-colors ${
-                      activeTab === tab.id ? 'text-gold' : 'text-gray-400 hover:text-gray-600'
-                    }`}
-                  >
-                    {index + 1}. {tab.label} {tab.count !== null && `(${tab.count})`}
-                  </button>
-                  <div className="w-full h-1 rounded-full bg-gray-200 overflow-hidden">
-                    <div className={`h-full transition-all duration-300 ${
-                      activeTab === tab.id ? 'bg-gold w-full' : 'w-0'
-                    }`} />
-                  </div>
-                </div>
-                {index < arr.length - 1 && <div className="w-4" />}
-              </div>
-            ))}
-          </div>
+        {/* Tabs */}
+        <div style={styles.tabs}>
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={styles.tab(activeTab === tab.id)}
+            >
+              {tab.label} {tab.count !== null && `(${tab.count})`}
+            </button>
+          ))}
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 min-h-[400px]">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-2 text-gray-400">
-                <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        <div style={styles.content}>
+          <div style={styles.scrollArea}>
+            {isLoading ? (
+              <div style={styles.emptyState}>
+                <svg style={{ width: '2rem', height: '2rem', margin: '0 auto 0.75rem', animation: 'spin 1s linear infinite' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                <span className="text-sm">{tCommon('loading')}</span>
+                <p style={{ fontSize: '0.875rem' }}>{tCommon('loading')}</p>
               </div>
-            </div>
-          ) : (
-            <>
-              {/* Upcoming Appointments */}
-              {activeTab === 'upcoming' && (
-                <div className="space-y-3">
-                  {/* Termin buchen Button */}
-                  {onBookNow && (
-                    <button
-                      onClick={() => {
-                        onClose();
-                        onBookNow();
-                      }}
-                      className="w-full py-2.5 px-4 border border-gold text-gold bg-transparent hover:bg-gold/10 rounded-sm text-sm font-light tracking-[0.1em] uppercase transition-colors flex items-center justify-center gap-2"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
-                      </svg>
-                      {t('bookNew')}
-                    </button>
-                  )}
-
-                  {cancelError && (
-                    <div className="flex items-center gap-2 text-red-600 text-[10px] bg-red-50 border border-red-200 rounded-sm px-3 py-2">
-                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>{cancelError}</span>
-                    </div>
-                  )}
-
-                  {upcomingAppointments.length === 0 ? (
-                    <div className="text-center py-12 text-gray-400">
-                      <svg className="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <p className="text-sm">{t('noUpcoming')}</p>
-                    </div>
-                  ) : (
-                    upcomingAppointments.map(apt => (
-                      <div key={apt.id} className="border border-gray-200 rounded-sm p-3 hover:border-gold/50 transition-colors">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-black">{formatDate(apt.date)}</p>
-                            <p className="text-xs text-gray-500">{apt.time_slot} {tCommon('oclock')}</p>
-                          </div>
-                          {canCancelAppointment(apt) ? (
-                            <button
-                              onClick={() => handleCancel(apt.id)}
-                              disabled={cancellingId === apt.id}
-                              className="px-3 py-1 text-[10px] text-red-600 border border-red-200 rounded-sm hover:bg-red-50 transition-colors disabled:opacity-50"
-                            >
-                              {cancellingId === apt.id ? t('cancelling') : t('cancel')}
-                            </button>
-                          ) : (
-                            <span className="px-2 py-1 text-[10px] text-gray-400 border border-gray-200 rounded-sm">
-                              &lt; 24h
-                            </span>
-                          )}
-                        </div>
-                        <div className="mt-2 pt-2 border-t border-gray-100 grid grid-cols-3 gap-2 text-xs">
-                          <div>
-                            <span className="text-gray-400">{t('barber')}:</span>{' '}
-                            <span className="text-black">{getBarberName(apt.barber_id)}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-400">{t('service')}:</span>{' '}
-                            <span className="text-black">{getServiceName(apt.service_id)}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-400">{t('price')}:</span>{' '}
-                            <span className="text-gold font-medium">{getServicePrice(apt.service_id)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-
-              {/* Past Appointments */}
-              {activeTab === 'past' && (
-                <div className="space-y-3">
-                  {pastAppointments.length === 0 ? (
-                    <div className="text-center py-12 text-gray-400">
-                      <svg className="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <p className="text-sm">{t('noPast')}</p>
-                    </div>
-                  ) : (
-                    pastAppointments.map(apt => (
-                      <div key={apt.id} className={`border rounded-sm p-3 ${
-                        apt.status === 'cancelled' ? 'border-red-200 bg-red-50/50' : 'border-gray-200'
-                      }`}>
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <p className={`text-sm font-medium ${apt.status === 'cancelled' ? 'text-red-600' : 'text-gray-500'}`}>
-                              {formatDate(apt.date)}
-                            </p>
-                            <p className="text-xs text-gray-400">{apt.time_slot} {tCommon('oclock')}</p>
-                          </div>
-                          {apt.status === 'cancelled' && (
-                            <span className="px-2 py-1 text-[10px] text-red-600 bg-red-100 rounded-sm">{t('cancelled')}</span>
-                          )}
-                        </div>
-                        <div className="mt-2 pt-2 border-t border-gray-100 grid grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <span className="text-gray-400">{t('barber')}:</span>{' '}
-                            <span className="text-gray-600">{getBarberName(apt.barber_id)}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-400">{t('service')}:</span>{' '}
-                            <span className="text-gray-600">{getServiceName(apt.service_id)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-
-              {/* Profile */}
-              {activeTab === 'profile' && (
-                <div className="space-y-4">
-                  {profileSuccess && (
-                    <div className="flex items-center gap-2 text-green-700 text-[10px] bg-green-50 border border-green-200 rounded-sm px-3 py-2">
-                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span>{t('profileUpdated')}</span>
-                    </div>
-                  )}
-
-                  {/* Persönliche Daten */}
+            ) : (
+              <>
+                {/* Upcoming Appointments */}
+                {activeTab === 'upcoming' && (
                   <div>
-                    <div className="flex items-baseline gap-1.5 mb-2">
-                      <span className="text-[8px] text-gray-400">1.</span>
-                      <h3 className="text-[8px] text-gray-500">{t('personalData')}</h3>
+                    {/* Termin buchen Button */}
+                    {onBookNow && (
+                      <button
+                        onClick={() => {
+                          onClose();
+                          onBookNow();
+                        }}
+                        className="outline-btn"
+                        style={{ ...styles.outlineButton, width: '100%', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                      >
+                        <svg style={{ width: '1rem', height: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        {t('bookNew')}
+                      </button>
+                    )}
+
+                    {cancelError && (
+                      <div style={styles.errorBox}>
+                        <svg style={{ width: '1rem', height: '1rem', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{cancelError}</span>
+                      </div>
+                    )}
+
+                    {upcomingAppointments.length === 0 ? (
+                      <div style={styles.emptyState}>
+                        <svg style={{ width: '2.5rem', height: '2.5rem', margin: '0 auto 0.75rem', color: '#cbd5e1' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p style={{ fontSize: '0.875rem' }}>{t('noUpcoming')}</p>
+                      </div>
+                    ) : (
+                      upcomingAppointments.map(apt => (
+                        <div key={apt.id} className="apt-card" style={styles.appointmentCard}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                            <div>
+                              <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>{formatDate(apt.date)}</p>
+                              <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{apt.time_slot} {tCommon('oclock')}</p>
+                            </div>
+                            {canCancelAppointment(apt) ? (
+                              <button
+                                onClick={() => handleCancel(apt.id)}
+                                disabled={cancellingId === apt.id}
+                                className="cancel-btn"
+                                style={styles.cancelButton}
+                              >
+                                {cancellingId === apt.id ? t('cancelling') : t('cancel')}
+                              </button>
+                            ) : (
+                              <span style={{ padding: '0.375rem 0.625rem', fontSize: '0.6875rem', color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: '0.375rem' }}>
+                                &lt; 24h
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', fontSize: '0.75rem' }}>
+                            <div>
+                              <span style={{ color: '#94a3b8' }}>{t('barber')}:</span>{' '}
+                              <span style={{ color: '#0f172a' }}>{getBarberName(apt.barber_id)}</span>
+                            </div>
+                            <div>
+                              <span style={{ color: '#94a3b8' }}>{t('service')}:</span>{' '}
+                              <span style={{ color: '#0f172a' }}>{getServiceName(apt.service_id)}</span>
+                            </div>
+                            <div>
+                              <span style={{ color: '#94a3b8' }}>{t('price')}:</span>{' '}
+                              <span style={{ color: '#d4a853', fontWeight: 600 }}>{getServicePrice(apt.service_id)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* Past Appointments */}
+                {activeTab === 'past' && (
+                  <div>
+                    {pastAppointments.length === 0 ? (
+                      <div style={styles.emptyState}>
+                        <svg style={{ width: '2.5rem', height: '2.5rem', margin: '0 auto 0.75rem', color: '#cbd5e1' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p style={{ fontSize: '0.875rem' }}>{t('noPast')}</p>
+                      </div>
+                    ) : (
+                      pastAppointments.map(apt => (
+                        <div key={apt.id} style={apt.status === 'cancelled' ? styles.appointmentCardCancelled : styles.appointmentCard}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                            <div>
+                              <p style={{ fontSize: '0.875rem', fontWeight: 600, color: apt.status === 'cancelled' ? '#ef4444' : '#64748b' }}>
+                                {formatDate(apt.date)}
+                              </p>
+                              <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{apt.time_slot} {tCommon('oclock')}</p>
+                            </div>
+                            {apt.status === 'cancelled' && (
+                              <span style={{ padding: '0.375rem 0.625rem', fontSize: '0.6875rem', color: '#ef4444', backgroundColor: '#fee2e2', borderRadius: '0.375rem' }}>
+                                {t('cancelled')}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.75rem' }}>
+                            <div>
+                              <span style={{ color: '#94a3b8' }}>{t('barber')}:</span>{' '}
+                              <span style={{ color: '#64748b' }}>{getBarberName(apt.barber_id)}</span>
+                            </div>
+                            <div>
+                              <span style={{ color: '#94a3b8' }}>{t('service')}:</span>{' '}
+                              <span style={{ color: '#64748b' }}>{getServiceName(apt.service_id)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+
+                {/* Profile */}
+                {activeTab === 'profile' && (
+                  <div>
+                    {profileSuccess && (
+                      <div style={styles.successBox}>
+                        <svg style={{ width: '1rem', height: '1rem', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>{t('profileUpdated')}</span>
+                      </div>
+                    )}
+
+                    {/* Persönliche Daten */}
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={styles.label}>{t('personalData')}</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <input
+                          type="text"
+                          value={editFirstName}
+                          onChange={(e) => setEditFirstName(e.target.value)}
+                          placeholder={tAuth('firstName')}
+                          className="portal-input"
+                          style={styles.input}
+                        />
+                        <input
+                          type="text"
+                          value={editLastName}
+                          onChange={(e) => setEditLastName(e.target.value)}
+                          placeholder={tAuth('lastName')}
+                          className="portal-input"
+                          style={styles.input}
+                        />
+                      </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <input
-                        type="text"
-                        value={editFirstName}
-                        onChange={(e) => setEditFirstName(e.target.value)}
-                        placeholder={tAuth('firstName')}
-                        className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                      />
-                      <input
-                        type="text"
-                        value={editLastName}
-                        onChange={(e) => setEditLastName(e.target.value)}
-                        placeholder={tAuth('lastName')}
-                        className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                      />
+
+                    {/* Kontakt */}
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={styles.label}>{t('contact')}</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                        <input
+                          type="tel"
+                          value={editPhone}
+                          onChange={(e) => setEditPhone(e.target.value)}
+                          placeholder={tAuth('phone')}
+                          className="portal-input"
+                          style={styles.input}
+                        />
+                        <input
+                          type="email"
+                          value={customer.email}
+                          disabled
+                          style={styles.inputDisabled}
+                        />
+                      </div>
+                      <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{t('emailCannotChange')}</p>
+                    </div>
+
+                    {/* Geburtstag */}
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={styles.label}>{tAuth('birthDate')}</label>
                       <input
                         type="date"
                         value={editBirthDate}
                         onChange={(e) => setEditBirthDate(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
+                        className="portal-input"
+                        style={{ ...styles.input, maxWidth: '12rem' }}
                       />
                     </div>
-                  </div>
 
-                  {/* Kontakt */}
-                  <div>
-                    <div className="flex items-baseline gap-1.5 mb-2">
-                      <span className="text-[8px] text-gray-400">2.</span>
-                      <h3 className="text-[8px] text-gray-500">{t('contact')}</h3>
+                    {/* Mitglied seit */}
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={styles.label}>{t('membership')}</label>
+                      <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                        {t('memberSince')} {formatBirthDate(customer.created_at)}
+                      </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="tel"
-                        value={editPhone}
-                        onChange={(e) => setEditPhone(e.target.value)}
-                        placeholder={tAuth('phone')}
-                        className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                      />
-                      <input
-                        type="email"
-                        value={customer.email}
-                        disabled
-                        className="w-full p-2 border border-gray-200 rounded-sm text-sm font-light text-gray-400 bg-gray-50 cursor-not-allowed"
-                      />
-                    </div>
-                    <p className="text-[9px] text-gray-400 mt-1">{t('emailCannotChange')}</p>
-                  </div>
 
-                  {/* Mitglied seit */}
-                  <div>
-                    <div className="flex items-baseline gap-1.5 mb-2">
-                      <span className="text-[8px] text-gray-400">3.</span>
-                      <h3 className="text-[8px] text-gray-500">{t('membership')}</h3>
+                    {/* Speichern Button */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        onClick={handleSaveProfile}
+                        disabled={isSavingProfile || !hasProfileChanges()}
+                        className="primary-btn"
+                        style={styles.primaryButton}
+                      >
+                        {isSavingProfile ? tCommon('saving') : t('saveChanges')}
+                      </button>
                     </div>
-                    <p className="text-sm text-gray-600">
-                      {t('memberSince')} {formatBirthDate(customer.created_at)}
-                    </p>
                   </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
 
-                  {/* Speichern Button */}
-                  <div className="pt-2 flex justify-end">
-                    <button
-                      onClick={handleSaveProfile}
-                      disabled={isSavingProfile || !hasProfileChanges()}
-                      className="px-5 py-2 bg-black text-white text-xs font-light tracking-[0.15em] uppercase hover:bg-gold transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-black"
-                    >
-                      {isSavingProfile ? tCommon('saving') : t('saveChanges')}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+        {/* Footer */}
+        <div style={styles.footer}>
+          <p style={{ fontSize: '0.6875rem', color: '#94a3b8', textAlign: 'center' }}>
+            Eingeloggt als {customer.email}
+          </p>
         </div>
       </div>
     </div>
