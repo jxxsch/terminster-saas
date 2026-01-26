@@ -25,6 +25,9 @@ import {
   OpenHoliday,
   getSetting,
   updateSetting,
+  getAllTeam,
+  updateTeamMember,
+  TeamMember,
 } from '@/lib/supabase';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
 import { SundayPicker } from '@/components/admin/SundayPicker';
@@ -80,17 +83,22 @@ export default function ZeitenPage() {
   const [openHolidays, setOpenHolidays] = useState<OpenHoliday[]>([]);
   const [savingBundesland, setSavingBundesland] = useState(false);
 
+  // Team & Freie Tage State
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [savingFreeDay, setSavingFreeDay] = useState<string | null>(null);
+
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
-      const [slotsData, hoursData, sundaysData, closedData, openHolidaysData, bundeslandData] = await Promise.all([
+      const [slotsData, hoursData, sundaysData, closedData, openHolidaysData, bundeslandData, teamData] = await Promise.all([
         getAllTimeSlots(),
         getOpeningHours(),
         getOpenSundays(),
         getClosedDates(),
         getOpenHolidays(),
         getSetting<Bundesland>('bundesland'),
+        getAllTeam(),
       ]);
       setTimeSlots(slotsData);
       setHours(hoursData);
@@ -98,6 +106,7 @@ export default function ZeitenPage() {
       setClosedDates(closedData);
       setOpenHolidays(openHolidaysData);
       if (bundeslandData) setBundesland(bundeslandData);
+      setTeam(teamData.filter(m => m.active));
       setIsLoading(false);
     }
     loadData();
@@ -229,6 +238,16 @@ export default function ZeitenPage() {
     if (success) {
       setOpenHolidays(openHolidays.filter(h => h.id !== id));
     }
+  }
+
+  // === Freie Tage Handlers ===
+  async function handleFreeDayChange(memberId: string, freeDay: number | null) {
+    setSavingFreeDay(memberId);
+    const updated = await updateTeamMember(memberId, { free_day: freeDay });
+    if (updated) {
+      setTeam(team.map(m => m.id === memberId ? updated : m));
+    }
+    setSavingFreeDay(null);
   }
 
   function formatDate(dateStr: string): string {
@@ -564,6 +583,77 @@ export default function ZeitenPage() {
 
           {activeTab === 'special' && (
             <div className="px-8 py-6 space-y-8">
+          {/* Wöchentliche freie Tage */}
+          <div>
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-slate-900">Wöchentliche freie Tage</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Fester freier Tag pro Barber (da samstags gearbeitet wird)</p>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
+              {/* Header-Zeile */}
+              <div className="grid grid-cols-[1fr_200px] gap-4 px-4 py-2 text-[11px] font-medium text-slate-400 border-b border-slate-200">
+                <div>Mitarbeiter</div>
+                <div>Freier Tag</div>
+              </div>
+
+              {/* Mitarbeiter-Liste */}
+              <div className="divide-y divide-slate-200">
+                {team.map(member => (
+                  <div
+                    key={member.id}
+                    className={`grid grid-cols-[1fr_200px] gap-4 items-center px-4 py-3 transition-colors ${
+                      savingFreeDay === member.id ? 'opacity-50' : 'hover:bg-white/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-slate-900">{member.name}</span>
+                    </div>
+                    <div>
+                      <select
+                        value={member.free_day ?? ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          handleFreeDayChange(member.id, value === '' ? null : parseInt(value, 10));
+                        }}
+                        disabled={savingFreeDay === member.id}
+                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
+                      >
+                        <option value="">Kein freier Tag</option>
+                        <option value="1">Montag</option>
+                        <option value="2">Dienstag</option>
+                        <option value="3">Mittwoch</option>
+                        <option value="4">Donnerstag</option>
+                        <option value="5">Freitag</option>
+                      </select>
+                    </div>
+                  </div>
+                ))}
+                {team.length === 0 && (
+                  <p className="text-sm text-slate-400 text-center py-4">Keine aktiven Mitarbeiter</p>
+                )}
+              </div>
+            </div>
+
+            {/* Info Box */}
+            <div className="mt-4 bg-slate-50 border border-slate-200 rounded-xl p-4">
+              <div className="flex gap-3">
+                <svg className="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <h3 className="text-xs font-medium text-slate-700">Hinweis</h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    An seinem freien Tag ist der Barber im Buchungssystem und Kalender als nicht verfügbar markiert. Samstag und Sonntag werden nicht angeboten.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Trennlinie */}
+          <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+
           {/* Verkaufsoffene Sonntage */}
           <div>
             <div className="mb-4">
@@ -754,7 +844,7 @@ export default function ZeitenPage() {
 
               return holidays.length > 0 ? (
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
-                  <div className="divide-y divide-slate-200 max-h-64 overflow-y-auto">
+                  <div className="divide-y divide-slate-200">
                     {holidays.map(holiday => {
                       const isOpen = openHolidayDates.has(holiday.date);
                       return (

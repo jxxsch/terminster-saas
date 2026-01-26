@@ -7,6 +7,7 @@ import { Gallery } from '@/components/sections/Gallery';
 import { Contact } from '@/components/sections/Contact';
 import { ScrollToTop } from '@/components/ui/ScrollToTop';
 import { AuthErrorHandler } from '@/components/sections/AuthErrorHandler';
+import { CancellationConfirmHandler } from '@/components/sections/CancellationConfirmHandler';
 
 export default function HomePage() {
   return (
@@ -22,6 +23,7 @@ export default function HomePage() {
       </main>
       <ScrollToTop />
       <AuthErrorHandler />
+      <CancellationConfirmHandler />
     </>
   );
 }

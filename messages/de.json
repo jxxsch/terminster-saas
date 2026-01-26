@@ -132,6 +132,7 @@
     },
     "week": "KW",
     "selectBarberFirst": "Bitte zuerst einen Friseur wählen",
+    "noSlotsAvailable": "Keine Termine mehr verfügbar. Alternativen:",
     "contactData": "Kontaktdaten",
     "autoFilled": "Automatisch ausgefüllt",
     "loggedInAs": "Eingeloggt als",
@@ -315,6 +316,7 @@
     "booked": "Gebucht",
     "fullyBooked": "Ausgebucht",
     "absent": "Abwesend",
+    "freeDay": "Frei",
     "holiday": "Feiertag",
     "vacation": "Urlaub"
   },

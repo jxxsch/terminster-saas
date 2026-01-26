@@ -54,6 +54,15 @@ export interface TeamMember {
   birthday: string | null;
   vacation_days: number;
   start_date: string | null;
+  // Wöchentlicher freier Tag (0=Sonntag, 1=Montag, ..., 6=Samstag)
+  free_day: number | null;
+}
+
+// Helper: Prüft ob ein Barber an einem bestimmten Datum seinen freien Tag hat
+export function isBarberFreeDay(barber: TeamMember, dateStr: string): boolean {
+  if (barber.free_day === null || barber.free_day === undefined) return false;
+  const dayOfWeek = new Date(dateStr).getDay();
+  return dayOfWeek === barber.free_day;
 }
 
 export interface Service {

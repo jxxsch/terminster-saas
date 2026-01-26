@@ -94,6 +94,7 @@ Wichtige Änderungen hier dokumentieren:
 | 2026-01-21 | **Resend E-Mail-Integration:** Buchungsbestätigung, Terminerinnerung (Cron-Job täglich 18:00), Stornierungsbestätigung. Professionelle HTML-Templates mit Beban-Branding | `lib/email.ts`, `lib/email-client.ts`, `app/api/email/route.ts`, `app/api/email/reminders/route.ts`, `vercel.json` |
 | 2026-01-21 | **Erweiterte Mitarbeiter-Daten:** Neue Felder in team-Tabelle (phone, birthday, vacation_days, start_date), Anzeige in Listenansicht und Bearbeitungsformular | `lib/supabase.ts`, `app/admin/team/page.tsx` |
 | 2026-01-25 | **Multi-Delete für Kalender:** Auswahl-Modus zum gesammelten Löschen mehrerer Termine. Toggle-Button "Auswählen", Checkboxen bei Terminen, Toolbar mit Barber/Zeit-Filter, Bereichsauswahl per Shift-Klick, 2-stufiges Bestätigungs-Modal | `app/(internal)/dashboard/page.tsx`, `components/dashboard/WeekView.tsx`, `components/dashboard/AppointmentSlot.tsx`, `components/dashboard/SelectionToolbar.tsx` (NEU), `components/dashboard/DragContext.tsx` |
+| 2026-01-26 | **Freier Tag pro Barber:** Jeder Mitarbeiter kann einen festen wöchentlichen freien Tag haben (Mo-Fr). Admin-UI im Tab "Sondertage", automatische Blockierung im BookingModal und Dashboard. Neues Feld `free_day` in team-Tabelle, Helper `isBarberFreeDay()` | `lib/supabase.ts`, `app/(internal)/admin/zeiten/page.tsx`, `components/sections/BookingModal.tsx`, `components/dashboard/WeekView.tsx`, `messages/*.json` |
 
 ## Dateistruktur
 
@@ -173,7 +174,7 @@ my-website/
 
 | Tabelle | Beschreibung | Spalten |
 |---------|--------------|---------|
-| `team` | Mitarbeiter | id, name, image, image_position, image_scale, sort_order, active, phone, birthday, vacation_days, start_date |
+| `team` | Mitarbeiter | id, name, image, image_position, image_scale, sort_order, active, phone, birthday, vacation_days, start_date, free_day |
 | `services` | Leistungen | id, name, price (Cent), duration (Min), sort_order, active |
 | `time_slots` | Zeitslots | id, time, sort_order, active |
 | `appointments` | Einzeltermine | id, barber_id, date, time_slot, service_id, customer_name, customer_phone, source, series_id |

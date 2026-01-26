@@ -15,12 +15,13 @@ import { ConfirmModal } from '@/components/admin/ConfirmModal';
 
 type ImageFormat = 'square' | 'portrait';
 
-// Berechnet Tage bis zum nächsten Geburtstag
-function getDaysUntilBirthday(birthdayStr: string): { days: number; label: string } {
+// Berechnet Tage bis zum nächsten Geburtstag und das Alter
+function getDaysUntilBirthday(birthdayStr: string): { days: number; label: string; nextAge: number } {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const birthday = new Date(birthdayStr);
+  const birthYear = birthday.getFullYear();
   const nextBirthday = new Date(today.getFullYear(), birthday.getMonth(), birthday.getDate());
 
   // Wenn Geburtstag dieses Jahr schon war, nächstes Jahr nehmen
@@ -28,19 +29,18 @@ function getDaysUntilBirthday(birthdayStr: string): { days: number; label: strin
     nextBirthday.setFullYear(today.getFullYear() + 1);
   }
 
+  // Alter am nächsten Geburtstag
+  const nextAge = nextBirthday.getFullYear() - birthYear;
+
   const diffTime = nextBirthday.getTime() - today.getTime();
   const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
   if (days === 0) {
-    return { days: 0, label: '🎂 heute!' };
+    return { days: 0, label: `🎂 wird ${nextAge}!`, nextAge };
   } else if (days === 1) {
-    return { days: 1, label: 'morgen' };
-  } else if (days <= 7) {
-    return { days, label: `in ${days} Tagen` };
-  } else if (days <= 30) {
-    return { days, label: `in ${days} Tagen` };
+    return { days: 1, label: `morgen ${nextAge}`, nextAge };
   } else {
-    return { days, label: `in ${days} Tagen` };
+    return { days, label: `in ${days}d → ${nextAge}`, nextAge };
   }
 }
 
@@ -70,6 +70,7 @@ export default function TeamPage() {
     birthday: '',
     vacation_days: 30,
     start_date: '',
+    free_day: null as number | null,
   });
 
   // All refs - no state during drag to avoid ANY re-renders
@@ -136,6 +137,7 @@ export default function TeamPage() {
       birthday: '',
       vacation_days: 30,
       start_date: '',
+      free_day: null,
     });
     squareOffsetRef.current = { x: 50, y: 50 };
     portraitOffsetRef.current = { x: 50, y: 50 };
@@ -168,6 +170,7 @@ export default function TeamPage() {
       birthday: member.birthday || '',
       vacation_days: member.vacation_days || 30,
       start_date: member.start_date || '',
+      free_day: member.free_day,
     });
 
     squareOffsetRef.current = squarePos;
@@ -402,6 +405,7 @@ export default function TeamPage() {
         birthday: formData.birthday || null,
         vacation_days: formData.vacation_days,
         start_date: formData.start_date || null,
+        free_day: formData.free_day,
       });
       if (newMember) {
         setTeam([...team, newMember]);
@@ -420,6 +424,7 @@ export default function TeamPage() {
         birthday: formData.birthday || null,
         vacation_days: formData.vacation_days,
         start_date: formData.start_date || null,
+        free_day: formData.free_day,
       });
       if (updated) {
         setTeam(team.map(m => m.id === updated.id ? updated : m));
@@ -581,8 +586,8 @@ export default function TeamPage() {
               </div>
             </div>
 
-            {/* Zeile 2: Geburtstag, Dabei seit, Aktiv + Bild */}
-            <div className="grid grid-cols-3 gap-3 items-end">
+            {/* Zeile 2: Geburtstag, Dabei seit, Freier Tag, Aktiv + Bild */}
+            <div className="grid grid-cols-4 gap-3 items-end">
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Geburtstag</label>
                 <input
@@ -600,6 +605,21 @@ export default function TeamPage() {
                   onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
                 />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Freier Tag</label>
+                <select
+                  value={formData.free_day ?? ''}
+                  onChange={(e) => setFormData({ ...formData, free_day: e.target.value === '' ? null : parseInt(e.target.value, 10) })}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer"
+                >
+                  <option value="">Keiner</option>
+                  <option value="1">Montag</option>
+                  <option value="2">Dienstag</option>
+                  <option value="3">Mittwoch</option>
+                  <option value="4">Donnerstag</option>
+                  <option value="5">Freitag</option>
+                </select>
               </div>
               <div className="flex items-center gap-2">
                 <label className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-100">
@@ -712,13 +732,14 @@ export default function TeamPage() {
               {isCreating && <div className="mb-4">{editFormContent}</div>}
 
               {/* Header-Zeile */}
-              <div className="grid grid-cols-[48px_1.5fr_1.2fr_1fr_0.8fr_1fr_60px_80px] gap-6 px-4 py-2 text-[11px] font-medium text-slate-400 border-b border-slate-100">
+              <div className="grid grid-cols-[48px_1.5fr_1.2fr_1fr_0.8fr_1fr_0.6fr_60px_80px] gap-6 px-4 py-2 text-[11px] font-medium text-slate-400 border-b border-slate-100">
                 <div></div>
                 <div>Name</div>
                 <div>Telefon</div>
                 <div>Geburtstag</div>
                 <div>Urlaub</div>
                 <div>Dabei seit</div>
+                <div>Frei</div>
                 <div>Status</div>
                 <div></div>
               </div>
@@ -727,7 +748,7 @@ export default function TeamPage() {
               <div className="divide-y divide-slate-50">
                 {team.map((member, index) => (
                   <div key={member.id}>
-                    <div className={`grid grid-cols-[48px_1.5fr_1.2fr_1fr_0.8fr_1fr_60px_80px] gap-6 items-center px-4 py-3.5 transition-colors ${editingId === member.id ? 'bg-gold/5' : 'hover:bg-slate-50'}`}>
+                    <div className={`grid grid-cols-[48px_1.5fr_1.2fr_1fr_0.8fr_1fr_0.6fr_60px_80px] gap-6 items-center px-4 py-3.5 transition-colors ${editingId === member.id ? 'bg-gold/5' : 'hover:bg-slate-50'}`}>
                       {/* Bild */}
                       <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
                         {member.image ? (
@@ -774,6 +795,12 @@ export default function TeamPage() {
                       {/* Dabei seit */}
                       <div className="text-sm text-slate-600">
                         {member.start_date ? new Date(member.start_date).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' }) : <span className="text-slate-400">–</span>}
+                      </div>
+                      {/* Freier Tag */}
+                      <div className="text-sm text-slate-600">
+                        {member.free_day !== null && member.free_day !== undefined ? (
+                          ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][member.free_day]
+                        ) : <span className="text-slate-400">–</span>}
                       </div>
                       {/* Status */}
                       <div>

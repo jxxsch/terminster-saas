@@ -58,6 +58,9 @@ interface SettingsState {
   location: { lat: number; lng: number; zoom: number; embed_url: string };
   social_instagram: { value: string };
   social_facebook: { value: string };
+  social_youtube: { value: string };
+  social_tiktok: { value: string };
+  social_custom: Array<{ id: string; platform: string; url: string }>;
   seo_meta: { title: LocalizedText; description: LocalizedText; og_image: string; keywords: string };
   legal_imprint: { content: LocalizedText };
   legal_privacy: { content: LocalizedText };
@@ -84,6 +87,9 @@ const defaultSettings: SettingsState = {
   location: { lat: 51.4556, lng: 7.0116, zoom: 15, embed_url: '' },
   social_instagram: { value: '' },
   social_facebook: { value: '' },
+  social_youtube: { value: '' },
+  social_tiktok: { value: '' },
+  social_custom: [],
   seo_meta: {
     title: { de: 'Beban Barbershop - Premium Herrenfriseur', en: 'Beban Barbershop - Premium Barber' },
     description: { de: 'Ihr Premium Barbershop für Haarschnitte und Bartpflege', en: 'Your premium barbershop for haircuts and beard care' },
@@ -663,28 +669,139 @@ export default function MedienPage() {
 
           {/* Social Media */}
           {activeSection === 'social' && (
-            <div>
-              <SectionHeader title="Social Media" subtitle="Links zu sozialen Netzwerken" />
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
-                <div className="divide-y divide-slate-200">
-                  <SettingField
-                    label="Instagram URL"
-                    value={settings.social_instagram.value}
-                    onChange={(v) => setSettings(s => ({ ...s, social_instagram: { value: v } }))}
-                    onSave={() => saveField('social_instagram')}
-                    saving={saving === 'social_instagram'}
-                    saved={savedFields.has('social_instagram')}
-                    placeholder="https://instagram.com/..."
-                  />
-                  <SettingField
-                    label="Facebook URL"
-                    value={settings.social_facebook.value}
-                    onChange={(v) => setSettings(s => ({ ...s, social_facebook: { value: v } }))}
-                    onSave={() => saveField('social_facebook')}
-                    saving={saving === 'social_facebook'}
-                    saved={savedFields.has('social_facebook')}
-                    placeholder="https://facebook.com/..."
-                  />
+            <div className="space-y-8">
+              {/* Standard Plattformen */}
+              <div>
+                <SectionHeader title="Haupt-Plattformen" subtitle="Die wichtigsten sozialen Netzwerke" />
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
+                  <div className="divide-y divide-slate-200">
+                    <SocialMediaField
+                      icon={<InstagramIcon />}
+                      label="Instagram"
+                      value={settings.social_instagram.value}
+                      onChange={(v) => setSettings(s => ({ ...s, social_instagram: { value: v } }))}
+                      onSave={() => saveField('social_instagram')}
+                      saving={saving === 'social_instagram'}
+                      saved={savedFields.has('social_instagram')}
+                      placeholder="https://instagram.com/username"
+                    />
+                    <SocialMediaField
+                      icon={<FacebookIcon />}
+                      label="Facebook"
+                      value={settings.social_facebook.value}
+                      onChange={(v) => setSettings(s => ({ ...s, social_facebook: { value: v } }))}
+                      onSave={() => saveField('social_facebook')}
+                      saving={saving === 'social_facebook'}
+                      saved={savedFields.has('social_facebook')}
+                      placeholder="https://facebook.com/page"
+                    />
+                    <SocialMediaField
+                      icon={<YouTubeIcon />}
+                      label="YouTube"
+                      value={settings.social_youtube.value}
+                      onChange={(v) => setSettings(s => ({ ...s, social_youtube: { value: v } }))}
+                      onSave={() => saveField('social_youtube')}
+                      saving={saving === 'social_youtube'}
+                      saved={savedFields.has('social_youtube')}
+                      placeholder="https://youtube.com/@channel"
+                    />
+                    <SocialMediaField
+                      icon={<TikTokIcon />}
+                      label="TikTok"
+                      value={settings.social_tiktok.value}
+                      onChange={(v) => setSettings(s => ({ ...s, social_tiktok: { value: v } }))}
+                      onSave={() => saveField('social_tiktok')}
+                      saving={saving === 'social_tiktok'}
+                      saved={savedFields.has('social_tiktok')}
+                      placeholder="https://tiktok.com/@username"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Weitere Plattformen */}
+              <div>
+                <SectionHeader title="Weitere Plattformen" subtitle="Zusätzliche Social Media Kanäle" />
+                <div className="space-y-2">
+                  {settings.social_custom.map((item, index) => (
+                    <div key={item.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 bg-slate-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <LinkIcon />
+                        </div>
+                        <div className="flex-1 space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-slate-500 mb-1">Plattform</label>
+                              <input
+                                type="text"
+                                value={item.platform}
+                                onChange={(e) => {
+                                  const updated = [...settings.social_custom];
+                                  updated[index] = { ...item, platform: e.target.value };
+                                  setSettings(s => ({ ...s, social_custom: updated }));
+                                }}
+                                className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                                placeholder="z.B. LinkedIn, Twitter, Yelp..."
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-slate-500 mb-1">URL</label>
+                              <input
+                                type="text"
+                                value={item.url}
+                                onChange={(e) => {
+                                  const updated = [...settings.social_custom];
+                                  updated[index] = { ...item, url: e.target.value };
+                                  setSettings(s => ({ ...s, social_custom: updated }));
+                                }}
+                                className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                                placeholder="https://..."
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-between">
+                            <button
+                              onClick={() => {
+                                const updated = settings.social_custom.filter((_, i) => i !== index);
+                                setSettings(s => ({ ...s, social_custom: updated }));
+                                setTimeout(() => saveField('social_custom'), 100);
+                              }}
+                              className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              Entfernen
+                            </button>
+                            <SaveButton
+                              onSave={() => saveField('social_custom')}
+                              saving={saving === 'social_custom'}
+                              saved={savedFields.has('social_custom')}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Hinzufügen Button */}
+                  <button
+                    onClick={() => {
+                      const newItem = {
+                        id: `custom_${Date.now()}`,
+                        platform: '',
+                        url: '',
+                      };
+                      setSettings(s => ({ ...s, social_custom: [...s.social_custom, newItem] }));
+                    }}
+                    className="w-full py-3 border-2 border-dashed border-slate-300 rounded-xl text-sm font-medium text-slate-500 hover:border-gold hover:text-gold hover:bg-gold/5 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Weitere Plattform hinzufügen
+                  </button>
                 </div>
               </div>
             </div>
@@ -942,6 +1059,78 @@ function SettingField({ label, value, onChange, onSave, saving, saved, multiline
         <SaveButton onSave={onSave} saving={saving} saved={saved} />
       </div>
     </div>
+  );
+}
+
+// Social Media Field with Icon
+interface SocialMediaFieldProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  onSave: () => void;
+  saving: boolean;
+  saved: boolean;
+  placeholder?: string;
+}
+
+function SocialMediaField({ icon, label, value, onChange, onSave, saving, saved, placeholder }: SocialMediaFieldProps) {
+  return (
+    <div className="flex items-center gap-3 py-3 px-4">
+      <div className="w-8 h-8 bg-slate-200 rounded-lg flex items-center justify-center flex-shrink-0">
+        {icon}
+      </div>
+      <span className="text-sm font-medium text-slate-900 w-24 flex-shrink-0">{label}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="flex-1 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+        placeholder={placeholder}
+      />
+      <SaveButton onSave={onSave} saving={saving} saved={saved} />
+    </div>
+  );
+}
+
+// Social Media Icons
+function InstagramIcon() {
+  return (
+    <svg className="w-4 h-4 text-slate-600" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+    </svg>
+  );
+}
+
+function FacebookIcon() {
+  return (
+    <svg className="w-4 h-4 text-slate-600" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+    </svg>
+  );
+}
+
+function YouTubeIcon() {
+  return (
+    <svg className="w-4 h-4 text-slate-600" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+    </svg>
+  );
+}
+
+function TikTokIcon() {
+  return (
+    <svg className="w-4 h-4 text-slate-600" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/>
+    </svg>
+  );
+}
+
+function LinkIcon() {
+  return (
+    <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+    </svg>
   );
 }
 

@@ -132,6 +132,7 @@
     },
     "week": "Hafta",
     "selectBarberFirst": "Lütfen önce bir berber seçin",
+    "noSlotsAvailable": "Randevu mevcut değil. Alternatifler:",
     "contactData": "İletişim bilgileri",
     "autoFilled": "Otomatik dolduruldu",
     "loggedInAs": "Giriş yapıldı",
@@ -315,6 +316,7 @@
     "booked": "Rezerveli",
     "fullyBooked": "Dolu",
     "absent": "Yok",
+    "freeDay": "İzinli",
     "holiday": "Tatil",
     "vacation": "İzin"
   },

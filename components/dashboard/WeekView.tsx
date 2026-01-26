@@ -16,6 +16,7 @@ import {
   getStaffTimeOffForDateRange,
   deleteAppointment,
   createAppointment,
+  isBarberFreeDay,
   Appointment,
   Series,
   TeamMember,
@@ -334,13 +335,30 @@ export function WeekView({
     return map;
   }, [services]);
 
-  // Helper: Prüfe ob Barber an einem Tag abwesend ist
+  // Helper: Prüfe ob Barber an einem Tag abwesend ist (Urlaub oder freier Tag)
   const isBarberOffOnDate = (barberId: string, dateStr: string): StaffTimeOff | undefined => {
-    return staffTimeOff.find(
+    // Prüfe erst Urlaub
+    const timeOff = staffTimeOff.find(
       off => off.staff_id === barberId &&
              off.start_date <= dateStr &&
              off.end_date >= dateStr
     );
+    if (timeOff) return timeOff;
+
+    // Prüfe freien Tag
+    const barber = team.find(b => b.id === barberId);
+    if (barber && isBarberFreeDay(barber, dateStr)) {
+      return {
+        id: 'free-day',
+        staff_id: barberId,
+        start_date: dateStr,
+        end_date: dateStr,
+        reason: 'Frei',
+        created_at: '',
+      };
+    }
+
+    return undefined;
   };
 
   const handleSlotClick = (barberId: string, dateStr: string, timeSlot: string) => {
@@ -927,7 +945,9 @@ export function WeekView({
             <span>Pause</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-red-50 border border-red-200"></div>
+            <svg className="w-2.5 h-2.5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
             <span>Storniert</span>
           </div>
         </div>

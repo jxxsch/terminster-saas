@@ -19,6 +19,7 @@ import {
   getOpenSundays,
   deleteAppointment,
   createAppointment,
+  isBarberFreeDay,
   Appointment,
   Series,
   TeamMember,
@@ -363,14 +364,32 @@ export function BarberWeekView({
     onSelectedAppointmentsChange(newSelection);
   }, [selectionMode, selectionFilter, barberAppointments, seriesAppointments, weekDays, selectedBarberId, onSelectedAppointmentsChange]);
 
-  // Helper: Prüfe ob Barber an einem Tag abwesend ist
+  // Helper: Prüfe ob Barber an einem Tag abwesend ist (Urlaub oder freier Tag)
   const isBarberOffOnDate = (dateStr: string): StaffTimeOff | undefined => {
     if (!selectedBarberId) return undefined;
-    return staffTimeOff.find(
+
+    // Prüfe erst Urlaub
+    const timeOff = staffTimeOff.find(
       off => off.staff_id === selectedBarberId &&
              off.start_date <= dateStr &&
              off.end_date >= dateStr
     );
+    if (timeOff) return timeOff;
+
+    // Prüfe freien Tag
+    const barber = team.find(b => b.id === selectedBarberId);
+    if (barber && isBarberFreeDay(barber, dateStr)) {
+      return {
+        id: 'free-day',
+        staff_id: selectedBarberId,
+        start_date: dateStr,
+        end_date: dateStr,
+        reason: 'Frei',
+        created_at: '',
+      };
+    }
+
+    return undefined;
   };
 
   // Helper: Prüfe ob Tag geschlossen ist

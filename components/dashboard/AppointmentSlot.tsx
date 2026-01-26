@@ -855,10 +855,18 @@ export function AppointmentSlot({
         ref={slotRef}
         className="relative p-1 h-full transition-colors select-none bg-red-50/50 hover:bg-red-100/50"
       >
-        <div className="flex items-center justify-between gap-1 h-full">
-          <span className="text-[10px] font-medium text-red-400 line-through truncate flex-1">
-            {appointment?.customer_name ? formatName(appointment.customer_name) : ''}
-          </span>
+        <div className="flex items-center justify-between gap-1 h-full pl-1">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1">
+              {/* Storniert-Icon */}
+              <svg className="w-2.5 h-2.5 flex-shrink-0 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
+              <span className="text-[13px] font-medium text-red-400 line-through truncate">
+                {appointment?.customer_name ? formatName(appointment.customer_name) : ''}
+              </span>
+            </div>
+          </div>
           {/* X zum direkten Löschen */}
           <button
             onClick={handleDeleteCancelledDirect}

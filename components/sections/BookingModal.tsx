@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import {
@@ -16,6 +17,7 @@ import {
   getStaffTimeOffForDateRange,
   getOpenHolidays,
   getSetting,
+  isBarberFreeDay,
   TeamMember,
   Service,
   Appointment,
@@ -57,7 +59,7 @@ function getWeekNumber(date: Date): number {
   return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 }
 
-// Generate week days (Mo-So) for a given week offset
+// Generate week days (Mo-Sa, ohne Sonntag für mobile) for a given week offset
 function getWeekDays(
   weekOffset: number,
   closedDatesList: ClosedDate[] = [],
@@ -104,7 +106,8 @@ function getWeekDays(
     isDisabled: boolean;
   }[] = [];
 
-  for (let i = 0; i < 7; i++) {
+  // Mo-Sa (6 Tage, ohne Sonntag)
+  for (let i = 0; i < 6; i++) {
     const date = new Date(monday);
     date.setDate(monday.getDate() + i);
 
@@ -156,7 +159,28 @@ function getWeekDays(
   return { days, weekNumber: getWeekNumber(monday), monday };
 }
 
-// Filtere verfügbare Slots basierend auf bereits gebuchten Terminen und Öffnungszeiten
+// Prüft ob ein Zeitslot am heutigen Tag bereits vergangen ist
+function isSlotInPast(slot: string, dateStr: string): boolean {
+  const today = new Date();
+  const todayStr = formatDateLocal(today);
+
+  // Nur am heutigen Tag prüfen
+  if (dateStr !== todayStr) return false;
+
+  // Slot-Zeit parsen (z.B. "14:30")
+  const [slotHour, slotMinute] = slot.split(':').map(Number);
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinute = now.getMinutes();
+
+  // Slot ist vergangen, wenn die Zeit vor der aktuellen Zeit liegt
+  if (slotHour < currentHour) return true;
+  if (slotHour === currentHour && slotMinute <= currentMinute) return true;
+
+  return false;
+}
+
+// Filtere verfügbare Slots basierend auf bereits gebuchten Terminen, Öffnungszeiten UND vergangene Slots
 function getAvailableSlots(
   barberId: string,
   dateStr: string,
@@ -188,22 +212,172 @@ function getAvailableSlots(
     });
   }
 
-  // Gib nur die nicht gebuchten Slots zurück
-  return filteredSlots.filter(slot => !bookedSlots.includes(slot));
+  // Filtere gebuchte UND vergangene Slots heraus
+  return filteredSlots.filter(slot =>
+    !bookedSlots.includes(slot) && !isSlotInPast(slot, dateStr)
+  );
+}
+
+// Hilfsfunktion: Zeit in Minuten umwandeln
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
+// Typ für Alternativen
+interface SlotAlternative {
+  type: 'nextDay' | 'otherBarber';
+  barberId: string;
+  barberName: string;
+  barberImage?: string;
+  date: string;
+  dateDisplay: string;
+  slot: string;
+}
+
+// Finde Alternativen wenn keine Slots verfügbar sind
+function findAlternatives(
+  currentBarberId: string,
+  currentDateStr: string,
+  preferredSlot: string | null,
+  allSlots: string[],
+  bookedAppointments: Appointment[],
+  team: TeamMember[],
+  staffTimeOff: StaffTimeOff[],
+  closedDates: ClosedDate[],
+  openSundays: OpenSunday[],
+  bundesland: Bundesland,
+  openHolidays: OpenHoliday[],
+  maxWeeks: number
+): SlotAlternative[] {
+  const alternatives: SlotAlternative[] = [];
+  const currentBarber = team.find(b => b.id === currentBarberId);
+  if (!currentBarber) return alternatives;
+
+  // Helper: Prüfe ob Tag buchbar ist
+  const isDayBookable = (dateStr: string): boolean => {
+    const date = new Date(dateStr + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Vergangen?
+    if (date < today) return false;
+
+    // Sonntag (außer verkaufsoffen)?
+    const isSunday = date.getDay() === 0;
+    const isOpenSunday = openSundays.some(os => os.date === dateStr);
+    if (isSunday && !isOpenSunday) return false;
+
+    // Geschlossen?
+    if (closedDates.some(cd => cd.date === dateStr)) return false;
+
+    // Feiertag (ohne Sonderöffnung)?
+    if (isHoliday(dateStr, bundesland) && !openHolidays.some(oh => oh.date === dateStr)) return false;
+
+    // Max Buchungsdatum
+    const maxDate = new Date(today);
+    maxDate.setDate(today.getDate() + maxWeeks * 7);
+    if (date > maxDate) return false;
+
+    return true;
+  };
+
+  // Helper: Prüfe ob Barber an Tag verfügbar ist
+  const isBarberAvailable = (barberId: string, dateStr: string): boolean => {
+    const barber = team.find(b => b.id === barberId);
+    if (!barber) return false;
+
+    // Urlaub?
+    const onTimeOff = staffTimeOff.some(
+      off => off.staff_id === barberId && off.start_date <= dateStr && off.end_date >= dateStr
+    );
+    if (onTimeOff) return false;
+
+    // Freier Tag?
+    if (isBarberFreeDay(barber, dateStr)) return false;
+
+    return true;
+  };
+
+  // Alternative 1: Nächster buchbarer Tag (gleicher Barber)
+  const today = new Date();
+  for (let i = 1; i <= maxWeeks * 7; i++) {
+    const nextDate = new Date(today);
+    nextDate.setDate(today.getDate() + i);
+    const nextDateStr = formatDateLocal(nextDate);
+
+    if (nextDateStr === currentDateStr) continue;
+    if (!isDayBookable(nextDateStr)) continue;
+    if (!isBarberAvailable(currentBarberId, nextDateStr)) continue;
+
+    const availableSlots = getAvailableSlots(currentBarberId, nextDateStr, allSlots, bookedAppointments);
+    if (availableSlots.length > 0) {
+      // Finde besten Slot (ähnlich zur bevorzugten Zeit oder erster verfügbarer)
+      let bestSlot = availableSlots[0];
+      if (preferredSlot) {
+        const preferredMinutes = timeToMinutes(preferredSlot);
+        bestSlot = availableSlots.reduce((best, slot) => {
+          const bestDiff = Math.abs(timeToMinutes(best) - preferredMinutes);
+          const slotDiff = Math.abs(timeToMinutes(slot) - preferredMinutes);
+          return slotDiff < bestDiff ? slot : best;
+        }, availableSlots[0]);
+      }
+
+      const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+      alternatives.push({
+        type: 'nextDay',
+        barberId: currentBarberId,
+        barberName: currentBarber.name,
+        barberImage: currentBarber.image || undefined,
+        date: nextDateStr,
+        dateDisplay: `${dayNames[nextDate.getDay()]} ${nextDate.getDate()}.${nextDate.getMonth() + 1}`,
+        slot: bestSlot,
+      });
+      break;
+    }
+  }
+
+  // Alternative 2: Anderer Barber mit ähnlicher Zeit (am gleichen Tag)
+  if (preferredSlot || allSlots.length > 0) {
+    const targetSlot = preferredSlot || allSlots[Math.floor(allSlots.length / 2)]; // Mittlerer Slot als Fallback
+    const targetMinutes = timeToMinutes(targetSlot);
+
+    for (const barber of team) {
+      if (barber.id === currentBarberId) continue;
+      if (!isBarberAvailable(barber.id, currentDateStr)) continue;
+
+      const availableSlots = getAvailableSlots(barber.id, currentDateStr, allSlots, bookedAppointments);
+      if (availableSlots.length === 0) continue;
+
+      // Finde ähnlichsten Slot (±60 Minuten Toleranz)
+      const similarSlot = availableSlots.find(slot => {
+        const slotMinutes = timeToMinutes(slot);
+        return Math.abs(slotMinutes - targetMinutes) <= 60;
+      });
+
+      if (similarSlot) {
+        alternatives.push({
+          type: 'otherBarber',
+          barberId: barber.id,
+          barberName: barber.name,
+          barberImage: barber.image || undefined,
+          date: currentDateStr,
+          dateDisplay: '',
+          slot: similarSlot,
+        });
+        break;
+      }
+    }
+  }
+
+  return alternatives;
 }
 
 export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModalProps) {
   const t = useTranslations('booking');
   const tAuth = useTranslations('auth');
-  const tDays = useTranslations('days');
-  const tMonths = useTranslations('months');
   const tCommon = useTranslations('common');
   const tStatus = useTranslations('status');
-
-  // Day/Month key arrays for translation lookup
-  const dayKeysShort = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
-  const dayKeysLong = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
-  const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as const;
 
   const { customer, isAuthenticated, signIn, signUp, signOut } = useAuth();
   const [team, setTeam] = useState<TeamMember[]>([]);
@@ -217,6 +391,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
   const [maxWeeks, setMaxWeeks] = useState(2);
   const [staffTimeOff, setStaffTimeOff] = useState<StaffTimeOff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedBarber, setSelectedBarber] = useState<string | null>(null);
@@ -246,6 +421,11 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
   const [authSuccess, setAuthSuccess] = useState('');
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
+  // Mount state for portal
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Prefill customer data when authenticated
   useEffect(() => {
     if (isAuthenticated && customer) {
@@ -265,7 +445,6 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       document.body.style.overflow = '';
     }
 
-    // Cleanup beim Unmount
     return () => {
       document.body.style.overflow = '';
     };
@@ -276,10 +455,8 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     async function loadData() {
       setIsLoading(true);
 
-      // Berechne Datumsbereich für Termine (4 Wochen in die Zukunft)
       const today = new Date();
       const startDate = formatDateLocal(today);
-      // Load appointments for up to 12 weeks (max possible setting)
       const endDate = formatDateLocal(new Date(today.getTime() + 12 * 7 * 24 * 60 * 60 * 1000));
 
       const [teamData, servicesData, timeSlotsData, appointmentsData, closedDatesData, openSundaysData, openHolidaysData, bundeslandData, advanceWeeksData, staffTimeOffData] = await Promise.all([
@@ -314,14 +491,14 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
 
   // Wochen-Range für Header berechnen
   const weekRange = useMemo(() => {
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
+    const saturday = new Date(monday);
+    saturday.setDate(monday.getDate() + 5); // Mo + 5 = Sa
     const startDay = monday.getDate();
-    const endDay = sunday.getDate();
+    const endDay = saturday.getDate();
     const startMonth = MONTH_NAMES[monday.getMonth()];
-    const endMonth = MONTH_NAMES[sunday.getMonth()];
+    const endMonth = MONTH_NAMES[saturday.getMonth()];
 
-    if (monday.getMonth() === sunday.getMonth()) {
+    if (monday.getMonth() === saturday.getMonth()) {
       return `${startDay}. - ${endDay}. ${startMonth}`;
     }
     return `${startDay}. ${startMonth} - ${endDay}. ${endMonth}`;
@@ -332,7 +509,6 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     setSelectedBarber(null);
     setSelectedSlot(null);
     setSelectedService(null);
-    // Keep customer data if authenticated, otherwise reset
     if (!isAuthenticated) {
       setCustomerName('');
       setCustomerEmail('');
@@ -341,7 +517,6 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     setCurrentWeekOffset(0);
     setBookingSuccess(false);
     setBookingError('');
-    // Reset contact mode and auth states
     setContactMode('choice');
     setAuthTab('login');
     setAuthEmail('');
@@ -384,7 +559,6 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       setAuthSubmitting(false);
     } else {
       setAuthSubmitting(false);
-      // Nach Login: Daten werden automatisch durch den useEffect übernommen
     }
   };
 
@@ -479,26 +653,25 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     setIsSubmitting(false);
 
     if (appointment) {
-      // Füge den neuen Termin zur Liste hinzu, damit er sofort als gebucht gilt
       setBookedAppointments(prev => [...prev, appointment]);
       setBookingSuccess(true);
 
-      // Bestätigungs-E-Mail senden (im Hintergrund, ohne auf Ergebnis zu warten)
       const barber = team.find(b => b.id === selectedBarber);
       const service = services.find(s => s.id === selectedService);
-      const dayData = days.find(d => d.dateStr === selectedDay);
 
-      if (barber && service && dayData) {
+      if (barber && service && selectedDay && selectedSlot) {
         sendBookingConfirmationEmail({
           customerName: customerName.trim(),
           customerEmail: customerEmail.trim(),
           customerPhone: customerPhone.trim(),
           barberName: barber.name,
+          barberImage: barber.image ? `https://terminster.com${barber.image}` : undefined,
           serviceName: service.name,
-          date: `${dayData.dayNameLong}, ${dayData.dayNumFull}`,
+          date: selectedDay,
           time: selectedSlot,
           duration: service.duration,
           price: formatPrice(service.price),
+          appointmentId: appointment.id,
         }).catch(err => {
           console.error('Failed to send confirmation email:', err);
         });
@@ -522,684 +695,1380 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
   const selectedBarberData = team.find(b => b.id === selectedBarber);
   const selectedDayData = days.find(d => d.dateStr === selectedDay);
 
-  if (!isOpen) return null;
+  // Inline Styles
+  const styles = {
+    overlay: {
+      position: 'fixed' as const,
+      inset: 0,
+      zIndex: 50,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1rem',
+    },
+    backdrop: {
+      position: 'absolute' as const,
+      inset: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      backdropFilter: 'blur(4px)',
+    },
+    modal: {
+      position: 'relative' as const,
+      zIndex: 10,
+      backgroundColor: '#f8fafc',
+      width: '100%',
+      maxWidth: '52rem',
+      maxHeight: '85vh',
+      borderRadius: '1rem',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      display: 'flex',
+      flexDirection: 'column' as const,
+      overflow: 'hidden',
+      animation: 'modalFadeIn 0.2s ease-out',
+    },
+    header: {
+      padding: '1rem 1.25rem',
+      borderBottom: '1px solid #e2e8f0',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: '#ffffff',
+    },
+    headerTitle: {
+      fontSize: '0.75rem',
+      fontWeight: 300,
+      color: '#d4a853',
+      letterSpacing: '0.2em',
+      textTransform: 'uppercase' as const,
+    },
+    closeBtn: {
+      padding: '0.375rem',
+      color: '#64748b',
+      backgroundColor: 'transparent',
+      border: 'none',
+      borderRadius: '0.5rem',
+      cursor: 'pointer',
+      transition: 'all 0.15s',
+    },
+    content: {
+      flex: 1,
+      overflowY: 'auto' as const,
+      padding: '1rem 1.25rem',
+    },
+    section: {
+      marginBottom: '1.25rem',
+    },
+    sectionHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.375rem',
+      marginBottom: '0.75rem',
+    },
+    sectionNum: {
+      fontSize: '0.625rem',
+      color: '#94a3b8',
+    },
+    sectionTitle: {
+      fontSize: '0.625rem',
+      color: '#64748b',
+      fontWeight: 500,
+    },
+    // Progress bar
+    progressContainer: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.25rem',
+      padding: '0.75rem 1.25rem',
+      borderBottom: '1px solid #e2e8f0',
+      backgroundColor: '#ffffff',
+    },
+    progressStep: {
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column' as const,
+      alignItems: 'center',
+    },
+    progressLabel: {
+      fontSize: '0.625rem',
+      marginBottom: '0.25rem',
+      fontWeight: 500,
+    },
+    progressBar: {
+      width: '100%',
+      height: '3px',
+      borderRadius: '2px',
+      backgroundColor: '#e2e8f0',
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      backgroundColor: '#d4a853',
+      transition: 'width 0.3s',
+    },
+    // Days grid (6 columns)
+    daysGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(6, 1fr)',
+      gap: '0.5rem',
+    },
+    dayBtn: {
+      padding: '0.5rem 0.25rem',
+      border: '1px solid #e2e8f0',
+      borderRadius: '0.5rem',
+      backgroundColor: '#ffffff',
+      textAlign: 'center' as const,
+      cursor: 'pointer',
+      transition: 'all 0.15s',
+      position: 'relative' as const,
+    },
+    dayBtnSelected: {
+      borderColor: '#d4a853',
+      backgroundColor: 'rgba(212, 168, 83, 0.1)',
+    },
+    dayBtnDisabled: {
+      opacity: 0.4,
+      backgroundColor: '#f1f5f9',
+      cursor: 'not-allowed',
+    },
+    dayName: {
+      display: 'block',
+      fontSize: '0.6875rem',
+      color: '#64748b',
+    },
+    dayNum: {
+      display: 'block',
+      fontSize: '0.75rem',
+      fontWeight: 500,
+      color: '#0f172a',
+    },
+    // Week nav
+    weekNav: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      marginLeft: 'auto',
+      backgroundColor: '#f1f5f9',
+      borderRadius: '1rem',
+      padding: '0.25rem',
+    },
+    weekNavBtn: {
+      padding: '0.25rem',
+      backgroundColor: 'transparent',
+      border: 'none',
+      borderRadius: '50%',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      transition: 'background-color 0.15s',
+    },
+    weekInfo: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      padding: '0 0.5rem',
+    },
+    weekLabel: {
+      fontSize: '0.625rem',
+      fontWeight: 500,
+      color: '#374151',
+      backgroundColor: '#ffffff',
+      padding: '0.125rem 0.5rem',
+      borderRadius: '0.25rem',
+    },
+    weekRange: {
+      fontSize: '0.625rem',
+      color: '#94a3b8',
+    },
+    // Barbers grid (4 columns on desktop, 2x2 on mobile via maxWidth)
+    barbersGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(4, 1fr)',
+      gap: '0.75rem',
+    },
+    barberBtn: {
+      position: 'relative' as const,
+      aspectRatio: '1',
+      borderRadius: '0.5rem',
+      overflow: 'hidden',
+      border: '2px solid #e2e8f0',
+      cursor: 'pointer',
+      transition: 'all 0.15s',
+    },
+    barberBtnSelected: {
+      borderColor: '#d4a853',
+    },
+    barberBtnOther: {
+      opacity: 0.3,
+      filter: 'grayscale(1)',
+    },
+    barberBtnDisabled: {
+      opacity: 0.4,
+    },
+    barberOverlay: {
+      position: 'absolute' as const,
+      inset: 0,
+      background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent 60%)',
+    },
+    barberName: {
+      position: 'absolute' as const,
+      bottom: '0.5rem',
+      left: 0,
+      right: 0,
+      textAlign: 'center' as const,
+      fontSize: '0.6875rem',
+      color: '#ffffff',
+      padding: '0 0.25rem',
+    },
+    barberStatus: {
+      position: 'absolute' as const,
+      inset: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    barberStatusText: {
+      fontSize: '0.5625rem',
+      color: 'rgba(255,255,255,0.8)',
+    },
+    // Time slots grid (5 columns)
+    slotsGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(5, 1fr)',
+      gap: '0.5rem',
+    },
+    slotBtn: {
+      padding: '0.5rem 0.25rem',
+      border: '1px solid #e2e8f0',
+      borderRadius: '0.5rem',
+      backgroundColor: '#ffffff',
+      fontSize: '0.75rem',
+      fontWeight: 500,
+      color: '#374151',
+      cursor: 'pointer',
+      transition: 'all 0.15s',
+      textAlign: 'center' as const,
+    },
+    slotBtnSelected: {
+      borderColor: '#d4a853',
+      backgroundColor: 'rgba(212, 168, 83, 0.1)',
+      color: '#0f172a',
+    },
+    // Services grid (4 columns)
+    servicesGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(4, 1fr)',
+      gap: '0.75rem',
+    },
+    serviceBtn: {
+      padding: '0.5rem 0.25rem',
+      border: '1px solid #e2e8f0',
+      borderRadius: '0.5rem',
+      backgroundColor: '#ffffff',
+      textAlign: 'center' as const,
+      cursor: 'pointer',
+      transition: 'all 0.15s',
+    },
+    serviceBtnSelected: {
+      borderColor: '#d4a853',
+      backgroundColor: 'rgba(212, 168, 83, 0.1)',
+    },
+    serviceName: {
+      display: 'block',
+      fontSize: '0.8125rem',
+      fontWeight: 300,
+      color: '#0f172a',
+    },
+    servicePrice: {
+      display: 'block',
+      fontSize: '0.75rem',
+      fontWeight: 500,
+      color: '#d4a853',
+    },
+    // Contact
+    input: {
+      width: '100%',
+      padding: '0.625rem',
+      border: '1px solid #e2e8f0',
+      borderRadius: '0.5rem',
+      fontSize: '0.8125rem',
+      fontWeight: 300,
+      color: '#0f172a',
+      backgroundColor: '#ffffff',
+      outline: 'none',
+      transition: 'border-color 0.15s',
+    },
+    inputGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: '0.5rem',
+    },
+    inputGridFull: {
+      gridColumn: 'span 3',
+    },
+    // Footer
+    footer: {
+      padding: '0.75rem 1.25rem',
+      borderTop: '1px solid #e2e8f0',
+      backgroundColor: '#ffffff',
+    },
+    footerSummary: {
+      fontSize: '0.6875rem',
+      color: '#64748b',
+      marginBottom: '0.5rem',
+    },
+    footerActions: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '1rem',
+    },
+    submitBtn: {
+      padding: '0.625rem 1.25rem',
+      backgroundColor: '#0f172a',
+      color: '#ffffff',
+      border: 'none',
+      borderRadius: '0.5rem',
+      fontSize: '0.6875rem',
+      fontWeight: 400,
+      letterSpacing: '0.1em',
+      textTransform: 'uppercase' as const,
+      cursor: 'pointer',
+      transition: 'background-color 0.15s',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+    },
+    submitBtnDisabled: {
+      opacity: 0.4,
+      cursor: 'not-allowed',
+    },
+    // Choice buttons
+    choiceGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)',
+      gap: '0.75rem',
+    },
+    choiceBtn: {
+      padding: '1rem',
+      border: '1px solid #e2e8f0',
+      borderRadius: '0.5rem',
+      backgroundColor: '#ffffff',
+      textAlign: 'left' as const,
+      cursor: 'pointer',
+      transition: 'all 0.15s',
+    },
+    choiceBtnHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      marginBottom: '0.375rem',
+    },
+    choiceBtnTitle: {
+      fontSize: '0.8125rem',
+      fontWeight: 500,
+      color: '#0f172a',
+    },
+    choiceBtnDesc: {
+      fontSize: '0.625rem',
+      color: '#94a3b8',
+    },
+    // Back button
+    backBtn: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.25rem',
+      fontSize: '0.625rem',
+      color: '#94a3b8',
+      backgroundColor: 'transparent',
+      border: 'none',
+      cursor: 'pointer',
+      padding: '0',
+      marginBottom: '0.75rem',
+      transition: 'color 0.15s',
+    },
+    // Auth tabs
+    authTabs: {
+      display: 'flex',
+      borderBottom: '1px solid #e2e8f0',
+      marginBottom: '0.75rem',
+    },
+    authTab: {
+      flex: 1,
+      padding: '0.5rem',
+      fontSize: '0.625rem',
+      fontWeight: 500,
+      backgroundColor: 'transparent',
+      border: 'none',
+      borderBottom: '2px solid transparent',
+      cursor: 'pointer',
+      transition: 'all 0.15s',
+      color: '#94a3b8',
+    },
+    authTabActive: {
+      color: '#d4a853',
+      borderBottomColor: '#d4a853',
+    },
+    // Messages
+    errorMsg: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      padding: '0.5rem 0.75rem',
+      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+      border: '1px solid rgba(239, 68, 68, 0.2)',
+      borderRadius: '0.5rem',
+      fontSize: '0.625rem',
+      color: '#dc2626',
+      marginBottom: '0.5rem',
+    },
+    successMsg: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      padding: '0.5rem 0.75rem',
+      backgroundColor: 'rgba(34, 197, 94, 0.1)',
+      border: '1px solid rgba(34, 197, 94, 0.2)',
+      borderRadius: '0.5rem',
+      fontSize: '0.625rem',
+      color: '#16a34a',
+      marginBottom: '0.5rem',
+    },
+    // Success state
+    successContainer: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '3rem 2rem',
+      textAlign: 'center' as const,
+    },
+    successIcon: {
+      width: '4rem',
+      height: '4rem',
+      backgroundColor: 'rgba(34, 197, 94, 0.1)',
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: '1rem',
+    },
+    successTitle: {
+      fontSize: '1.125rem',
+      fontWeight: 300,
+      color: '#0f172a',
+      marginBottom: '0.5rem',
+    },
+    successText: {
+      fontSize: '0.8125rem',
+      color: '#64748b',
+      marginBottom: '1.5rem',
+    },
+    // Logged in info
+    loggedInInfo: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+      padding: '0.625rem 0.75rem',
+      backgroundColor: '#f1f5f9',
+      borderRadius: '0.5rem',
+      fontSize: '0.75rem',
+      color: '#64748b',
+      marginBottom: '0.75rem',
+    },
+    loggedInActions: {
+      display: 'flex',
+      gap: '0.5rem',
+    },
+    actionBtn: {
+      flex: 1,
+      padding: '0.5rem',
+      fontSize: '0.6875rem',
+      border: '1px solid #e2e8f0',
+      borderRadius: '0.5rem',
+      backgroundColor: 'transparent',
+      cursor: 'pointer',
+      transition: 'all 0.15s',
+    },
+    // Disabled section
+    disabledSection: {
+      opacity: 0.4,
+      pointerEvents: 'none' as const,
+    },
+    placeholder: {
+      textAlign: 'center' as const,
+      padding: '1rem',
+      fontSize: '0.625rem',
+      color: '#94a3b8',
+    },
+    gold: {
+      color: '#d4a853',
+    },
+  };
 
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
-        <div className="relative bg-white w-full max-w-6xl rounded-lg p-8 flex items-center justify-center">
-          <div className="flex items-center gap-3 text-gray-500">
-            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <span>{tCommon('loading')}</span>
+  if (!isOpen || !mounted) return null;
+
+  const modalContent = (
+    <>
+      <style>{`
+        @keyframes modalFadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+      <div style={styles.overlay}>
+        <div style={styles.backdrop} onClick={handleClose} />
+        <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+          {/* Header */}
+          <div style={styles.header}>
+            <span style={styles.headerTitle}>{t('title')}</span>
+            <button style={styles.closeBtn} onClick={handleClose}>
+              <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-        </div>
-      </div>
-    );
-  }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
-
-      <div className="relative bg-white w-full mx-8 max-h-[85vh] rounded-lg overflow-y-auto">
-        {/* Header - immer sichtbar */}
-        <div className="border-b border-gray-100 px-4 py-2 flex items-center justify-between">
-          <span className="text-sm font-light text-gold tracking-[0.2em] uppercase">{t('title')}</span>
-          <button onClick={handleClose} className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Erfolgs-Meldung */}
-        {bookingSuccess ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center px-8">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {/* Loading State */}
+          {isLoading ? (
+            <div style={{ ...styles.content, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '200px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#64748b' }}>
+                <svg style={{ animation: 'spin 1s linear infinite', width: '1.25rem', height: '1.25rem' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span style={{ fontSize: '0.8125rem' }}>{tCommon('loading')}</span>
+              </div>
+            </div>
+          ) : bookingSuccess ? (
+            /* Success State */
+            <div style={styles.successContainer}>
+              <div style={styles.successIcon}>
+                <svg width="32" height="32" fill="none" stroke="#16a34a" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-xl font-light text-black mb-2">{t('success.title')}</h3>
-              <p className="text-sm text-gray-500 mb-6">
+              <h3 style={styles.successTitle}>{t('success.title')}</h3>
+              <p style={styles.successText}>
                 {t('success.message', { barber: selectedBarberData?.name || '', date: `${selectedDayData?.dayNameLong || ''}, ${selectedDayData?.dayNumFull || ''}`, time: selectedSlot || '' })}
               </p>
               <button
                 onClick={handleClose}
-                className="px-8 py-3 bg-black text-white text-xs font-light tracking-[0.15em] uppercase hover:bg-gold transition-all"
+                style={{ ...styles.submitBtn, backgroundColor: '#0f172a' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d4a853'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0f172a'}
               >
                 {tCommon('close')}
               </button>
             </div>
-          </div>
-        ) : (
-          <>
+          ) : (
+            <>
+              {/* Progress Bar */}
+              <div style={styles.progressContainer}>
+                {[
+                  { num: 1, label: t('steps.day'), done: selectedDay !== null },
+                  { num: 2, label: t('steps.barber'), done: selectedBarber !== null },
+                  { num: 3, label: t('steps.time'), done: selectedSlot !== null },
+                  { num: 4, label: t('steps.service'), done: selectedService !== null },
+                  { num: 5, label: t('steps.contact'), done: customerName.length > 0 && customerEmail.length > 0 && customerPhone.length > 0 },
+                ].map((step) => {
+                  const isActive =
+                    (step.num === 1 && !selectedDay) ||
+                    (step.num === 2 && selectedDay && !selectedBarber) ||
+                    (step.num === 3 && selectedBarber && !selectedSlot) ||
+                    (step.num === 4 && selectedSlot && !selectedService) ||
+                    (step.num === 5 && selectedService && (!customerName || !customerEmail || !customerPhone));
+                  const isPast = step.done;
 
-        {/* Progress Steps */}
-        <div className="px-4 py-3 border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            {[
-              { num: 1, label: t('steps.day'), done: selectedDay !== null },
-              { num: 2, label: t('steps.barber'), done: selectedBarber !== null },
-              { num: 3, label: t('steps.time'), done: selectedSlot !== null },
-              { num: 4, label: t('steps.service'), done: selectedService !== null },
-              { num: 5, label: t('steps.contact'), done: customerName.length > 0 && customerEmail.length > 0 && customerPhone.length > 0 },
-            ].map((step, index, arr) => {
-              const isActive =
-                (step.num === 1 && !selectedDay) ||
-                (step.num === 2 && selectedDay && !selectedBarber) ||
-                (step.num === 3 && selectedBarber && !selectedSlot) ||
-                (step.num === 4 && selectedSlot && !selectedService) ||
-                (step.num === 5 && selectedService && (!customerName || !customerEmail || !customerPhone));
-              const isPast = step.done;
+                  return (
+                    <div key={step.num} style={styles.progressStep}>
+                      <span style={{
+                        ...styles.progressLabel,
+                        color: isActive || isPast ? '#d4a853' : '#94a3b8',
+                      }}>
+                        {step.num}
+                      </span>
+                      <div style={styles.progressBar}>
+                        <div style={{
+                          ...styles.progressFill,
+                          width: isPast ? '100%' : '0%',
+                        }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
 
-              return (
-                <div key={step.num} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center flex-1">
-                    <span className={`text-xs font-medium mb-1 transition-colors ${
-                      isActive ? 'text-gold' : isPast ? 'text-gold' : 'text-gray-400'
-                    }`}>
-                      {step.num}. {step.label}
-                    </span>
-                    <div className="w-full h-1 rounded-full bg-gray-200 overflow-hidden">
-                      <div
-                        className={`h-full transition-all duration-300 ${
-                          isPast ? 'bg-gold w-full' : 'w-0'
-                        }`}
-                      />
+              {/* Content */}
+              <div style={styles.content}>
+                {/* Section 1: Day Selection */}
+                <div style={styles.section}>
+                  <div style={styles.sectionHeader}>
+                    <span style={styles.sectionNum}>1.</span>
+                    <span style={styles.sectionTitle}>{t('steps.day')}</span>
+                    {/* Week Navigation */}
+                    <div style={styles.weekNav}>
+                      <button
+                        style={{
+                          ...styles.weekNavBtn,
+                          opacity: currentWeekOffset === 0 ? 0.3 : 1,
+                          cursor: currentWeekOffset === 0 ? 'not-allowed' : 'pointer',
+                        }}
+                        onClick={() => setCurrentWeekOffset(prev => Math.max(0, prev - 1))}
+                        disabled={currentWeekOffset === 0}
+                      >
+                        <svg width="12" height="12" fill="none" stroke="#64748b" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                      <div style={styles.weekInfo}>
+                        <span style={styles.weekLabel}>{t('week')} {weekNumber}</span>
+                        <span style={styles.weekRange}>{weekRange}</span>
+                      </div>
+                      <button
+                        style={{
+                          ...styles.weekNavBtn,
+                          opacity: currentWeekOffset >= maxWeeks - 1 ? 0.3 : 1,
+                          cursor: currentWeekOffset >= maxWeeks - 1 ? 'not-allowed' : 'pointer',
+                        }}
+                        onClick={() => setCurrentWeekOffset(prev => Math.min(maxWeeks - 1, prev + 1))}
+                        disabled={currentWeekOffset >= maxWeeks - 1}
+                      >
+                        <svg width="12" height="12" fill="none" stroke="#64748b" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
-                  {index < arr.length - 1 && <div className="w-4" />}
+                  <div style={styles.daysGrid}>
+                    {days.map((day) => (
+                      <button
+                        key={day.dateStr}
+                        onClick={() => !day.isDisabled && setSelectedDay(day.dateStr)}
+                        disabled={day.isDisabled}
+                        title={day.isClosed ? day.closedReason : undefined}
+                        style={{
+                          ...styles.dayBtn,
+                          ...(selectedDay === day.dateStr ? styles.dayBtnSelected : {}),
+                          ...(day.isDisabled ? styles.dayBtnDisabled : {}),
+                          borderColor: selectedDay === day.dateStr ? '#d4a853' : '#e2e8f0',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!day.isDisabled && selectedDay !== day.dateStr) {
+                            e.currentTarget.style.borderColor = '#d4a853';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!day.isDisabled && selectedDay !== day.dateStr) {
+                            e.currentTarget.style.borderColor = '#e2e8f0';
+                          }
+                        }}
+                      >
+                        <span style={{ ...styles.dayName, color: day.isDisabled ? '#94a3b8' : '#64748b' }}>
+                          {day.dayNameShort}
+                        </span>
+                        <span style={{ ...styles.dayNum, color: day.isDisabled ? '#94a3b8' : '#0f172a' }}>
+                          {day.dayNum}
+                        </span>
+                        {day.isClosed && (
+                          <span style={{
+                            position: 'absolute',
+                            top: '-2px',
+                            right: '-2px',
+                            width: '6px',
+                            height: '6px',
+                            backgroundColor: '#f87171',
+                            borderRadius: '50%',
+                          }} />
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* Content - kompakter */}
-        <div className="p-4 space-y-4">
+                {/* Section 2: Barber */}
+                <div style={{ ...styles.section, ...(isBarberUnlocked ? {} : styles.disabledSection) }}>
+                  <div style={styles.sectionHeader}>
+                    <span style={{ ...styles.sectionNum, color: isBarberUnlocked ? '#94a3b8' : '#cbd5e1' }}>2.</span>
+                    <span style={{ ...styles.sectionTitle, color: isBarberUnlocked ? '#64748b' : '#cbd5e1' }}>{t('steps.barber')}</span>
+                  </div>
+                  <div style={styles.barbersGrid}>
+                    {team.map((barber) => {
+                      const timeOff = selectedDay && staffTimeOff.find(
+                        off => off.staff_id === barber.id &&
+                               off.start_date <= selectedDay &&
+                               off.end_date >= selectedDay
+                      );
+                      const isOnTimeOff = !!timeOff;
+                      const isFreeDayToday = selectedDay && isBarberFreeDay(barber, selectedDay);
+                      const isAbsent = isOnTimeOff || isFreeDayToday;
 
-          {/* Section 1: Day Selection */}
-          <div className="relative">
-            <div className="flex items-baseline gap-1.5 mb-2">
-              <span className="text-[8px] text-gray-400">1.</span>
-              <h3 className="text-[8px] text-gray-500">{t('steps.day')}</h3>
+                      const availableSlots = selectedDay && !isAbsent
+                        ? getAvailableSlots(barber.id, selectedDay, timeSlots, bookedAppointments, selectedDayData?.openSundayOpenTime, selectedDayData?.openSundayCloseTime)
+                        : [];
+                      const isSelected = selectedBarber === barber.id;
+                      const isOtherSelected = selectedBarber !== null && !isSelected;
+                      const isFullyBooked = !!(selectedDay && !isAbsent && availableSlots.length === 0);
+                      const isUnavailable = isAbsent || isFullyBooked;
 
-              {/* Wochen-Navigation */}
-              <div className="flex items-center gap-2 ml-auto bg-gray-50 rounded-full px-1 py-0.5">
-                <button
-                  onClick={() => setCurrentWeekOffset(prev => Math.max(0, prev - 1))}
-                  disabled={currentWeekOffset === 0}
-                  className="p-1 hover:bg-white rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-
-                <div className="flex items-center gap-2 px-1">
-                  <span className="text-[10px] font-medium text-gray-700 bg-white px-1.5 py-0.5 rounded">{t('week')} {weekNumber}</span>
-                  <span className="text-[10px] text-gray-400">{weekRange}</span>
+                      return (
+                        <button
+                          key={barber.id}
+                          onClick={() => { if (!isUnavailable) { setSelectedBarber(barber.id); setSelectedSlot(null); }}}
+                          disabled={isUnavailable}
+                          style={{
+                            ...styles.barberBtn,
+                            ...(isSelected ? styles.barberBtnSelected : {}),
+                            ...(isOtherSelected ? styles.barberBtnOther : {}),
+                            ...(isUnavailable ? styles.barberBtnDisabled : {}),
+                            borderColor: isSelected ? '#d4a853' : '#e2e8f0',
+                          }}
+                        >
+                          <Image
+                            src={barber.image || '/team/placeholder.jpg'}
+                            alt={barber.name}
+                            fill
+                            style={{
+                              objectFit: 'cover',
+                              objectPosition: barber.image_position,
+                              transform: `scale(${barber.image_scale})`,
+                            }}
+                          />
+                          <div style={styles.barberOverlay} />
+                          <span style={{ ...styles.barberName, fontWeight: isSelected ? 500 : 400 }}>{barber.name}</span>
+                          {isFreeDayToday && (
+                            <div style={styles.barberStatus}>
+                              <span style={styles.barberStatusText}>{tStatus('freeDay')}</span>
+                            </div>
+                          )}
+                          {isOnTimeOff && !isFreeDayToday && (
+                            <div style={styles.barberStatus}>
+                              <span style={styles.barberStatusText}>{tStatus('absent')}</span>
+                            </div>
+                          )}
+                          {isFullyBooked && !isAbsent && (
+                            <div style={styles.barberStatus}>
+                              <span style={styles.barberStatusText}>{tStatus('fullyBooked')}</span>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                <button
-                  onClick={() => setCurrentWeekOffset(prev => Math.min(maxWeeks - 1, prev + 1))}
-                  disabled={currentWeekOffset >= maxWeeks - 1}
-                  className="p-1 hover:bg-white rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+                {/* Section 3: Time Slots */}
+                <div style={{ ...styles.section, ...(selectedBarber ? {} : styles.disabledSection) }}>
+                  <div style={styles.sectionHeader}>
+                    <span style={{ ...styles.sectionNum, color: selectedBarber ? '#94a3b8' : '#cbd5e1' }}>3.</span>
+                    <span style={{ ...styles.sectionTitle, color: selectedBarber ? '#64748b' : '#cbd5e1' }}>{t('steps.time')}</span>
+                  </div>
+                  {selectedBarber ? (() => {
+                    const availableSlots = getAvailableSlots(
+                      selectedBarber,
+                      selectedDay!,
+                      timeSlots,
+                      bookedAppointments,
+                      selectedDayData?.openSundayOpenTime,
+                      selectedDayData?.openSundayCloseTime
+                    );
 
-            <div className="grid grid-cols-7 gap-2">
-              {days.map((day) => (
-                <button
-                  key={day.dateStr}
-                  onClick={() => !day.isDisabled && setSelectedDay(day.dateStr)}
-                  disabled={day.isDisabled}
-                  title={day.isClosed ? day.closedReason : undefined}
-                  className={`relative py-2 px-3 border rounded-sm text-center transition-all hover:border-gold ${
-                    selectedDay === day.dateStr
-                      ? 'border-gold bg-gold/10'
-                      : day.isDisabled
-                        ? 'opacity-40 bg-gray-50 border-gray-200 cursor-not-allowed'
-                        : 'border-gray-300'
-                  }`}
-                >
-                  <span className={`block text-xs ${day.isDisabled ? 'text-gray-400' : 'text-black/60'}`}>
-                    {day.dayNameShort}
-                  </span>
-                  <span className={`block text-xs font-medium ${day.isDisabled ? 'text-gray-400' : 'text-black'}`}>
-                    {day.dayNum}
-                  </span>
-                  {day.isClosed && (
-                    <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-400 rounded-full" title={day.closedReason}></span>
+                    // Wenn keine Slots verfügbar sind, zeige Alternativen
+                    if (availableSlots.length === 0) {
+                      const alternatives = findAlternatives(
+                        selectedBarber,
+                        selectedDay!,
+                        selectedSlot,
+                        timeSlots,
+                        bookedAppointments,
+                        team,
+                        staffTimeOff,
+                        closedDates,
+                        openSundays,
+                        bundesland,
+                        openHolidays,
+                        maxWeeks
+                      );
+
+                      return (
+                        <div style={{ textAlign: 'center' }}>
+                          <p style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '0.75rem' }}>
+                            {t('noSlotsAvailable')}
+                          </p>
+                          {alternatives.length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }}>
+                              {alternatives.map((alt, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => {
+                                    if (alt.type === 'nextDay') {
+                                      // Berechne Wochen-Offset für das Datum
+                                      const altDate = new Date(alt.date + 'T00:00:00');
+                                      const today = new Date();
+                                      today.setHours(0, 0, 0, 0);
+                                      const monday = new Date(today);
+                                      const dayOfWeek = today.getDay();
+                                      const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+                                      monday.setDate(today.getDate() + diff);
+
+                                      const diffDays = Math.floor((altDate.getTime() - monday.getTime()) / (1000 * 60 * 60 * 24));
+                                      const weekOffset = Math.floor(diffDays / 7);
+
+                                      setCurrentWeekOffset(Math.max(0, weekOffset));
+                                      setSelectedDay(alt.date);
+                                      setSelectedSlot(alt.slot);
+                                    } else {
+                                      // Anderer Barber
+                                      setSelectedBarber(alt.barberId);
+                                      setSelectedSlot(alt.slot);
+                                    }
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    padding: '0.5rem 0.75rem',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: '2rem',
+                                    backgroundColor: '#ffffff',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s',
+                                    fontSize: '0.6875rem',
+                                    color: '#374151',
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.borderColor = '#d4a853';
+                                    e.currentTarget.style.backgroundColor = 'rgba(212, 168, 83, 0.1)';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.borderColor = '#e2e8f0';
+                                    e.currentTarget.style.backgroundColor = '#ffffff';
+                                  }}
+                                >
+                                  {alt.type === 'otherBarber' && alt.barberImage && (
+                                    <div style={{
+                                      width: '1.5rem',
+                                      height: '1.5rem',
+                                      borderRadius: '50%',
+                                      overflow: 'hidden',
+                                      position: 'relative',
+                                      flexShrink: 0,
+                                    }}>
+                                      <Image
+                                        src={alt.barberImage}
+                                        alt={alt.barberName}
+                                        fill
+                                        style={{ objectFit: 'cover' }}
+                                      />
+                                    </div>
+                                  )}
+                                  <span>
+                                    {alt.type === 'nextDay' ? (
+                                      <>{alt.dateDisplay} · {alt.slot}</>
+                                    ) : (
+                                      <>{alt.barberName} · {alt.slot}</>
+                                    )}
+                                  </span>
+                                  <svg width="12" height="12" fill="none" stroke="#d4a853" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                  </svg>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    // Normale Slot-Anzeige
+                    return (
+                      <div style={styles.slotsGrid}>
+                        {availableSlots.map((slot) => (
+                          <button
+                            key={slot}
+                            onClick={() => setSelectedSlot(slot)}
+                            style={{
+                              ...styles.slotBtn,
+                              ...(selectedSlot === slot ? styles.slotBtnSelected : {}),
+                              borderColor: selectedSlot === slot ? '#d4a853' : '#e2e8f0',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (selectedSlot !== slot) {
+                                e.currentTarget.style.borderColor = '#d4a853';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (selectedSlot !== slot) {
+                                e.currentTarget.style.borderColor = '#e2e8f0';
+                              }
+                            }}
+                          >
+                            {slot}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })() : (
+                    <div style={styles.placeholder}>{t('selectBarberFirst')}</div>
                   )}
-                </button>
-              ))}
-            </div>
-          </div>
+                </div>
 
-          {/* Section 2: Friseur */}
-          <div className={`relative transition-all duration-300 ${!isBarberUnlocked ? 'pointer-events-none' : ''}`}>
-            <div className="flex items-baseline gap-1.5 mb-2">
-              <span className={`text-[8px] transition-colors ${isBarberUnlocked ? 'text-gray-400' : 'text-gray-300'}`}>2.</span>
-              <h3 className={`text-[8px] transition-colors ${isBarberUnlocked ? 'text-gray-500' : 'text-gray-400'}`}>
-                {t('steps.barber')}
-              </h3>
-            </div>
-            <div className="grid grid-cols-4 gap-2 w-full">
-              {team.map((barber) => {
-                // Prüfe ob Barber an diesem Tag im Urlaub ist
-                const timeOff = selectedDay && staffTimeOff.find(
-                  off => off.staff_id === barber.id &&
-                         off.start_date <= selectedDay &&
-                         off.end_date >= selectedDay
-                );
-                const isOnTimeOff = !!timeOff;
+                {/* Section 4: Service */}
+                <div style={{ ...styles.section, ...(isServiceUnlocked ? {} : styles.disabledSection) }}>
+                  <div style={styles.sectionHeader}>
+                    <span style={{ ...styles.sectionNum, color: isServiceUnlocked ? '#94a3b8' : '#cbd5e1' }}>4.</span>
+                    <span style={{ ...styles.sectionTitle, color: isServiceUnlocked ? '#64748b' : '#cbd5e1' }}>{t('steps.service')}</span>
+                  </div>
+                  <div style={styles.servicesGrid}>
+                    {services.map((service) => (
+                      <button
+                        key={service.id}
+                        onClick={() => setSelectedService(service.id)}
+                        disabled={!isServiceUnlocked}
+                        style={{
+                          ...styles.serviceBtn,
+                          ...(selectedService === service.id ? styles.serviceBtnSelected : {}),
+                          borderColor: selectedService === service.id ? '#d4a853' : '#e2e8f0',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (selectedService !== service.id && isServiceUnlocked) {
+                            e.currentTarget.style.borderColor = '#d4a853';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (selectedService !== service.id && isServiceUnlocked) {
+                            e.currentTarget.style.borderColor = '#e2e8f0';
+                          }
+                        }}
+                      >
+                        <span style={styles.serviceName}>{service.name}</span>
+                        <span style={styles.servicePrice}>{formatPrice(service.price)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-                const availableSlots = selectedDay && !isOnTimeOff
-                  ? getAvailableSlots(barber.id, selectedDay, timeSlots, bookedAppointments, selectedDayData?.openSundayOpenTime, selectedDayData?.openSundayCloseTime)
-                  : [];
-                const isSelected = selectedBarber === barber.id;
-                const isOtherSelected = selectedBarber !== null && !isSelected;
-                const isFullyBooked = !!(selectedDay && !isOnTimeOff && availableSlots.length === 0);
-                const isUnavailable = isOnTimeOff || isFullyBooked;
-
-                return (
-                  <button
-                    key={barber.id}
-                    onClick={() => { if (!isUnavailable) { setSelectedBarber(barber.id); setSelectedSlot(null); }}}
-                    disabled={isUnavailable}
-                    className={`relative aspect-square rounded-sm overflow-hidden transition-all border-2 ${
-                      isSelected ? 'border-gold' :
-                      isOtherSelected ? 'opacity-30 grayscale border-transparent' :
-                      isUnavailable ? 'opacity-40 border-transparent' :
-                      'border-gray-300 hover:border-gold'
-                    }`}
-                  >
-                    <Image src={barber.image || '/team/placeholder.jpg'} alt={barber.name} fill className="object-cover"
-                      style={{ objectPosition: barber.image_position, transform: `scale(${barber.image_scale})` }} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                    <span className={`absolute bottom-2 inset-x-0 text-[10px] text-white text-center truncate px-1 ${isSelected ? 'font-medium' : ''}`}>{barber.name}</span>
-                    {isOnTimeOff && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <span className="text-[9px] text-white/80">{tStatus('absent')}</span>
-                      </div>
+                {/* Section 5: Contact */}
+                <div style={{ ...styles.section, ...(isContactUnlocked ? {} : styles.disabledSection), marginBottom: 0 }}>
+                  <div style={styles.sectionHeader}>
+                    <span style={{ ...styles.sectionNum, color: isContactUnlocked ? '#94a3b8' : '#cbd5e1' }}>5.</span>
+                    <span style={{ ...styles.sectionTitle, color: isContactUnlocked ? '#64748b' : '#cbd5e1' }}>{t('contactData')}</span>
+                    {isAuthenticated && (
+                      <span style={{ fontSize: '0.5625rem', color: '#d4a853', marginLeft: '0.5rem' }}>{t('autoFilled')}</span>
                     )}
-                    {isFullyBooked && !isOnTimeOff && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <span className="text-[9px] text-white/80">{tStatus('fullyBooked')}</span>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                  </div>
 
-          {/* Section 3: Zeit */}
-          <div className={`relative transition-all duration-300 ${!selectedBarber ? 'opacity-40 pointer-events-none' : ''}`}>
-            <div className="flex items-baseline gap-1.5 mb-2">
-              <span className={`text-[8px] transition-colors ${selectedBarber ? 'text-gray-400' : 'text-gray-300'}`}>3.</span>
-              <h3 className={`text-[8px] transition-colors ${selectedBarber ? 'text-gray-500' : 'text-gray-400'}`}>
-                {t('steps.time')}
-              </h3>
-            </div>
-            {selectedBarber ? (
-              <div className="grid grid-cols-8 gap-2">
-                {getAvailableSlots(selectedBarber, selectedDay!, timeSlots, bookedAppointments, selectedDayData?.openSundayOpenTime, selectedDayData?.openSundayCloseTime).map((slot) => (
-                  <button key={slot} onClick={() => setSelectedSlot(slot)}
-                    className={`text-[11px] py-2 px-3 border rounded-sm transition-all text-center hover:border-gold ${
-                      selectedSlot === slot ? 'border-gold bg-gold/10 text-black' : 'border-gray-300 text-gray-700'
-                    }`}>{slot}</button>
-                ))}
-              </div>
-            ) : (
-              <div className="text-[10px] text-gray-400 text-center py-4">{t('selectBarberFirst')}</div>
-            )}
-          </div>
-
-          {/* Section 4: Service */}
-          <div className={`relative transition-all duration-300 ${!isServiceUnlocked ? 'opacity-40 pointer-events-none' : ''}`}>
-            <div className="flex items-baseline gap-1.5 mb-2">
-              <span className={`text-[8px] transition-colors ${isServiceUnlocked ? 'text-gray-400' : 'text-gray-300'}`}>4.</span>
-              <h3 className={`text-[8px] transition-colors ${isServiceUnlocked ? 'text-gray-500' : 'text-gray-400'}`}>
-                {t('steps.service')}
-              </h3>
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {services.map((service) => (
-                <button
-                  key={service.id}
-                  onClick={() => setSelectedService(service.id)}
-                  disabled={!isServiceUnlocked}
-                  className={`py-2 px-3 border rounded-sm text-center transition-all hover:border-gold ${
-                    selectedService === service.id ? 'border-gold bg-gold/10' : 'border-gray-300'
-                  }`}
-                >
-                  <span className="block text-sm font-light text-black">{service.name}</span>
-                  <span className="block text-xs font-medium text-gold">{formatPrice(service.price)}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Section 5: Kontakt */}
-          <div className={`relative transition-all duration-300 ${!isContactUnlocked ? 'opacity-40 pointer-events-none' : ''}`}>
-            <div className="flex items-baseline gap-1.5 mb-2">
-              <span className={`text-[8px] transition-colors ${isContactUnlocked ? 'text-gray-400' : 'text-gray-300'}`}>5.</span>
-              <h3 className={`text-[8px] transition-colors ${isContactUnlocked ? 'text-gray-500' : 'text-gray-400'}`}>
-                {t('contactData')}
-              </h3>
-              {isAuthenticated && (
-                <span className="text-[8px] text-gold ml-2">{t('autoFilled')}</span>
-              )}
-            </div>
-
-            {/* Eingeloggt: Daten anzeigen + Aktionen */}
-            {isAuthenticated ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 rounded-sm px-3 py-2">
-                  <svg className="w-4 h-4 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span>{t('loggedInAs')} <span className="font-medium text-black">{customer?.name}</span></span>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <input
-                    type="text"
-                    placeholder={t('name')}
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    disabled={!isContactUnlocked}
-                    className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black focus:border-gold focus:outline-none disabled:bg-gray-50 placeholder:text-gray-400"
-                  />
-                  <input
-                    type="email"
-                    placeholder={t('email')}
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
-                    disabled={!isContactUnlocked}
-                    className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black focus:border-gold focus:outline-none disabled:bg-gray-50 placeholder:text-gray-400"
-                  />
-                  <input
-                    type="tel"
-                    placeholder={t('phone')}
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    disabled={!isContactUnlocked}
-                    className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black focus:border-gold focus:outline-none disabled:bg-gray-50 placeholder:text-gray-400"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowCustomerPortal(true)}
-                    className="flex-1 py-2 text-xs border border-gold/60 text-gold hover:bg-gold/10 rounded-sm transition-colors"
-                  >
-                    {t('myAppointments')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => signOut()}
-                    className="flex-1 py-2 text-xs border border-gray-300 text-gray-500 hover:border-red-300 hover:text-red-500 rounded-sm transition-colors"
-                  >
-                    {tAuth('logout')}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Nicht eingeloggt: Auswahl */}
-                {contactMode === 'choice' && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setContactMode('guest')}
-                      className="p-4 border border-gray-300 rounded-sm hover:border-gold transition-colors text-left group"
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <svg className="w-5 h-5 text-gray-400 group-hover:text-gold transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                        <span className="text-sm font-medium text-black">{t('bookAsGuest')}</span>
-                      </div>
-                      <p className="text-[10px] text-gray-400">{t('quickWithoutAccount')}</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setContactMode('auth')}
-                      className="p-4 border border-gray-300 rounded-sm hover:border-gold transition-colors text-left group"
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <svg className="w-5 h-5 text-gray-400 group-hover:text-gold transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {/* Logged In */}
+                  {isAuthenticated ? (
+                    <div>
+                      <div style={styles.loggedInInfo}>
+                        <svg width="16" height="16" fill="none" stroke="#d4a853" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
-                        <span className="text-sm font-medium text-black">{tAuth('login')}</span>
+                        <span>{t('loggedInAs')} <span style={{ fontWeight: 500, color: '#0f172a' }}>{customer?.name}</span></span>
                       </div>
-                      <p className="text-[10px] text-gray-400">{t('manageAppointments')}</p>
-                    </button>
-                  </div>
-                )}
-
-                {/* Gast-Formular */}
-                {contactMode === 'guest' && (
-                  <div className="space-y-3">
-                    <button
-                      type="button"
-                      onClick={() => setContactMode('choice')}
-                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-gold transition-colors"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                      {t('back')}
-                    </button>
-                    <div className="grid grid-cols-3 gap-2">
-                      <input
-                        type="text"
-                        placeholder={t('name')}
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        disabled={!isContactUnlocked}
-                        className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black focus:border-gold focus:outline-none disabled:bg-gray-50 placeholder:text-gray-400"
-                      />
-                      <input
-                        type="email"
-                        placeholder={t('email')}
-                        value={customerEmail}
-                        onChange={(e) => setCustomerEmail(e.target.value)}
-                        disabled={!isContactUnlocked}
-                        className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black focus:border-gold focus:outline-none disabled:bg-gray-50 placeholder:text-gray-400"
-                      />
-                      <input
-                        type="tel"
-                        placeholder={t('phone')}
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        disabled={!isContactUnlocked}
-                        className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black focus:border-gold focus:outline-none disabled:bg-gray-50 placeholder:text-gray-400"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Auth-Formular */}
-                {contactMode === 'auth' && (
-                  <div className="space-y-3">
-                    <button
-                      type="button"
-                      onClick={() => { setContactMode('choice'); resetAuthForm(); }}
-                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-gold transition-colors"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                      {t('back')}
-                    </button>
-
-                    {/* Tabs (nur für login/register) */}
-                    {authTab !== 'forgot' && (
-                      <div className="flex border-b border-gray-200">
-                        <button
-                          type="button"
-                          onClick={() => { setAuthTab('login'); resetAuthForm(); }}
-                          className={`flex-1 py-2 text-[10px] font-medium tracking-wide transition-colors ${
-                            authTab === 'login'
-                              ? 'text-gold border-b-2 border-gold'
-                              : 'text-gray-400 hover:text-gray-600'
-                          }`}
-                        >
-                          {tAuth('login')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setAuthTab('register'); resetAuthForm(); }}
-                          className={`flex-1 py-2 text-[10px] font-medium tracking-wide transition-colors ${
-                            authTab === 'register'
-                              ? 'text-gold border-b-2 border-gold'
-                              : 'text-gray-400 hover:text-gray-600'
-                          }`}
-                        >
-                          {tAuth('register')}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Success Message */}
-                    {authSuccess && (
-                      <div className="flex items-center gap-2 text-green-700 text-[10px] bg-green-50 border border-green-200 rounded-sm px-3 py-2">
-                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span>{authSuccess}</span>
-                      </div>
-                    )}
-
-                    {/* Error Message */}
-                    {authError && (
-                      <div className="flex items-center gap-2 text-red-600 text-[10px] bg-red-50 border border-red-200 rounded-sm px-3 py-2">
-                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span>{authError}</span>
-                      </div>
-                    )}
-
-                    {/* Login Form */}
-                    {authTab === 'login' && !authSuccess && (
-                      <form onSubmit={handleLogin} className="space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            type="email"
-                            value={authEmail}
-                            onChange={(e) => setAuthEmail(e.target.value)}
-                            placeholder={tAuth('email')}
-                            className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                            required
-                          />
-                          <input
-                            type="password"
-                            value={authPassword}
-                            onChange={(e) => setAuthPassword(e.target.value)}
-                            placeholder={tAuth('password')}
-                            className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                            required
-                          />
-                        </div>
-                        <button
-                          type="submit"
-                          disabled={authSubmitting}
-                          className="w-full py-2 bg-black text-white text-[10px] font-light tracking-[0.15em] uppercase hover:bg-gold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {authSubmitting ? tAuth('loggingIn') : tAuth('login')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setAuthTab('forgot'); resetAuthForm(); }}
-                          className="w-full text-[9px] text-gray-400 hover:text-gold transition-colors"
-                        >
-                          {tAuth('forgotPassword')}
-                        </button>
-                      </form>
-                    )}
-
-                    {/* Register Form */}
-                    {authTab === 'register' && !authSuccess && (
-                      <form onSubmit={handleRegister} className="space-y-2">
-                        <div className="grid grid-cols-3 gap-2">
-                          <input
-                            type="text"
-                            value={authFirstName}
-                            onChange={(e) => setAuthFirstName(e.target.value)}
-                            placeholder={tAuth('firstName')}
-                            className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                            required
-                          />
-                          <input
-                            type="text"
-                            value={authLastName}
-                            onChange={(e) => setAuthLastName(e.target.value)}
-                            placeholder={tAuth('lastName')}
-                            className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                            required
-                          />
-                          <input
-                            type="date"
-                            value={authBirthDate}
-                            onChange={(e) => setAuthBirthDate(e.target.value)}
-                            placeholder={tAuth('birthDate')}
-                            className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                            required
-                          />
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          <input
-                            type="tel"
-                            value={authPhone}
-                            onChange={(e) => setAuthPhone(e.target.value)}
-                            placeholder={tAuth('phone')}
-                            className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                            required
-                          />
-                          <input
-                            type="email"
-                            value={authEmail}
-                            onChange={(e) => setAuthEmail(e.target.value)}
-                            placeholder={tAuth('email')}
-                            className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                            required
-                          />
-                          <input
-                            type="password"
-                            value={authPassword}
-                            onChange={(e) => setAuthPassword(e.target.value)}
-                            placeholder={tAuth('passwordMinLength')}
-                            className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                            required
-                            minLength={6}
-                          />
-                        </div>
-                        <button
-                          type="submit"
-                          disabled={authSubmitting}
-                          className="w-full py-2 bg-black text-white text-[10px] font-light tracking-[0.15em] uppercase hover:bg-gold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {authSubmitting ? tAuth('registering') : tAuth('register')}
-                        </button>
-                      </form>
-                    )}
-
-                    {/* Forgot Password Form */}
-                    {authTab === 'forgot' && !authSuccess && (
-                      <form onSubmit={handleForgotPassword} className="space-y-2">
-                        <p className="text-[10px] text-gray-500">
-                          {tAuth('resetDescription')}
-                        </p>
+                      <div style={styles.inputGrid}>
+                        <input
+                          type="text"
+                          placeholder={t('name')}
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          style={styles.input}
+                        />
                         <input
                           type="email"
-                          value={authEmail}
-                          onChange={(e) => setAuthEmail(e.target.value)}
-                          placeholder={tAuth('email')}
-                          className="w-full p-2 border border-gray-300 rounded-sm text-sm font-light text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
-                          required
+                          placeholder={t('email')}
+                          value={customerEmail}
+                          onChange={(e) => setCustomerEmail(e.target.value)}
+                          style={styles.input}
                         />
+                        <input
+                          type="tel"
+                          placeholder={t('phone')}
+                          value={customerPhone}
+                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          style={styles.input}
+                        />
+                      </div>
+                      <div style={{ ...styles.loggedInActions, marginTop: '0.75rem' }}>
                         <button
-                          type="submit"
-                          disabled={authSubmitting}
-                          className="w-full py-2 bg-black text-white text-[10px] font-light tracking-[0.15em] uppercase hover:bg-gold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          type="button"
+                          onClick={() => setShowCustomerPortal(true)}
+                          style={{ ...styles.actionBtn, borderColor: 'rgba(212, 168, 83, 0.6)', color: '#d4a853' }}
                         >
-                          {authSubmitting ? tAuth('sendingLink') : tAuth('sendResetLink')}
+                          {t('myAppointments')}
                         </button>
                         <button
                           type="button"
-                          onClick={() => { setAuthTab('login'); resetAuthForm(); }}
-                          className="w-full text-[9px] text-gray-400 hover:text-gold transition-colors"
+                          onClick={() => signOut()}
+                          style={{ ...styles.actionBtn, color: '#64748b' }}
                         >
-                          {tAuth('goToLogin')}
+                          {tAuth('logout')}
                         </button>
-                      </form>
-                    )}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Choice Mode */}
+                      {contactMode === 'choice' && (
+                        <div style={styles.choiceGrid}>
+                          <button
+                            type="button"
+                            onClick={() => setContactMode('guest')}
+                            style={styles.choiceBtn}
+                            onMouseEnter={(e) => e.currentTarget.style.borderColor = '#d4a853'}
+                            onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                          >
+                            <div style={styles.choiceBtnHeader}>
+                              <svg width="18" height="18" fill="none" stroke="#94a3b8" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              <span style={styles.choiceBtnTitle}>{t('bookAsGuest')}</span>
+                            </div>
+                            <p style={styles.choiceBtnDesc}>{t('quickWithoutAccount')}</p>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setContactMode('auth')}
+                            style={styles.choiceBtn}
+                            onMouseEnter={(e) => e.currentTarget.style.borderColor = '#d4a853'}
+                            onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
+                          >
+                            <div style={styles.choiceBtnHeader}>
+                              <svg width="18" height="18" fill="none" stroke="#94a3b8" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                              </svg>
+                              <span style={styles.choiceBtnTitle}>{tAuth('login')}</span>
+                            </div>
+                            <p style={styles.choiceBtnDesc}>{t('manageAppointments')}</p>
+                          </button>
+                        </div>
+                      )}
 
-                    {/* Back to Login after success */}
-                    {authSuccess && authTab !== 'login' && (
-                      <button
-                        type="button"
-                        onClick={() => { setAuthTab('login'); resetAuthForm(); }}
-                        className="w-full py-2 bg-black text-white text-[10px] font-light tracking-[0.15em] uppercase hover:bg-gold transition-colors"
-                      >
-                        {tAuth('goToLogin')}
-                      </button>
-                    )}
+                      {/* Guest Mode */}
+                      {contactMode === 'guest' && (
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => setContactMode('choice')}
+                            style={styles.backBtn}
+                          >
+                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                            {t('back')}
+                          </button>
+                          <div style={styles.inputGrid}>
+                            <input
+                              type="text"
+                              placeholder={t('name')}
+                              value={customerName}
+                              onChange={(e) => setCustomerName(e.target.value)}
+                              style={styles.input}
+                            />
+                            <input
+                              type="email"
+                              placeholder={t('email')}
+                              value={customerEmail}
+                              onChange={(e) => setCustomerEmail(e.target.value)}
+                              style={styles.input}
+                            />
+                            <input
+                              type="tel"
+                              placeholder={t('phone')}
+                              value={customerPhone}
+                              onChange={(e) => setCustomerPhone(e.target.value)}
+                              style={styles.input}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Auth Mode */}
+                      {contactMode === 'auth' && (
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => { setContactMode('choice'); resetAuthForm(); }}
+                            style={styles.backBtn}
+                          >
+                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                            {t('back')}
+                          </button>
+
+                          {/* Auth Tabs */}
+                          {authTab !== 'forgot' && (
+                            <div style={styles.authTabs}>
+                              <button
+                                type="button"
+                                onClick={() => { setAuthTab('login'); resetAuthForm(); }}
+                                style={{ ...styles.authTab, ...(authTab === 'login' ? styles.authTabActive : {}) }}
+                              >
+                                {tAuth('login')}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setAuthTab('register'); resetAuthForm(); }}
+                                style={{ ...styles.authTab, ...(authTab === 'register' ? styles.authTabActive : {}) }}
+                              >
+                                {tAuth('register')}
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Success Message */}
+                          {authSuccess && <div style={styles.successMsg}>
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>{authSuccess}</span>
+                          </div>}
+
+                          {/* Error Message */}
+                          {authError && <div style={styles.errorMsg}>
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>{authError}</span>
+                          </div>}
+
+                          {/* Login Form */}
+                          {authTab === 'login' && !authSuccess && (
+                            <form onSubmit={handleLogin}>
+                              <div style={{ ...styles.inputGrid, marginBottom: '0.5rem' }}>
+                                <input
+                                  type="email"
+                                  value={authEmail}
+                                  onChange={(e) => setAuthEmail(e.target.value)}
+                                  placeholder={tAuth('email')}
+                                  style={styles.input}
+                                  required
+                                />
+                                <input
+                                  type="password"
+                                  value={authPassword}
+                                  onChange={(e) => setAuthPassword(e.target.value)}
+                                  placeholder={tAuth('password')}
+                                  style={styles.input}
+                                  required
+                                />
+                              </div>
+                              <button
+                                type="submit"
+                                disabled={authSubmitting}
+                                style={{
+                                  ...styles.submitBtn,
+                                  width: '100%',
+                                  justifyContent: 'center',
+                                  opacity: authSubmitting ? 0.5 : 1,
+                                }}
+                              >
+                                {authSubmitting ? tAuth('loggingIn') : tAuth('login')}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setAuthTab('forgot'); resetAuthForm(); }}
+                                style={{ ...styles.backBtn, width: '100%', justifyContent: 'center', marginTop: '0.5rem', marginBottom: 0 }}
+                              >
+                                {tAuth('forgotPassword')}
+                              </button>
+                            </form>
+                          )}
+
+                          {/* Register Form */}
+                          {authTab === 'register' && !authSuccess && (
+                            <form onSubmit={handleRegister}>
+                              <div style={{ ...styles.inputGrid, marginBottom: '0.5rem' }}>
+                                <input
+                                  type="text"
+                                  value={authFirstName}
+                                  onChange={(e) => setAuthFirstName(e.target.value)}
+                                  placeholder={tAuth('firstName')}
+                                  style={styles.input}
+                                  required
+                                />
+                                <input
+                                  type="text"
+                                  value={authLastName}
+                                  onChange={(e) => setAuthLastName(e.target.value)}
+                                  placeholder={tAuth('lastName')}
+                                  style={styles.input}
+                                  required
+                                />
+                                <input
+                                  type="date"
+                                  value={authBirthDate}
+                                  onChange={(e) => setAuthBirthDate(e.target.value)}
+                                  placeholder={tAuth('birthDate')}
+                                  style={styles.input}
+                                  required
+                                />
+                                <input
+                                  type="tel"
+                                  value={authPhone}
+                                  onChange={(e) => setAuthPhone(e.target.value)}
+                                  placeholder={tAuth('phone')}
+                                  style={styles.input}
+                                  required
+                                />
+                                <input
+                                  type="email"
+                                  value={authEmail}
+                                  onChange={(e) => setAuthEmail(e.target.value)}
+                                  placeholder={tAuth('email')}
+                                  style={styles.input}
+                                  required
+                                />
+                                <input
+                                  type="password"
+                                  value={authPassword}
+                                  onChange={(e) => setAuthPassword(e.target.value)}
+                                  placeholder={tAuth('passwordMinLength')}
+                                  style={styles.input}
+                                  required
+                                  minLength={6}
+                                />
+                              </div>
+                              <button
+                                type="submit"
+                                disabled={authSubmitting}
+                                style={{
+                                  ...styles.submitBtn,
+                                  width: '100%',
+                                  justifyContent: 'center',
+                                  opacity: authSubmitting ? 0.5 : 1,
+                                }}
+                              >
+                                {authSubmitting ? tAuth('registering') : tAuth('register')}
+                              </button>
+                            </form>
+                          )}
+
+                          {/* Forgot Password Form */}
+                          {authTab === 'forgot' && !authSuccess && (
+                            <form onSubmit={handleForgotPassword}>
+                              <p style={{ fontSize: '0.625rem', color: '#64748b', marginBottom: '0.5rem' }}>
+                                {tAuth('resetDescription')}
+                              </p>
+                              <input
+                                type="email"
+                                value={authEmail}
+                                onChange={(e) => setAuthEmail(e.target.value)}
+                                placeholder={tAuth('email')}
+                                style={{ ...styles.input, marginBottom: '0.5rem' }}
+                                required
+                              />
+                              <button
+                                type="submit"
+                                disabled={authSubmitting}
+                                style={{
+                                  ...styles.submitBtn,
+                                  width: '100%',
+                                  justifyContent: 'center',
+                                  opacity: authSubmitting ? 0.5 : 1,
+                                }}
+                              >
+                                {authSubmitting ? tAuth('sendingLink') : tAuth('sendResetLink')}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setAuthTab('login'); resetAuthForm(); }}
+                                style={{ ...styles.backBtn, width: '100%', justifyContent: 'center', marginTop: '0.5rem', marginBottom: 0 }}
+                              >
+                                {tAuth('goToLogin')}
+                              </button>
+                            </form>
+                          )}
+
+                          {/* Back to Login after success */}
+                          {authSuccess && authTab !== 'login' && (
+                            <button
+                              type="button"
+                              onClick={() => { setAuthTab('login'); resetAuthForm(); }}
+                              style={{
+                                ...styles.submitBtn,
+                                width: '100%',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              {tAuth('goToLogin')}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div style={styles.footer}>
+                {bookingError && (
+                  <div style={styles.errorMsg}>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{bookingError}</span>
                   </div>
                 )}
-              </>
-            )}
-          </div>
-
+                <div style={styles.footerActions}>
+                  <div style={styles.footerSummary}>
+                    {selectedServiceData && selectedBarberData && selectedDayData && selectedSlot ? (
+                      <span>
+                        <span style={styles.gold}>{selectedServiceData.name}</span> {t('at')}{' '}
+                        <span style={styles.gold}>{selectedBarberData.name}</span> {t('on')}{' '}
+                        <span style={styles.gold}>{selectedDayData.dayNameLong}, {selectedDayData.dayNumFull}</span> {t('atTime')}{' '}
+                        <span style={styles.gold}>{selectedSlot} {tCommon('oclock')}</span>
+                      </span>
+                    ) : (
+                      <span>{t('fillAllFields')}</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleBooking}
+                    disabled={!isContactUnlocked || !customerName || !customerEmail || !customerPhone || isSubmitting}
+                    style={{
+                      ...styles.submitBtn,
+                      ...(!isContactUnlocked || !customerName || !customerEmail || !customerPhone || isSubmitting ? styles.submitBtnDisabled : {}),
+                    }}
+                    onMouseEnter={(e) => {
+                      if (isContactUnlocked && customerName && customerEmail && customerPhone && !isSubmitting) {
+                        e.currentTarget.style.backgroundColor = '#d4a853';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#0f172a';
+                    }}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <svg style={{ animation: 'spin 1s linear infinite', width: '1rem', height: '1rem' }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>{t('booking')}</span>
+                      </>
+                    ) : (
+                      <span>{t('bookAppointment')}</span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
-
-        {/* Footer */}
-        <div className="border-t border-gray-100 px-4 py-2">
-            {/* Fehler-Meldung */}
-            {bookingError && (
-              <div className="mb-2 flex items-center gap-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{bookingError}</span>
-              </div>
-            )}
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-gray-600">
-                {selectedServiceData && selectedBarberData && selectedDayData && selectedSlot ? (
-                  <span>
-                    <span className="text-gold">{selectedServiceData.name}</span> {t('at')}{' '}
-                    <span className="text-gold">{selectedBarberData.name}</span> {t('on')}{' '}
-                    <span className="text-gold">{selectedDayData.dayNameLong}, {selectedDayData.dayNumFull}</span> {t('atTime')}{' '}
-                    <span className="text-gold">{selectedSlot} {tCommon('oclock')}</span>
-                  </span>
-                ) : (
-                  <span>{t('fillAllFields')}</span>
-                )}
-              </div>
-              <button
-                onClick={handleBooking}
-                disabled={!isContactUnlocked || !customerName || !customerEmail || !customerPhone || isSubmitting}
-                className="px-5 py-2 bg-black text-white text-xs font-light tracking-[0.15em] uppercase hover:bg-gold transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-black flex items-center gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>{t('booking')}</span>
-                  </>
-                ) : (
-                  <span>{t('bookAppointment')}</span>
-                )}
-              </button>
-            </div>
-          </div>
-        </>
-        )}
       </div>
 
       {/* Customer Portal Modal */}
       {showCustomerPortal && (
         <CustomerPortal onClose={() => setShowCustomerPortal(false)} />
       )}
-    </div>
+    </>
   );
+
+  return createPortal(modalContent, document.body);
 }

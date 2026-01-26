@@ -30,11 +30,13 @@ export async function POST(request: NextRequest) {
           customerEmail: data.customerEmail,
           customerPhone: data.customerPhone,
           barberName: data.barberName,
+          barberImage: data.barberImage,
           serviceName: data.serviceName,
-          date: data.date.includes(',') ? data.date : formatDateForEmail(data.date),
+          date: data.date, // ISO Format: YYYY-MM-DD
           time: data.time,
           duration: data.duration,
           price: data.price,
+          appointmentId: data.appointmentId,
         };
         result = await sendBookingConfirmation(emailData);
         break;

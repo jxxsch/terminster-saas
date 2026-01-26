@@ -7,12 +7,14 @@ export interface SendEmailParams {
     customerEmail: string;
     customerPhone?: string;
     barberName: string;
+    barberImage?: string;
     serviceName: string;
     date: string;
     time: string;
     duration?: number;
     price?: string;
     reason?: string;
+    appointmentId?: string;
   };
 }
 
@@ -45,11 +47,13 @@ export async function sendBookingConfirmationEmail(data: {
   customerEmail: string;
   customerPhone?: string;
   barberName: string;
+  barberImage?: string;
   serviceName: string;
   date: string;
   time: string;
   duration: number;
   price: string;
+  appointmentId: string;
 }): Promise<{ success: boolean; error?: string }> {
   return sendEmail({
     type: 'booking_confirmation',

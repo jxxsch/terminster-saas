@@ -132,6 +132,7 @@
     },
     "week": "Week",
     "selectBarberFirst": "Please select a barber first",
+    "noSlotsAvailable": "No appointments available. Alternatives:",
     "contactData": "Contact Details",
     "autoFilled": "Auto-filled",
     "loggedInAs": "Logged in as",
@@ -315,6 +316,7 @@
     "booked": "Booked",
     "fullyBooked": "Fully booked",
     "absent": "Absent",
+    "freeDay": "Day off",
     "holiday": "Holiday",
     "vacation": "Vacation"
   },
