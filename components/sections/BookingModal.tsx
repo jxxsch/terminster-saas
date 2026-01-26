@@ -581,6 +581,16 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
   const [contactMode, setContactMode] = useState<'choice' | 'guest' | 'auth'>('choice');
   const [authTab, setAuthTab] = useState<'login' | 'register' | 'forgot'>('login');
   const [showCustomerPortal, setShowCustomerPortal] = useState(false);
+  const authFormRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll helper
+  const scrollToTop = () => {
+    setTimeout(() => contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' }), 50);
+  };
+  const scrollToBottom = () => {
+    setTimeout(() => contentRef.current?.scrollTo({ top: contentRef.current.scrollHeight, behavior: 'smooth' }), 50);
+  };
 
   // Auth Form States
   const [authEmail, setAuthEmail] = useState('');
@@ -1042,8 +1052,10 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     weekInfo: {
       display: 'flex',
       alignItems: 'center',
+      justifyContent: 'center',
       gap: '0.5rem',
       padding: '0 0.5rem',
+      minWidth: '11rem',
     },
     weekLabel: {
       fontSize: '0.625rem',
@@ -1052,10 +1064,16 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       backgroundColor: '#ffffff',
       padding: '0.125rem 0.5rem',
       borderRadius: '0.25rem',
+      whiteSpace: 'nowrap',
+      minWidth: '2.75rem',
+      textAlign: 'center' as const,
     },
     weekRange: {
       fontSize: '0.625rem',
       color: '#94a3b8',
+      whiteSpace: 'nowrap',
+      minWidth: '6rem',
+      textAlign: 'center' as const,
     },
     // Barbers grid (4 columns on desktop, 2x2 on mobile via maxWidth)
     barbersGrid: {
@@ -1179,6 +1197,11 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     inputGrid: {
       display: 'grid',
       gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: '0.5rem',
+    },
+    inputGridTwo: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(2, 1fr)',
       gap: '0.5rem',
     },
     inputGridFull: {
@@ -1478,7 +1501,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
               </div>
 
               {/* Content */}
-              <div style={styles.content}>
+              <div style={styles.content} ref={contentRef}>
                 {/* Section 1: Day Selection */}
                 <div style={styles.section}>
                   <div style={styles.sectionHeader}>
@@ -1522,7 +1545,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                     {days.map((day) => (
                       <button
                         key={day.dateStr}
-                        onClick={() => !day.isDisabled && setSelectedDay(day.dateStr)}
+                        onClick={() => { if (!day.isDisabled) { setSelectedDay(day.dateStr); scrollToBottom(); } }}
                         disabled={day.isDisabled}
                         title={day.isClosed ? day.closedReason : undefined}
                         style={{
@@ -1582,6 +1605,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                             // Alle Barber sind immer klickbar - Alternativen werden angezeigt
                             setSelectedBarber(barber.id);
                             setSelectedSlot(null);
+                            scrollToBottom();
                           }}
                           style={{
                             ...styles.barberBtn,
@@ -1673,10 +1697,12 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                                       setSelectedDay(alt.date);
                                       setSelectedBarber(alt.barberId);
                                       setSelectedSlot(alt.slot);
+                                      scrollToBottom();
                                     } else {
                                       // Anderer Barber am gleichen Tag
                                       setSelectedBarber(alt.barberId);
                                       setSelectedSlot(alt.slot);
+                                      scrollToBottom();
                                     }
                                   }}
                                   style={{
@@ -1743,7 +1769,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                         {availableSlots.map((slot) => (
                           <button
                             key={slot}
-                            onClick={() => setSelectedSlot(slot)}
+                            onClick={() => { setSelectedSlot(slot); scrollToBottom(); }}
                             style={{
                               ...styles.slotBtn,
                               ...(selectedSlot === slot ? styles.slotBtnSelected : {}),
@@ -1780,7 +1806,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                     {services.map((service) => (
                       <button
                         key={service.id}
-                        onClick={() => setSelectedService(service.id)}
+                        onClick={() => { setSelectedService(service.id); scrollToBottom(); }}
                         disabled={!isServiceUnlocked}
                         style={{
                           ...styles.serviceBtn,
@@ -1875,7 +1901,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                         <div style={styles.choiceGrid}>
                           <button
                             type="button"
-                            onClick={() => setContactMode('guest')}
+                            onClick={() => { setContactMode('guest'); scrollToBottom(); }}
                             style={styles.choiceBtn}
                             onMouseEnter={(e) => e.currentTarget.style.borderColor = '#d4a853'}
                             onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
@@ -1891,7 +1917,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                           </button>
                           <button
                             type="button"
-                            onClick={() => setContactMode('auth')}
+                            onClick={() => { setContactMode('auth'); scrollToBottom(); }}
                             style={styles.choiceBtn}
                             onMouseEnter={(e) => e.currentTarget.style.borderColor = '#d4a853'}
                             onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
@@ -1966,17 +1992,21 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
 
                           {/* Auth Tabs */}
                           {authTab !== 'forgot' && (
-                            <div style={styles.authTabs}>
+                            <div style={styles.authTabs} ref={authFormRef}>
                               <button
                                 type="button"
-                                onClick={() => { setAuthTab('login'); resetAuthForm(); }}
+                                onClick={() => { setAuthTab('login'); resetAuthForm(); scrollToBottom(); }}
                                 style={{ ...styles.authTab, ...(authTab === 'login' ? styles.authTabActive : {}) }}
                               >
                                 {tAuth('login')}
                               </button>
                               <button
                                 type="button"
-                                onClick={() => { setAuthTab('register'); resetAuthForm(); }}
+                                onClick={() => {
+                                  setAuthTab('register');
+                                  resetAuthForm();
+                                  setTimeout(() => authFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                                }}
                                 style={{ ...styles.authTab, ...(authTab === 'register' ? styles.authTabActive : {}) }}
                               >
                                 {tAuth('register')}
@@ -2003,7 +2033,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                           {/* Login Form */}
                           {authTab === 'login' && !authSuccess && (
                             <form onSubmit={handleLogin}>
-                              <div style={{ ...styles.inputGrid, marginBottom: '0.5rem' }}>
+                              <div style={{ ...styles.inputGridTwo, marginBottom: '0.5rem' }}>
                                 <input
                                   type="email"
                                   value={authEmail}
@@ -2046,7 +2076,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                           {/* Register Form */}
                           {authTab === 'register' && !authSuccess && (
                             <form onSubmit={handleRegister}>
-                              <div style={{ ...styles.inputGrid, marginBottom: '0.5rem' }}>
+                              <div style={{ ...styles.inputGridTwo, marginBottom: '0.5rem' }}>
                                 <input
                                   type="text"
                                   value={authFirstName}
