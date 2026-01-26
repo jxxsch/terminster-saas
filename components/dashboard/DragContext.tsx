@@ -95,7 +95,8 @@ export function DragProvider({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // Minimale Pixel-Distanz bevor Drag startet
+        delay: 150, // 150ms Verzögerung - erlaubt normale Klicks
+        tolerance: 5,
       },
     }),
     useSensor(TouchSensor, {
