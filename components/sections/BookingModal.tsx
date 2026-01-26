@@ -323,14 +323,13 @@ function findAlternatives(
         }, availableSlots[0]);
       }
 
-      const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
       alternatives.push({
         type: 'nextDay',
         barberId: currentBarberId,
         barberName: currentBarber.name,
         barberImage: currentBarber.image || undefined,
         date: nextDateStr,
-        dateDisplay: `${dayNames[nextDate.getDay()]} ${nextDate.getDate()}.${nextDate.getMonth() + 1}`,
+        dateDisplay: `${String(nextDate.getDate()).padStart(2, '0')}.${String(nextDate.getMonth() + 1).padStart(2, '0')}.${nextDate.getFullYear()}`,
         slot: bestSlot,
       });
       break;
@@ -338,6 +337,7 @@ function findAlternatives(
   }
 
   // Alternative 2: Anderer Barber am gleichen Tag
+  const currentDate = new Date(currentDateStr + 'T00:00:00');
   for (const barber of team) {
     if (barber.id === currentBarberId) continue;
     if (!isBarberAvailable(barber.id, currentDateStr)) continue;
@@ -352,7 +352,7 @@ function findAlternatives(
       barberName: barber.name,
       barberImage: barber.image || undefined,
       date: currentDateStr,
-      dateDisplay: 'Heute',
+      dateDisplay: `${String(currentDate.getDate()).padStart(2, '0')}.${String(currentDate.getMonth() + 1).padStart(2, '0')}.${currentDate.getFullYear()}`,
       slot: availableSlots[0],
     });
     break;
@@ -392,8 +392,6 @@ function findBarberAlternatives(
   // Max Buchungsdatum
   const maxDate = new Date(today);
   maxDate.setDate(today.getDate() + maxWeeks * 7);
-
-  const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 
   // Montag der aktuellen Woche berechnen (für weekOffset)
   const monday = new Date(today);
@@ -445,7 +443,7 @@ function findBarberAlternatives(
 
       result.nextDay = {
         date: checkDateStr,
-        dateDisplay: `${dayNames[checkDate.getDay()]} ${checkDate.getDate()}.${checkDate.getMonth() + 1}`,
+        dateDisplay: `${String(checkDate.getDate()).padStart(2, '0')}.${String(checkDate.getMonth() + 1).padStart(2, '0')}.${checkDate.getFullYear()}`,
         slot: availableSlots[0],
         weekOffset: Math.max(0, weekOffset),
       };
@@ -499,8 +497,6 @@ function findNextAvailableDate(
   const maxDate = new Date(today);
   maxDate.setDate(today.getDate() + maxWeeks * 7);
 
-  const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-
   for (let i = 0; i <= maxWeeks * 7; i++) {
     const checkDate = new Date(today);
     checkDate.setDate(today.getDate() + i);
@@ -537,7 +533,7 @@ function findNextAvailableDate(
     if (availableSlots.length > 0) {
       return {
         date: checkDateStr,
-        dateDisplay: `${dayNames[checkDate.getDay()]} ${checkDate.getDate()}.${checkDate.getMonth() + 1}`,
+        dateDisplay: `${String(checkDate.getDate()).padStart(2, '0')}.${String(checkDate.getMonth() + 1).padStart(2, '0')}.${checkDate.getFullYear()}`,
         slot: availableSlots[0],
       };
     }
