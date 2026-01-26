@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { WeekView } from '@/components/dashboard/WeekView';
 import { BarberWeekView } from '@/components/dashboard/BarberWeekView';
 import Image from 'next/image';
@@ -73,6 +74,16 @@ export default function DashboardPage() {
   const [selectedAppointments, setSelectedAppointments] = useState<Set<string>>(new Set());
   const [nameDisplayMode, setNameDisplayMode] = useState<NameDisplayMode>('lastName');
   const [showNameDropdown, setShowNameDropdown] = useState(false);
+  const [showCancelledModal, setShowCancelledModal] = useState(false);
+  const [closeButtonHover, setCloseButtonHover] = useState(false);
+  const [cancelledAppointments, setCancelledAppointments] = useState<Array<{
+    id: string;
+    customer_name: string;
+    date: string;
+    time_slot: string;
+    barber_name: string;
+    cancelled_at: string;
+  }>>([]);
   const t = useTranslations('dashboard');
   const tDays = useTranslations('days');
   const tMonths = useTranslations('months');
@@ -99,6 +110,24 @@ export default function DashboardPage() {
     localStorage.setItem('dashboard_name_display', mode);
     setShowNameDropdown(false);
   }, []);
+
+  // Stornierte Termine laden
+  const loadCancelledAppointments = useCallback(async () => {
+    try {
+      const response = await fetch('/api/appointments/cancelled');
+      const data = await response.json();
+      if (data.appointments) {
+        setCancelledAppointments(data.appointments);
+      }
+    } catch (error) {
+      console.error('Failed to load cancelled appointments:', error);
+    }
+  }, []);
+
+  const handleShowCancelled = useCallback(() => {
+    loadCancelledAppointments();
+    setShowCancelledModal(true);
+  }, [loadCancelledAppointments]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -372,6 +401,19 @@ export default function DashboardPage() {
               )}
             </button>
 
+          {/* Cancelled Appointments Button */}
+          <button
+            onClick={handleShowCancelled}
+            className="flex items-center justify-center px-3 py-2 rounded-xl transition-all bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200"
+            title="Stornierte Termine"
+          >
+            {/* Durchgestrichener Kalender */}
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4l16 16" />
+            </svg>
+          </button>
+
           {/* Name Display Mode Dropdown */}
           <div className="relative">
             <button
@@ -585,6 +627,122 @@ export default function DashboardPage() {
           />
         )}
       </main>
+
+      {/* Stornierte Termine Modal - via Portal */}
+      {showCancelledModal && typeof document !== 'undefined' && createPortal(
+        <>
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              zIndex: 9999,
+            }}
+            onClick={() => setShowCancelledModal(false)}
+          />
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 10000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1rem',
+              pointerEvents: 'none',
+            }}
+          >
+            <div
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '1rem',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                maxWidth: '32rem',
+                width: '100%',
+                maxHeight: '80vh',
+                overflow: 'hidden',
+                pointerEvents: 'auto',
+                animation: 'modalFadeIn 0.2s ease-out',
+              }}
+            >
+              <style>{`
+                @keyframes modalFadeIn {
+                  from { opacity: 0; transform: scale(0.95); }
+                  to { opacity: 1; transform: scale(1); }
+                }
+              `}</style>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', borderBottom: '1px solid #e2e8f0' }}>
+                <h2 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0f172a' }}>Stornierte Termine</h2>
+                <button
+                  onClick={() => setShowCancelledModal(false)}
+                  onMouseEnter={() => setCloseButtonHover(true)}
+                  onMouseLeave={() => setCloseButtonHover(false)}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '0.5rem',
+                    cursor: 'pointer',
+                    background: closeButtonHover ? '#f1f5f9' : 'transparent',
+                    border: 'none',
+                    transition: 'background-color 0.15s ease, transform 0.15s ease',
+                    transform: closeButtonHover ? 'scale(1.1)' : 'scale(1)',
+                  }}
+                >
+                  <svg style={{ width: '1.25rem', height: '1.25rem', color: closeButtonHover ? '#ef4444' : '#64748b', transition: 'color 0.15s ease' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div style={{ overflowY: 'auto', maxHeight: '60vh' }}>
+                {cancelledAppointments.length === 0 ? (
+                  <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
+                    <svg style={{ width: '3rem', height: '3rem', margin: '0 auto 0.75rem', color: '#cbd5e1' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p>Keine stornierten Termine</p>
+                  </div>
+                ) : (
+                  <div>
+                    {cancelledAppointments.map((apt, index) => {
+                      const date = new Date(apt.date);
+                      const cancelledAt = new Date(apt.cancelled_at);
+                      const dateStr = `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}.${date.getFullYear()}`;
+                      const cancelledStr = `${String(cancelledAt.getDate()).padStart(2, '0')}.${String(cancelledAt.getMonth() + 1).padStart(2, '0')}. ${String(cancelledAt.getHours()).padStart(2, '0')}:${String(cancelledAt.getMinutes()).padStart(2, '0')}`;
+
+                      return (
+                        <div key={apt.id} style={{ padding: '1rem', borderTop: index > 0 ? '1px solid #f1f5f9' : 'none' }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                            <div>
+                              <p style={{ fontWeight: 600, color: '#0f172a' }}>{apt.customer_name}</p>
+                              <p style={{ fontSize: '0.875rem', color: '#475569' }}>{dateStr} · {apt.time_slot} Uhr</p>
+                              <p style={{ fontSize: '0.875rem', color: '#64748b' }}>Barber: {apt.barber_name}</p>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.25rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 500, backgroundColor: '#fee2e2', color: '#b91c1c' }}>
+                                Storniert
+                              </span>
+                              <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>{cancelledStr}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <div style={{ padding: '1rem', borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                <p style={{ fontSize: '0.75rem', color: '#64748b', textAlign: 'center' }}>Letzte 10 stornierte Termine</p>
+              </div>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
     </div>
   );
 }
