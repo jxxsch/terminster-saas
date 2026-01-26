@@ -675,10 +675,13 @@ export async function cancelAppointment(id: string): Promise<{ success: boolean;
     return { success: false, error: `Termine können nur bis ${cancellationHours} Stunden vorher storniert werden` };
   }
 
-  // Status auf cancelled setzen
+  // Status auf cancelled setzen und Zeitstempel speichern
   const { error: updateError } = await supabase
     .from('appointments')
-    .update({ status: 'cancelled' })
+    .update({
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString()
+    })
     .eq('id', id);
 
   if (updateError) {

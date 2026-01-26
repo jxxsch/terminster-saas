@@ -20,8 +20,7 @@ export async function GET() {
         team:barber_id (name)
       `)
       .eq('status', 'cancelled')
-      .not('cancelled_at', 'is', null)
-      .order('cancelled_at', { ascending: false })
+      .order('cancelled_at', { ascending: false, nullsFirst: false })
       .limit(10);
 
     if (error) {
