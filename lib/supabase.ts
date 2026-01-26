@@ -238,6 +238,7 @@ export async function getAppointments(startDate: string, endDate: string): Promi
     .select('*')
     .gte('date', startDate)
     .lte('date', endDate)
+    .or('status.is.null,status.neq.cancelled')
     .order('date')
     .order('time_slot');
 
