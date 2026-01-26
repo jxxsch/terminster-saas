@@ -10,12 +10,14 @@ import {
   updateCustomer,
   getTeam,
   getServices,
+  getSetting,
   Appointment,
   TeamMember,
   Service,
   formatPrice,
 } from '@/lib/supabase';
 import { sendCancellationEmail } from '@/lib/email-client';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 interface CustomerPortalProps {
   onClose: () => void;
@@ -38,6 +40,7 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancellationHours, setCancellationHours] = useState<number>(24);
   const [mounted, setMounted] = useState(false);
   const [closeHover, setCloseHover] = useState(false);
   const [logoutHover, setLogoutHover] = useState(false);
@@ -72,15 +75,19 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
 
       setIsLoading(true);
       try {
-        const [appointmentsData, teamData, servicesData] = await Promise.all([
+        const [appointmentsData, teamData, servicesData, cancellationSetting] = await Promise.all([
           getCustomerAppointments(customer.id),
           getTeam(),
           getServices(),
+          getSetting<{ value: number }>('cancellation_hours'),
         ]);
 
         setAppointments(appointmentsData || []);
         setTeam(teamData || []);
         setServices(servicesData || []);
+        if (cancellationSetting?.value) {
+          setCancellationHours(cancellationSetting.value);
+        }
       } catch (error) {
         console.error('Error loading customer data:', error);
       } finally {
@@ -154,7 +161,7 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
     const appointmentDate = new Date(`${apt.date}T${apt.time_slot}`);
     const now = new Date();
     const hoursUntil = (appointmentDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-    return hoursUntil >= 24;
+    return hoursUntil >= cancellationHours;
   };
 
   const handleCancel = async (id: string) => {
@@ -607,7 +614,7 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                               </button>
                             ) : (
                               <span style={{ padding: '0.375rem 0.625rem', fontSize: '0.6875rem', color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: '0.375rem' }}>
-                                &lt; 24h
+                                &lt; {cancellationHours}h
                               </span>
                             )}
                           </div>
@@ -731,14 +738,14 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                     </div>
 
                     {/* Geburtstag */}
-                    <div style={{ marginBottom: '1.5rem' }}>
+                    <div style={{ marginBottom: '1.5rem', maxWidth: '12rem' }}>
                       <label style={styles.label}>{tAuth('birthDate')}</label>
-                      <input
-                        type="date"
+                      <DatePicker
                         value={editBirthDate}
-                        onChange={(e) => setEditBirthDate(e.target.value)}
-                        className="portal-input"
-                        style={{ ...styles.input, maxWidth: '12rem' }}
+                        onChange={setEditBirthDate}
+                        max={new Date().toISOString().split('T')[0]}
+                        min="1920-01-01"
+                        style={styles.input}
                       />
                     </div>
 
