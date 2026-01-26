@@ -337,40 +337,213 @@ function findAlternatives(
     }
   }
 
-  // Alternative 2: Anderer Barber mit ähnlicher Zeit (am gleichen Tag)
-  if (preferredSlot || allSlots.length > 0) {
-    const targetSlot = preferredSlot || allSlots[Math.floor(allSlots.length / 2)]; // Mittlerer Slot als Fallback
-    const targetMinutes = timeToMinutes(targetSlot);
+  // Alternative 2: Anderer Barber am gleichen Tag
+  for (const barber of team) {
+    if (barber.id === currentBarberId) continue;
+    if (!isBarberAvailable(barber.id, currentDateStr)) continue;
 
-    for (const barber of team) {
-      if (barber.id === currentBarberId) continue;
-      if (!isBarberAvailable(barber.id, currentDateStr)) continue;
+    const availableSlots = getAvailableSlots(barber.id, currentDateStr, allSlots, bookedAppointments);
+    if (availableSlots.length === 0) continue;
 
-      const availableSlots = getAvailableSlots(barber.id, currentDateStr, allSlots, bookedAppointments);
-      if (availableSlots.length === 0) continue;
+    // Nimm den ersten verfügbaren Slot
+    alternatives.push({
+      type: 'otherBarber',
+      barberId: barber.id,
+      barberName: barber.name,
+      barberImage: barber.image || undefined,
+      date: currentDateStr,
+      dateDisplay: 'Heute',
+      slot: availableSlots[0],
+    });
+    break;
+  }
 
-      // Finde ähnlichsten Slot (±60 Minuten Toleranz)
-      const similarSlot = availableSlots.find(slot => {
-        const slotMinutes = timeToMinutes(slot);
-        return Math.abs(slotMinutes - targetMinutes) <= 60;
-      });
+  return alternatives;
+}
 
-      if (similarSlot) {
-        alternatives.push({
-          type: 'otherBarber',
-          barberId: barber.id,
-          barberName: barber.name,
-          barberImage: barber.image || undefined,
-          date: currentDateStr,
-          dateDisplay: '',
-          slot: similarSlot,
-        });
+// Typ für Barber-Overlay Alternativen
+interface BarberOverlayAlternatives {
+  nextDay: { date: string; dateDisplay: string; slot: string; weekOffset: number } | null;
+  otherBarber: { barberId: string; barberName: string; slot: string } | null;
+}
+
+// Finde Alternativen für einen ausgebuchten Barber (für Anzeige im Overlay)
+function findBarberAlternatives(
+  barberId: string,
+  currentDateStr: string,
+  allSlots: string[],
+  bookedAppointments: Appointment[],
+  team: TeamMember[],
+  staffTimeOff: StaffTimeOff[],
+  closedDates: ClosedDate[],
+  openSundays: OpenSunday[],
+  bundesland: Bundesland,
+  openHolidays: OpenHoliday[],
+  maxWeeks: number
+): BarberOverlayAlternatives {
+  const result: BarberOverlayAlternatives = { nextDay: null, otherBarber: null };
+  const barber = team.find(b => b.id === barberId);
+  if (!barber) return result;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = formatDateLocal(today);
+
+  // Max Buchungsdatum
+  const maxDate = new Date(today);
+  maxDate.setDate(today.getDate() + maxWeeks * 7);
+
+  const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
+  // Montag der aktuellen Woche berechnen (für weekOffset)
+  const monday = new Date(today);
+  const dayOfWeek = today.getDay();
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  monday.setDate(today.getDate() + diffToMonday);
+
+  // Helper: Prüfe ob Tag buchbar ist
+  const isDayBookable = (dateStr: string): boolean => {
+    const date = new Date(dateStr + 'T00:00:00');
+    if (date < today || date > maxDate) return false;
+    const isSunday = date.getDay() === 0;
+    const isOpenSunday = openSundays.some(os => os.date === dateStr);
+    if (isSunday && !isOpenSunday) return false;
+    if (closedDates.some(cd => cd.date === dateStr)) return false;
+    if (isHoliday(dateStr, bundesland) && !openHolidays.some(oh => oh.date === dateStr)) return false;
+    return true;
+  };
+
+  // Helper: Prüfe ob Barber an Tag verfügbar ist
+  const isBarberAvailableOnDay = (bId: string, dateStr: string): boolean => {
+    const b = team.find(t => t.id === bId);
+    if (!b) return false;
+    const onTimeOff = staffTimeOff.some(
+      off => off.staff_id === bId && off.start_date <= dateStr && off.end_date >= dateStr
+    );
+    if (onTimeOff) return false;
+    if (isBarberFreeDay(b, dateStr)) return false;
+    return true;
+  };
+
+  // 1. Nächster freier Tag (gleicher Barber) - starte ab MORGEN (nicht heute, da wir ja auf dem aktuellen Tag sind)
+  for (let i = 1; i <= maxWeeks * 7; i++) {
+    const checkDate = new Date(today);
+    checkDate.setDate(today.getDate() + i);
+    const checkDateStr = formatDateLocal(checkDate);
+
+    // Skip den aktuellen ausgewählten Tag (da dort ja ausgebucht)
+    if (checkDateStr === currentDateStr) continue;
+
+    if (!isDayBookable(checkDateStr)) continue;
+    if (!isBarberAvailableOnDay(barberId, checkDateStr)) continue;
+
+    const availableSlots = getAvailableSlots(barberId, checkDateStr, allSlots, bookedAppointments);
+    if (availableSlots.length > 0) {
+      // Berechne weekOffset
+      const diffDays = Math.floor((checkDate.getTime() - monday.getTime()) / (1000 * 60 * 60 * 24));
+      const weekOffset = Math.floor(diffDays / 7);
+
+      result.nextDay = {
+        date: checkDateStr,
+        dateDisplay: `${dayNames[checkDate.getDay()]} ${checkDate.getDate()}.${checkDate.getMonth() + 1}`,
+        slot: availableSlots[0],
+        weekOffset: Math.max(0, weekOffset),
+      };
+      break;
+    }
+  }
+
+  // 2. Anderer Barber am gleichen Tag (currentDateStr)
+  if (isDayBookable(currentDateStr)) {
+    for (const otherBarber of team) {
+      if (otherBarber.id === barberId) continue;
+      if (!isBarberAvailableOnDay(otherBarber.id, currentDateStr)) continue;
+
+      const availableSlots = getAvailableSlots(otherBarber.id, currentDateStr, allSlots, bookedAppointments);
+      if (availableSlots.length > 0) {
+        result.otherBarber = {
+          barberId: otherBarber.id,
+          barberName: otherBarber.name,
+          slot: availableSlots[0],
+        };
         break;
       }
     }
   }
 
-  return alternatives;
+  return result;
+}
+
+// Finde den nächsten freien Termin für einen Barber (für Anzeige im Overlay) - Legacy, wird noch verwendet
+function findNextAvailableDate(
+  barberId: string,
+  currentDateStr: string,
+  allSlots: string[],
+  bookedAppointments: Appointment[],
+  team: TeamMember[],
+  staffTimeOff: StaffTimeOff[],
+  closedDates: ClosedDate[],
+  openSundays: OpenSunday[],
+  bundesland: Bundesland,
+  openHolidays: OpenHoliday[],
+  maxWeeks: number
+): { date: string; dateDisplay: string; slot: string } | null {
+  const barber = team.find(b => b.id === barberId);
+  if (!barber) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = formatDateLocal(today);
+
+  // Max Buchungsdatum
+  const maxDate = new Date(today);
+  maxDate.setDate(today.getDate() + maxWeeks * 7);
+
+  const dayNames = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
+  for (let i = 0; i <= maxWeeks * 7; i++) {
+    const checkDate = new Date(today);
+    checkDate.setDate(today.getDate() + i);
+    const checkDateStr = formatDateLocal(checkDate);
+
+    // Skip aktuellen Tag wenn explizit angegeben
+    if (checkDateStr === currentDateStr) continue;
+
+    // Vergangen oder zu weit in der Zukunft?
+    if (checkDate < today || checkDate > maxDate) continue;
+
+    // Sonntag (außer verkaufsoffen)?
+    const isSunday = checkDate.getDay() === 0;
+    const isOpenSunday = openSundays.some(os => os.date === checkDateStr);
+    if (isSunday && !isOpenSunday) continue;
+
+    // Geschlossen?
+    if (closedDates.some(cd => cd.date === checkDateStr)) continue;
+
+    // Feiertag (ohne Sonderöffnung)?
+    if (isHoliday(checkDateStr, bundesland) && !openHolidays.some(oh => oh.date === checkDateStr)) continue;
+
+    // Barber im Urlaub?
+    const onTimeOff = staffTimeOff.some(
+      off => off.staff_id === barberId && off.start_date <= checkDateStr && off.end_date >= checkDateStr
+    );
+    if (onTimeOff) continue;
+
+    // Freier Tag?
+    if (isBarberFreeDay(barber, checkDateStr)) continue;
+
+    // Verfügbare Slots?
+    const availableSlots = getAvailableSlots(barberId, checkDateStr, allSlots, bookedAppointments);
+    if (availableSlots.length > 0) {
+      return {
+        date: checkDateStr,
+        dateDisplay: `${dayNames[checkDate.getDay()]} ${checkDate.getDate()}.${checkDate.getMonth() + 1}`,
+        slot: availableSlots[0],
+      };
+    }
+  }
+
+  return null;
 }
 
 export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModalProps) {
@@ -1401,27 +1574,28 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                                off.end_date >= selectedDay
                       );
                       const isOnTimeOff = !!timeOff;
-                      const isFreeDayToday = selectedDay && isBarberFreeDay(barber, selectedDay);
+                      const isFreeDayToday = !!(selectedDay && isBarberFreeDay(barber, selectedDay));
                       const isAbsent = isOnTimeOff || isFreeDayToday;
 
-                      const availableSlots = selectedDay && !isAbsent
-                        ? getAvailableSlots(barber.id, selectedDay, timeSlots, bookedAppointments, selectedDayData?.openSundayOpenTime, selectedDayData?.openSundayCloseTime)
-                        : [];
                       const isSelected = selectedBarber === barber.id;
                       const isOtherSelected = selectedBarber !== null && !isSelected;
-                      const isFullyBooked = !!(selectedDay && !isAbsent && availableSlots.length === 0);
-                      const isUnavailable = isAbsent || isFullyBooked;
 
                       return (
                         <button
                           key={barber.id}
-                          onClick={() => { if (!isUnavailable) { setSelectedBarber(barber.id); setSelectedSlot(null); }}}
-                          disabled={isUnavailable}
+                          onClick={() => {
+                            // Nur abwesende Barber (Urlaub/freier Tag) sind nicht klickbar
+                            if (!isAbsent) {
+                              setSelectedBarber(barber.id);
+                              setSelectedSlot(null);
+                            }
+                          }}
+                          disabled={isAbsent}
                           style={{
                             ...styles.barberBtn,
                             ...(isSelected ? styles.barberBtnSelected : {}),
                             ...(isOtherSelected ? styles.barberBtnOther : {}),
-                            ...(isUnavailable ? styles.barberBtnDisabled : {}),
+                            ...(isAbsent ? styles.barberBtnDisabled : {}),
                             borderColor: isSelected ? '#d4a853' : '#e2e8f0',
                           }}
                         >
@@ -1445,11 +1619,6 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                           {isOnTimeOff && !isFreeDayToday && (
                             <div style={styles.barberStatus}>
                               <span style={styles.barberStatusText}>{tStatus('absent')}</span>
-                            </div>
-                          )}
-                          {isFullyBooked && !isAbsent && (
-                            <div style={styles.barberStatus}>
-                              <span style={styles.barberStatusText}>{tStatus('fullyBooked')}</span>
                             </div>
                           )}
                         </button>
@@ -1515,11 +1684,13 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                                       const diffDays = Math.floor((altDate.getTime() - monday.getTime()) / (1000 * 60 * 60 * 24));
                                       const weekOffset = Math.floor(diffDays / 7);
 
+                                      // Setze Tag, Barber UND Slot
                                       setCurrentWeekOffset(Math.max(0, weekOffset));
                                       setSelectedDay(alt.date);
+                                      setSelectedBarber(alt.barberId);
                                       setSelectedSlot(alt.slot);
                                     } else {
-                                      // Anderer Barber
+                                      // Anderer Barber am gleichen Tag
                                       setSelectedBarber(alt.barberId);
                                       setSelectedSlot(alt.slot);
                                     }
@@ -1546,7 +1717,8 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                                     e.currentTarget.style.backgroundColor = '#ffffff';
                                   }}
                                 >
-                                  {alt.type === 'otherBarber' && alt.barberImage && (
+                                  {/* Barber-Bild für beide Typen */}
+                                  {alt.barberImage && (
                                     <div style={{
                                       width: '1.5rem',
                                       height: '1.5rem',
@@ -1565,9 +1737,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                                   )}
                                   <span>
                                     {alt.type === 'nextDay' ? (
-                                      <>{alt.dateDisplay} · {alt.slot}</>
+                                      <>{alt.barberName} · {alt.dateDisplay} · {alt.slot}</>
                                     ) : (
-                                      <>{alt.barberName} · {alt.slot}</>
+                                      <>{alt.barberName} · {alt.dateDisplay} · {alt.slot}</>
                                     )}
                                   </span>
                                   <svg width="12" height="12" fill="none" stroke="#d4a853" viewBox="0 0 24 24">
