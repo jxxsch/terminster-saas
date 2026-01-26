@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -570,6 +570,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
   const [selectedBarber, setSelectedBarber] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<string | null>(null);
+
+  // Ref um zu tracken, ob wir von den Alternativen kommen (dann soll der useEffect nicht resetten)
+  const skipDayChangeReset = useRef(false);
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -855,6 +858,11 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
   };
 
   useEffect(() => {
+    // Überspringe Reset wenn wir von den Alternativen kommen
+    if (skipDayChangeReset.current) {
+      skipDayChangeReset.current = false;
+      return;
+    }
     setSelectedBarber(null);
     setSelectedSlot(null);
     setSelectedService(null);
@@ -1683,6 +1691,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
 
                                       const diffDays = Math.floor((altDate.getTime() - monday.getTime()) / (1000 * 60 * 60 * 24));
                                       const weekOffset = Math.floor(diffDays / 7);
+
+                                      // Skip den Reset-useEffect da wir alles manuell setzen
+                                      skipDayChangeReset.current = true;
 
                                       // Setze Tag, Barber UND Slot
                                       setCurrentWeekOffset(Math.max(0, weekOffset));

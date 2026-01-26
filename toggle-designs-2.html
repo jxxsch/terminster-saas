@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Toggle Designs 2 - Tag/Woche</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+
+    /* Option 6: Neon Glow */
+    .neon-toggle {
+      position: relative;
+      background: #0f172a;
+      border-radius: 14px;
+      padding: 4px;
+      display: flex;
+    }
+    .neon-toggle button {
+      position: relative;
+      padding: 12px 28px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #475569;
+      border-radius: 10px;
+      transition: all 0.3s;
+      z-index: 1;
+    }
+    .neon-toggle button.active {
+      color: #D4AF37;
+      background: rgba(212, 175, 55, 0.1);
+      box-shadow:
+        0 0 20px rgba(212, 175, 55, 0.3),
+        inset 0 0 20px rgba(212, 175, 55, 0.05);
+    }
+
+    /* Option 7: Stacked Cards */
+    .stack-toggle {
+      position: relative;
+      height: 48px;
+      width: 200px;
+    }
+    .stack-card {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .stack-card.back {
+      background: #e2e8f0;
+      color: #64748b;
+      transform: scale(0.92) translateY(8px);
+      z-index: 1;
+    }
+    .stack-card.front {
+      background: linear-gradient(135deg, #D4AF37 0%, #c9a227 100%);
+      color: #000;
+      box-shadow: 0 8px 30px rgba(212, 175, 55, 0.3);
+      z-index: 2;
+    }
+    .stack-toggle.week .stack-card.back {
+      transform: scale(1) translateY(0);
+      z-index: 2;
+      background: linear-gradient(135deg, #D4AF37 0%, #c9a227 100%);
+      color: #000;
+      box-shadow: 0 8px 30px rgba(212, 175, 55, 0.3);
+    }
+    .stack-toggle.week .stack-card.front {
+      transform: scale(0.92) translateY(8px);
+      z-index: 1;
+      background: #e2e8f0;
+      color: #64748b;
+      box-shadow: none;
+    }
+
+    /* Option 8: Rotating Dial */
+    .dial-toggle {
+      position: relative;
+      width: 180px;
+      height: 48px;
+      background: #f1f5f9;
+      border-radius: 24px;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .dial-knob {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #D4AF37 0%, #b8982f 100%);
+      border-radius: 50%;
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+      transition: transform 0.5s cubic-bezier(0.68, -0.3, 0.32, 1.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dial-knob svg {
+      width: 18px;
+      height: 18px;
+      color: #000;
+      transition: transform 0.5s;
+    }
+    .dial-toggle.week .dial-knob {
+      transform: translateX(132px);
+    }
+    .dial-toggle.week .dial-knob svg {
+      transform: rotate(360deg);
+    }
+    .dial-labels {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 56px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      pointer-events: none;
+    }
+    .dial-labels span {
+      transition: color 0.3s, opacity 0.3s;
+    }
+    .dial-toggle:not(.week) .dial-labels span:first-child { opacity: 0; }
+    .dial-toggle.week .dial-labels span:last-child { opacity: 0; }
+
+    /* Option 9: Morphing Icon */
+    .icon-toggle {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: #f1f5f9;
+      border-radius: 16px;
+      padding: 4px;
+    }
+    .icon-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .icon-btn svg {
+      width: 18px;
+      height: 18px;
+      transition: transform 0.3s;
+    }
+    .icon-btn.active {
+      background: white;
+      color: #0f172a;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .icon-btn.active svg {
+      color: #D4AF37;
+      transform: scale(1.1);
+    }
+    .icon-btn:hover:not(.active) svg {
+      transform: translateY(-2px);
+    }
+
+    /* Option 10: Glassmorphism */
+    .glass-toggle {
+      position: relative;
+      background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.5);
+      border-radius: 20px;
+      padding: 6px;
+      box-shadow:
+        0 8px 32px rgba(0,0,0,0.08),
+        inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+    .glass-toggle .indicator {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      height: calc(100% - 12px);
+      width: calc(50% - 6px);
+      background: linear-gradient(135deg, #D4AF37 0%, #e5c158 100%);
+      border-radius: 14px;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow:
+        0 4px 15px rgba(212, 175, 55, 0.4),
+        inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+    .glass-toggle.week .indicator {
+      transform: translateX(100%);
+    }
+    .glass-toggle button {
+      position: relative;
+      z-index: 1;
+      padding: 14px 32px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      transition: color 0.3s;
+    }
+    .glass-toggle button.active {
+      color: #000;
+    }
+
+    /* Background for glass effect */
+    .glass-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 24px;
+      padding: 40px;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen p-8">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold text-slate-900 mb-2">Toggle Designs - Teil 2</h1>
+    <p class="text-slate-500 mb-8">5 weitere innovative Varianten</p>
+
+    <!-- Option 6: Neon Glow -->
+    <div class="bg-white rounded-2xl p-8 mb-6 shadow-sm border border-slate-200">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">6. Neon Glow</h2>
+          <p class="text-sm text-slate-500">Dunkler Hintergrund mit leuchtendem Glow-Effekt</p>
+        </div>
+        <span class="text-xs font-mono bg-slate-900 px-2 py-1 rounded text-amber-400">Dark</span>
+      </div>
+
+      <div class="flex justify-center">
+        <div class="neon-toggle" id="toggle6">
+          <button class="active" onclick="setToggle(6, 'day')">Tag</button>
+          <button onclick="setToggle(6, 'week')">Woche</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option 7: Stacked Cards -->
+    <div class="bg-white rounded-2xl p-8 mb-6 shadow-sm border border-slate-200">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">7. Stacked Cards</h2>
+          <p class="text-sm text-slate-500">Gestapelte Karten die sich austauschen</p>
+        </div>
+        <span class="text-xs font-mono bg-violet-100 px-2 py-1 rounded text-violet-700">3D</span>
+      </div>
+
+      <div class="flex justify-center py-4">
+        <div class="stack-toggle" id="toggle7" onclick="setToggle(7, 'toggle')">
+          <div class="stack-card back">Woche</div>
+          <div class="stack-card front">Tag</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option 8: Rotating Dial -->
+    <div class="bg-white rounded-2xl p-8 mb-6 shadow-sm border border-slate-200">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">8. Rotating Dial</h2>
+          <p class="text-sm text-slate-500">Drehbarer Knopf mit Icon-Animation</p>
+        </div>
+        <span class="text-xs font-mono bg-emerald-100 px-2 py-1 rounded text-emerald-700">Playful</span>
+      </div>
+
+      <div class="flex justify-center">
+        <div class="dial-toggle" id="toggle8" onclick="setToggle(8, 'toggle')">
+          <div class="dial-knob">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <div class="dial-labels">
+            <span>Tag</span>
+            <span>Woche</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option 9: Icon Toggle -->
+    <div class="bg-white rounded-2xl p-8 mb-6 shadow-sm border border-slate-200">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">9. Icon Labels</h2>
+          <p class="text-sm text-slate-500">Buttons mit animierten Icons</p>
+        </div>
+        <span class="text-xs font-mono bg-blue-100 px-2 py-1 rounded text-blue-700">Modern</span>
+      </div>
+
+      <div class="flex justify-center">
+        <div class="icon-toggle" id="toggle9">
+          <button class="icon-btn active" onclick="setToggle(9, 'day')">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
+            </svg>
+            Tag
+          </button>
+          <button class="icon-btn" onclick="setToggle(9, 'week')">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            Woche
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Option 10: Glassmorphism -->
+    <div class="bg-white rounded-2xl p-8 mb-6 shadow-sm border border-slate-200">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">10. Glassmorphism</h2>
+          <p class="text-sm text-slate-500">Frosted Glass Effekt mit Blur</p>
+        </div>
+        <span class="text-xs font-mono bg-pink-100 px-2 py-1 rounded text-pink-700">Trendy</span>
+      </div>
+
+      <div class="glass-bg flex justify-center">
+        <div class="glass-toggle flex" id="toggle10">
+          <div class="indicator"></div>
+          <button class="active" onclick="setToggle(10, 'day')">Tag</button>
+          <button onclick="setToggle(10, 'week')">Woche</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="flex gap-4">
+      <a href="toggle-designs.html" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 text-center py-3 rounded-xl font-semibold transition-colors">
+        ← Designs 1-5
+      </a>
+      <a href="toggle-designs-3.html" class="flex-1 bg-slate-900 hover:bg-slate-800 text-white text-center py-3 rounded-xl font-semibold transition-colors">
+        Designs 11-15 →
+      </a>
+    </div>
+  </div>
+
+  <script>
+    function setToggle(num, mode) {
+      const toggle = document.getElementById('toggle' + num);
+
+      if (num === 6) {
+        toggle.querySelectorAll('button').forEach((btn, i) => {
+          btn.classList.toggle('active', (mode === 'day' && i === 0) || (mode === 'week' && i === 1));
+        });
+      } else if (num === 7) {
+        toggle.classList.toggle('week');
+      } else if (num === 8) {
+        toggle.classList.toggle('week');
+      } else if (num === 9) {
+        toggle.querySelectorAll('button').forEach((btn, i) => {
+          btn.classList.toggle('active', (mode === 'day' && i === 0) || (mode === 'week' && i === 1));
+        });
+      } else if (num === 10) {
+        toggle.classList.toggle('week', mode === 'week');
+        toggle.querySelectorAll('button').forEach((btn, i) => {
+          btn.classList.toggle('active', (mode === 'day' && i === 0) || (mode === 'week' && i === 1));
+        });
+      }
+    }
+  </script>
+</body>
+</html>
