@@ -1592,18 +1592,14 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                         <button
                           key={barber.id}
                           onClick={() => {
-                            // Nur abwesende Barber (Urlaub/freier Tag) sind nicht klickbar
-                            if (!isAbsent) {
-                              setSelectedBarber(barber.id);
-                              setSelectedSlot(null);
-                            }
+                            // Alle Barber sind immer klickbar - Alternativen werden angezeigt
+                            setSelectedBarber(barber.id);
+                            setSelectedSlot(null);
                           }}
-                          disabled={isAbsent}
                           style={{
                             ...styles.barberBtn,
                             ...(isSelected ? styles.barberBtnSelected : {}),
                             ...(isOtherSelected ? styles.barberBtnOther : {}),
-                            ...(isAbsent ? styles.barberBtnDisabled : {}),
                             borderColor: isSelected ? '#d4a853' : '#e2e8f0',
                           }}
                         >
