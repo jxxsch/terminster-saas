@@ -650,7 +650,11 @@ export async function getCustomerAppointments(customerId: string): Promise<Appoi
 }
 
 export async function cancelAppointment(id: string): Promise<{ success: boolean; error: string | null }> {
-  // Termin laden um 24h-Regel zu prüfen
+  // Stornierungsfrist aus Einstellungen laden
+  const cancellationSetting = await getSetting<{ value: number }>('cancellation_hours');
+  const cancellationHours = cancellationSetting?.value || 24;
+
+  // Termin laden um Stornierungsfrist zu prüfen
   const { data: appointment, error: fetchError } = await supabase
     .from('appointments')
     .select('*')
@@ -661,13 +665,13 @@ export async function cancelAppointment(id: string): Promise<{ success: boolean;
     return { success: false, error: 'Termin nicht gefunden' };
   }
 
-  // 24h-Regel prüfen
+  // Stornierungsfrist prüfen
   const appointmentDate = new Date(`${appointment.date}T${appointment.time_slot}`);
   const now = new Date();
   const hoursUntil = (appointmentDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-  if (hoursUntil < 24) {
-    return { success: false, error: 'Termine können nur bis 24 Stunden vorher storniert werden' };
+  if (hoursUntil < cancellationHours) {
+    return { success: false, error: `Termine können nur bis ${cancellationHours} Stunden vorher storniert werden` };
   }
 
   // Status auf cancelled setzen
