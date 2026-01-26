@@ -1843,8 +1843,12 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                           type="tel"
                           placeholder={t('phone')}
                           value={customerPhone}
-                          onChange={(e) => setCustomerPhone(e.target.value)}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[^\d+\-\s]/g, '');
+                            if (value.length <= 20) setCustomerPhone(value);
+                          }}
                           style={styles.input}
+                          maxLength={20}
                         />
                       </div>
                       <div style={{ ...styles.loggedInActions, marginTop: '0.75rem' }}>
@@ -1935,8 +1939,12 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                               type="tel"
                               placeholder={t('phone')}
                               value={customerPhone}
-                              onChange={(e) => setCustomerPhone(e.target.value)}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/[^\d+\-\s]/g, '');
+                                if (value.length <= 20) setCustomerPhone(value);
+                              }}
                               style={styles.input}
+                              maxLength={20}
                             />
                           </div>
                         </div>
@@ -2062,14 +2070,20 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                                   placeholder={tAuth('birthDate')}
                                   style={styles.input}
                                   required
+                                  max={new Date().toISOString().split('T')[0]}
+                                  min="1920-01-01"
                                 />
                                 <input
                                   type="tel"
                                   value={authPhone}
-                                  onChange={(e) => setAuthPhone(e.target.value)}
+                                  onChange={(e) => {
+                                    const value = e.target.value.replace(/[^\d+\-\s]/g, '');
+                                    if (value.length <= 20) setAuthPhone(value);
+                                  }}
                                   placeholder={tAuth('phone')}
                                   style={styles.input}
                                   required
+                                  maxLength={20}
                                 />
                                 <input
                                   type="email"
