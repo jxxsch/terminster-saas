@@ -30,6 +30,7 @@ import { sendBookingConfirmationEmail } from '@/lib/email-client';
 import { useAuth } from '@/context/AuthContext';
 import { CustomerPortal } from '@/components/sections/CustomerPortal';
 import { Bundesland, isHoliday, getHolidayName } from '@/lib/holidays';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 // Constants for getWeekDays function (outside component, can't use hooks)
 const DAY_NAMES_SHORT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
@@ -595,6 +596,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
   // Auth Form States
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
+  const [authConfirmPassword, setAuthConfirmPassword] = useState('');
   const [authFirstName, setAuthFirstName] = useState('');
   const [authLastName, setAuthLastName] = useState('');
   const [authPhone, setAuthPhone] = useState('');
@@ -768,6 +770,10 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       setAuthError(tAuth('errors.passwordTooShort'));
       return;
     }
+    if (authPassword !== authConfirmPassword) {
+      setAuthError(tAuth('errors.passwordMismatch'));
+      return;
+    }
 
     setAuthSubmitting(true);
 
@@ -881,6 +887,55 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
   const selectedServiceData = services.find(s => s.id === selectedService);
   const selectedBarberData = team.find(b => b.id === selectedBarber);
   const selectedDayData = days.find(d => d.dateStr === selectedDay);
+
+  // Kalender-Download Funktion (.ics)
+  const downloadCalendarEvent = () => {
+    if (!selectedDay || !selectedSlot || !selectedServiceData || !selectedBarberData) return;
+
+    const [hour, minute] = selectedSlot.split(':').map(Number);
+    const startDate = new Date(selectedDay + 'T00:00:00');
+    startDate.setHours(hour, minute, 0, 0);
+
+    const endDate = new Date(startDate);
+    endDate.setMinutes(endDate.getMinutes() + (selectedServiceData.duration || 30));
+
+    // Format: YYYYMMDDTHHMMSS
+    const formatICSDate = (date: Date) => {
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
+    };
+
+    const title = `${selectedServiceData.name} bei ${selectedBarberData.name} - Beban Barbershop`;
+    const location = 'Beban Barbershop, Friedrich-Ebert-Platz 3a, 51373 Leverkusen';
+
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Beban Barbershop//Booking//DE',
+      'BEGIN:VEVENT',
+      `DTSTART:${formatICSDate(startDate)}`,
+      `DTEND:${formatICSDate(endDate)}`,
+      `SUMMARY:${title}`,
+      `LOCATION:${location}`,
+      'BEGIN:VALARM',
+      'TRIGGER:-PT1H',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:Terminerinnerung',
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `beban-termin-${selectedDay}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   // Inline Styles
   const styles = {
@@ -1453,14 +1508,27 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
               <p style={styles.successText}>
                 {t('success.message', { barber: selectedBarberData?.name || '', date: `${selectedDayData?.dayNameLong || ''}, ${selectedDayData?.dayNumFull || ''}`, time: selectedSlot || '' })}
               </p>
-              <button
-                onClick={handleClose}
-                style={{ ...styles.submitBtn, backgroundColor: '#0f172a' }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d4a853'}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0f172a'}
-              >
-                {tCommon('close')}
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%', marginTop: '0.5rem' }}>
+                <button
+                  onClick={downloadCalendarEvent}
+                  style={{ ...styles.submitBtn, backgroundColor: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d4a853'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0f172a'}
+                >
+                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  {t('success.addToCalendar')}
+                </button>
+                <button
+                  onClick={handleClose}
+                  style={{ ...styles.submitBtn, backgroundColor: 'transparent', border: '1px solid #e2e8f0', color: '#64748b' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#d4a853'; e.currentTarget.style.color = '#d4a853'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.color = '#64748b'; }}
+                >
+                  {tCommon('close')}
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -2076,6 +2144,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                           {/* Register Form */}
                           {authTab === 'register' && !authSuccess && (
                             <form onSubmit={handleRegister}>
+                              {/* Zeile 1: Vorname, Nachname */}
                               <div style={{ ...styles.inputGridTwo, marginBottom: '0.5rem' }}>
                                 <input
                                   type="text"
@@ -2093,10 +2162,12 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                                   style={styles.input}
                                   required
                                 />
-                                <input
-                                  type="date"
+                              </div>
+                              {/* Zeile 2: Geburtsdatum, Telefon */}
+                              <div style={{ ...styles.inputGridTwo, marginBottom: '0.5rem' }}>
+                                <DatePicker
                                   value={authBirthDate}
-                                  onChange={(e) => setAuthBirthDate(e.target.value)}
+                                  onChange={setAuthBirthDate}
                                   placeholder={tAuth('birthDate')}
                                   style={styles.input}
                                   required
@@ -2115,6 +2186,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                                   required
                                   maxLength={20}
                                 />
+                              </div>
+                              {/* Zeile 3: E-Mail, Passwort */}
+                              <div style={{ ...styles.inputGridTwo, marginBottom: '0.5rem' }}>
                                 <input
                                   type="email"
                                   value={authEmail}
@@ -2129,6 +2203,18 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                                   onChange={(e) => setAuthPassword(e.target.value)}
                                   placeholder={tAuth('passwordMinLength')}
                                   style={styles.input}
+                                  required
+                                  minLength={6}
+                                />
+                              </div>
+                              {/* Zeile 4: Passwort bestätigen */}
+                              <div style={{ marginBottom: '0.5rem' }}>
+                                <input
+                                  type="password"
+                                  value={authConfirmPassword}
+                                  onChange={(e) => setAuthConfirmPassword(e.target.value)}
+                                  placeholder={tAuth('confirmPassword')}
+                                  style={{ ...styles.input, width: '100%' }}
                                   required
                                   minLength={6}
                                 />
