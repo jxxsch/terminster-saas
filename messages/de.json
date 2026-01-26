@@ -250,6 +250,7 @@
     "email": "E-Mail",
     "password": "Passwort",
     "passwordMinLength": "Mindestens 6 Zeichen",
+    "confirmPassword": "Passwort bestätigen",
     "firstName": "Vorname",
     "lastName": "Nachname",
     "phone": "Telefon",
@@ -271,7 +272,8 @@
       "enterFirstName": "Bitte Vorname eingeben",
       "enterLastName": "Bitte Nachname eingeben",
       "enterPhone": "Bitte Telefonnummer eingeben",
-      "enterBirthDate": "Bitte Geburtsdatum eingeben"
+      "enterBirthDate": "Bitte Geburtsdatum eingeben",
+      "passwordMismatch": "Passwörter stimmen nicht überein"
     },
     "goToLogin": "Zur Anmeldung"
   },

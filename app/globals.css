@@ -195,3 +195,56 @@ a:not([class*="nav"]):not([class*="tracking"]):hover {
   }
 }
 
+/* Date Input Styling */
+input[type="date"] {
+  position: relative;
+  cursor: pointer;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 4px;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+  filter: invert(0.5) sepia(1) saturate(5) hue-rotate(15deg);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background-color: rgba(212, 175, 55, 0.1);
+}
+
+/* Dark background variant (für modals mit hellem Hintergrund) */
+.date-input-light::-webkit-calendar-picker-indicator {
+  filter: none;
+  opacity: 0.6;
+}
+
+.date-input-light::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background-color: rgba(212, 175, 55, 0.15);
+}
+
+/* Portal/Modal specific date input styling */
+.portal-input[type="date"],
+.login-input[type="date"],
+.booking-date-input {
+  color-scheme: light;
+}
+
+.portal-input[type="date"]::-webkit-calendar-picker-indicator,
+.login-input[type="date"]::-webkit-calendar-picker-indicator,
+.booking-date-input::-webkit-calendar-picker-indicator {
+  filter: none;
+  opacity: 0.5;
+}
+
+.portal-input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.login-input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.booking-date-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background-color: rgba(212, 175, 55, 0.15);
+}
+

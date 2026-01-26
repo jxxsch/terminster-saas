@@ -506,16 +506,16 @@ export default function DashboardPage() {
                 }}
                 disabled={isSundayDisabled || isWeekView}
                 title={day.isClosed ? day.closedReason : undefined}
-                className={`w-12 py-2 rounded-xl text-[11px] font-semibold transition-all relative ${
+                className={`w-12 py-2 rounded-xl text-[11px] font-semibold transition-all relative border-2 ${
                   isSundayDisabled
-                    ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                    ? 'bg-slate-100 text-slate-300 cursor-not-allowed border-transparent'
                     : isClosedDay
                     ? isSelected
-                      ? 'bg-red-100 text-red-600 border border-red-200'
-                      : 'bg-slate-100 text-slate-400'
+                      ? 'bg-red-100 text-red-600 border-red-200'
+                      : 'bg-slate-100 text-slate-400 border-transparent'
                     : isSelected
-                    ? 'bg-white text-slate-900 shadow-sm border-2 border-gold'
-                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                    ? 'bg-white text-slate-900 shadow-sm border-gold'
+                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200 border-transparent'
                 }`}
               >
                 <span className="block">{day.dayName}</span>

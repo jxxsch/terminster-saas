@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
 import { resetPassword } from '@/lib/supabase';
 import { useTranslations } from 'next-intl';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 interface LoginModalProps {
   onClose: () => void;
@@ -518,13 +519,13 @@ export function LoginModal({ onClose, onSuccess }: LoginModalProps) {
                 </div>
                 <div>
                   <label style={styles.label}>Geburtstag</label>
-                  <input
-                    type="date"
+                  <DatePicker
                     value={birthDate}
-                    onChange={(e) => setBirthDate(e.target.value)}
-                    className="login-input"
+                    onChange={setBirthDate}
                     style={styles.input}
                     required
+                    max={new Date().toISOString().split('T')[0]}
+                    min="1920-01-01"
                   />
                 </div>
               </div>

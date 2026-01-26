@@ -250,6 +250,7 @@
     "email": "Email",
     "password": "Password",
     "passwordMinLength": "At least 6 characters",
+    "confirmPassword": "Confirm password",
     "firstName": "First name",
     "lastName": "Last name",
     "phone": "Phone",
@@ -271,7 +272,8 @@
       "enterFirstName": "Please enter first name",
       "enterLastName": "Please enter last name",
       "enterPhone": "Please enter phone number",
-      "enterBirthDate": "Please enter date of birth"
+      "enterBirthDate": "Please enter date of birth",
+      "passwordMismatch": "Passwords do not match"
     },
     "goToLogin": "Go to login"
   },
