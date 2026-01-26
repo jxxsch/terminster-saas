@@ -1576,15 +1576,6 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                   </div>
                   <div style={styles.barbersGrid}>
                     {team.map((barber) => {
-                      const timeOff = selectedDay && staffTimeOff.find(
-                        off => off.staff_id === barber.id &&
-                               off.start_date <= selectedDay &&
-                               off.end_date >= selectedDay
-                      );
-                      const isOnTimeOff = !!timeOff;
-                      const isFreeDayToday = !!(selectedDay && isBarberFreeDay(barber, selectedDay));
-                      const isAbsent = isOnTimeOff || isFreeDayToday;
-
                       const isSelected = selectedBarber === barber.id;
                       const isOtherSelected = selectedBarber !== null && !isSelected;
 
@@ -1615,16 +1606,6 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                           />
                           <div style={styles.barberOverlay} />
                           <span style={{ ...styles.barberName, fontWeight: isSelected ? 500 : 400 }}>{barber.name}</span>
-                          {isFreeDayToday && (
-                            <div style={styles.barberStatus}>
-                              <span style={styles.barberStatusText}>{tStatus('freeDay')}</span>
-                            </div>
-                          )}
-                          {isOnTimeOff && !isFreeDayToday && (
-                            <div style={styles.barberStatus}>
-                              <span style={styles.barberStatusText}>{tStatus('absent')}</span>
-                            </div>
-                          )}
                         </button>
                       );
                     })}
