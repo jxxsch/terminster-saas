@@ -1452,7 +1452,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                   { num: 2, label: t('steps.barber'), done: selectedBarber !== null },
                   { num: 3, label: t('steps.time'), done: selectedSlot !== null },
                   { num: 4, label: t('steps.service'), done: selectedService !== null },
-                  { num: 5, label: t('steps.contact'), done: customerName.length > 0 && customerEmail.length > 0 && customerPhone.length > 0 },
+                  { num: 5, label: t('steps.contact'), done: selectedService !== null && customerName.length > 0 && customerEmail.length > 0 && customerPhone.length > 0 },
                 ].map((step) => {
                   const isActive =
                     (step.num === 1 && !selectedDay) ||
