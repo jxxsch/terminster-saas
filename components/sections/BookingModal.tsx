@@ -95,6 +95,7 @@ function getWeekDays(
     dayNameLong: string;
     dayNum: string;
     dayNumFull: string;
+    dayNumFullDate: string;
     isToday: boolean;
     isPast: boolean;
     isSunday: boolean;
@@ -123,6 +124,7 @@ function getWeekDays(
     const isToday = date.toDateString() === new Date().toDateString();
     const day = date.getDate();
     const month = date.getMonth();
+    const year = date.getFullYear();
 
     // Prüfe ob Tag manuell geschlossen ist
     const closedDate = closedDatesList.find(cd => cd.date === dateStr);
@@ -144,6 +146,7 @@ function getWeekDays(
       dayNameLong: DAY_NAMES_LONG[date.getDay()],
       dayNum: day.toString().padStart(2, '0') + '.' + (month + 1).toString().padStart(2, '0'),
       dayNumFull: `${day}. ${MONTH_NAMES[month]}`,
+      dayNumFullDate: `${day.toString().padStart(2, '0')}.${(month + 1).toString().padStart(2, '0')}.${year}`,
       isToday,
       isPast,
       isSunday,
@@ -1508,7 +1511,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
               </div>
               <h3 style={styles.successTitle}>{t('success.title')}</h3>
               <p style={styles.successText}>
-                {t('success.message', { barber: selectedBarberData?.name || '', date: `${selectedDayData?.dayNameLong || ''}, ${selectedDayData?.dayNumFull || ''}`, time: selectedSlot || '' })}
+                {t('success.message', { barber: selectedBarberData?.name || '', date: `${selectedDayData?.dayNameLong || ''}, ${selectedDayData?.dayNumFullDate || ''}`, time: selectedSlot || '' })}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%', marginTop: '0.5rem' }}>
                 <button
@@ -2309,7 +2312,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                       <span>
                         <span style={styles.gold}>{selectedServiceData.name}</span> {t('at')}{' '}
                         <span style={styles.gold}>{selectedBarberData.name}</span> {t('on')}{' '}
-                        <span style={styles.gold}>{selectedDayData.dayNameLong}, {selectedDayData.dayNumFull}</span> {t('atTime')}{' '}
+                        <span style={styles.gold}>{selectedDayData.dayNameLong}, {selectedDayData.dayNumFullDate}</span> {t('atTime')}{' '}
                         <span style={styles.gold}>{selectedSlot} {tCommon('oclock')}</span>
                       </span>
                     ) : (
