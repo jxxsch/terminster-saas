@@ -248,3 +248,31 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   background-color: rgba(212, 175, 55, 0.15);
 }
 
+/* Glassmorphism Header Styles */
+.header-glass-dark {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.header-glass-light {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Header color transition */
+.header-transition {
+  transition: background-color 500ms ease,
+              backdrop-filter 500ms ease,
+              box-shadow 500ms ease,
+              border-color 500ms ease;
+}
+
+/* Vertical separator in header */
+.header-separator {
+  width: 1px;
+  height: 1.25rem;
+}
+

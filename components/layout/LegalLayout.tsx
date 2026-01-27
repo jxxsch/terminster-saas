@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { LegalHeader } from './LegalHeader';
+import { Header } from './Header';
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
@@ -18,7 +18,10 @@ export function LegalLayout({ children, title, lastUpdated }: LegalLayoutProps) 
 
   return (
     <div className="min-h-screen bg-stone-50 flex flex-col">
-      <LegalHeader />
+      <Header />
+
+      {/* Spacer for fixed header */}
+      <div className="h-14 lg:h-16" />
 
       <main className="flex-grow py-12 md:py-16">
         <div className="container mx-auto px-4 max-w-4xl">

@@ -7,10 +7,11 @@ import { locales, Locale } from '@/i18n/config';
 
 interface LanguageSwitcherProps {
   className?: string;
-  variant?: 'globe' | 'vertical';
+  variant?: 'globe' | 'vertical' | 'minimal';
+  isDark?: boolean;
 }
 
-export function LanguageSwitcher({ className = '', variant = 'globe' }: LanguageSwitcherProps) {
+export function LanguageSwitcher({ className = '', variant = 'globe', isDark = true }: LanguageSwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const locale = useLocale() as Locale;
@@ -98,7 +99,9 @@ export function LanguageSwitcher({ className = '', variant = 'globe' }: Language
                 loc === locale
                   ? 'text-gold'
                   : isOpen
-                    ? 'text-gray-400 hover:text-white'
+                    ? isDark
+                      ? 'text-gray-400 hover:text-white'
+                      : 'text-gray-500 hover:text-gray-900'
                     : 'text-transparent'
               }`}
               style={{
@@ -112,6 +115,33 @@ export function LanguageSwitcher({ className = '', variant = 'globe' }: Language
             </button>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  // Variante 3: Minimal - inline "DE / EN"
+  if (variant === 'minimal') {
+    return (
+      <div className={`flex items-center gap-1 ${className}`}>
+        {locales.map((loc, index) => (
+          <span key={loc} className="flex items-center">
+            <button
+              onClick={() => handleLocaleChange(loc)}
+              className={`text-xs font-light tracking-wider uppercase transition-colors duration-300 ${
+                loc === locale
+                  ? 'text-gold'
+                  : isDark
+                    ? 'text-gray-400 hover:text-white'
+                    : 'text-gray-500 hover:text-gray-900'
+              }`}
+            >
+              {loc}
+            </button>
+            {index < locales.length - 1 && (
+              <span className={`mx-1 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>/</span>
+            )}
+          </span>
+        ))}
       </div>
     );
   }

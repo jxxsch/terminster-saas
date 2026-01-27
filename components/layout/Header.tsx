@@ -17,17 +17,23 @@ export function Header() {
   const { openBooking } = useBooking();
   const { isAuthenticated } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [scrollY, setScrollY] = useState(0);
-  const [heroHeight, setHeroHeight] = useState(800);
+  const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
   const [showCustomerPortal, setShowCustomerPortal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginModalTab, setLoginModalTab] = useState<'login' | 'register'>('login');
+
+  // Check if on legal pages (always light mode)
+  const isLegalPage = pathname.includes('/impressum') || pathname.includes('/datenschutz');
 
   useEffect(() => {
-    setHeroHeight(window.innerHeight);
-
     const handleScroll = () => {
-      setScrollY(window.scrollY);
+      // Farbwechsel exakt wenn Hero-Bereich verlassen wird (100% viewport height)
+      const heroHeight = window.innerHeight;
+      setIsScrolledPastHero(window.scrollY >= heroHeight);
     };
+
+    // Initial check
+    handleScroll();
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -48,215 +54,289 @@ export function Header() {
     };
   }, [isMobileMenuOpen]);
 
-  // Header nur im Hero-Bereich sichtbar
-  const inHero = scrollY < heroHeight * 0.8;
+  // Determine if we should use light mode
+  const isLightMode = isLegalPage || isScrolledPastHero;
 
-  const headerStyles = {
-    opacity: inHero ? 1 : 0,
-    transform: `translate(-50%, ${inHero ? 0 : -100}px)`,
-    pointerEvents: inHero ? 'auto' as const : 'none' as const,
+  const openLoginModal = (tab: 'login' | 'register') => {
+    setLoginModalTab(tab);
+    setShowLoginModal(true);
   };
 
-  // Navigation
-  const navItemsLeft = [
+  // Navigation items
+  const navItems = [
     { href: '#about', label: t('about') },
     { href: '#services', label: t('services') },
     { href: '#team', label: t('team') },
-  ];
-
-  const navItemsRight = [
     { href: '#products', label: t('products') },
     { href: '#gallery', label: t('gallery') },
     { href: '#contact', label: t('contact') },
   ];
 
-  const allNavItems = [...navItemsLeft, ...navItemsRight];
+  // Dynamic classes based on light/dark mode
+  const headerClass = cn(
+    'fixed top-0 left-0 right-0 z-50 header-transition',
+    isLightMode
+      ? 'header-glass-light border-b border-gray-200/50'
+      : 'header-glass-dark border-b border-white/10'
+  );
 
-  const navLinkClass = `
-    relative px-4 py-2
-    text-sm font-light tracking-[0.2em] uppercase text-gray-300
-    transition-all duration-300
-    border border-transparent
-    hover:border-gold/60
-    whitespace-nowrap
-    rounded-sm
-  `;
+  const navLinkClass = cn(
+    'px-3 py-2 text-xs font-light tracking-[0.12em] uppercase transition-all duration-300 rounded-sm',
+    isLightMode
+      ? 'text-gray-600 hover:text-gold'
+      : 'text-gray-300 hover:text-gold'
+  );
 
-  const navButtonClass = `
-    relative px-5 py-2
-    text-sm font-light tracking-[0.2em] uppercase
-    transition-all duration-300
-    bg-white/10 text-gray-300
-    hover:bg-gold hover:text-black hover:border-gold
-    whitespace-nowrap
-    rounded-sm
-    border border-white/30
-  `;
+  const ctaButtonClass = cn(
+    'h-9 px-4 text-xs font-medium tracking-[0.1em] uppercase rounded-sm transition-all duration-300 flex items-center justify-center border',
+    isLightMode
+      ? 'bg-black/10 text-gray-800 border-black/30 hover:bg-gold hover:text-black hover:border-gold'
+      : 'bg-white/10 text-white border-white/30 hover:bg-gold hover:text-black hover:border-gold'
+  );
+
+  const authButtonClass = cn(
+    'h-9 px-3 text-xs font-light tracking-[0.1em] uppercase transition-all duration-300 rounded-sm border flex items-center justify-center',
+    isLightMode
+      ? 'text-gray-600 border-gray-300 hover:text-gold hover:border-gold'
+      : 'text-gray-300 border-white/30 hover:text-gold hover:border-gold'
+  );
+
+  const separatorClass = cn(
+    'header-separator',
+    isLightMode ? 'bg-black/30' : 'bg-white/30'
+  );
 
   return (
-    <header
-      className="fixed top-4 left-1/2 z-40 w-[calc(100%-2rem)] max-w-[1104px] bg-black/20 border border-white/20 backdrop-blur-sm rounded-lg transition-all duration-300"
-      style={headerStyles}
-    >
-      <nav className="px-4 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Left Navigation - Desktop */}
-          <div className="hidden lg:flex items-center gap-1 flex-1">
-            {/* User Button / Login - Links */}
-            {isAuthenticated ? (
-              <button
-                onClick={() => setShowCustomerPortal(true)}
-                className="p-2 text-gold border border-gold/60 rounded-sm transition-all duration-300 hover:bg-gold/10"
-                aria-label="Mein Bereich"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </button>
-            ) : (
-              <button
-                onClick={() => setShowLoginModal(true)}
-                className="p-2 text-gray-300 hover:text-gold border border-transparent hover:border-gold/60 rounded-sm transition-all duration-300"
-                aria-label="Anmelden"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </button>
-            )}
-
-            {/* Language Switcher */}
-            <LanguageSwitcher variant="vertical" className="ml-2" />
-
-            {navItemsLeft.map((item) => (
+    <>
+      <header className={headerClass}>
+        <nav className="container mx-auto px-4 lg:px-6">
+          <div className="flex items-center justify-between h-14 lg:h-16">
+            {/* Left: Logo + Separator + Navigation */}
+            <div className="flex items-center gap-3 lg:gap-4">
+              {/* Logo */}
               <a
-                key={item.href}
-                href={item.href}
-                className={navLinkClass}
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="group cursor-pointer flex-shrink-0"
               >
-                {item.label}
+                <div className={cn(
+                  "relative w-10 h-10 lg:w-12 lg:h-12 transition-all duration-300",
+                  isLightMode
+                    ? "group-hover:[filter:drop-shadow(0_0_8px_rgba(212,175,55,0.5))]"
+                    : "[filter:drop-shadow(0_0_8px_rgba(212,175,55,0.5))]"
+                )}>
+                  <Image
+                    src="/logo.png"
+                    alt="Beban Barber Shop Logo"
+                    fill
+                    className="object-contain"
+                    priority
+                  />
+                </div>
               </a>
-            ))}
-          </div>
 
-          {/* Center Logo */}
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className="lg:mx-8 group cursor-pointer flex-shrink-0"
-          >
-            <div className="relative w-14 h-14 transition-all duration-300 group-hover:[filter:drop-shadow(0_0_8px_rgba(212,175,55,0.5))]">
-              <Image
-                src="/logo.png"
-                alt="Beban Barber Shop Logo"
-                fill
-                className="object-contain"
-                priority
-              />
+              {/* Separator */}
+              <div className={cn(separatorClass, 'hidden lg:block')} />
+
+              {/* Desktop Navigation */}
+              <div className="hidden lg:flex items-center gap-1">
+                {navItems.map((item) => (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    className={navLinkClass}
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </div>
             </div>
-          </a>
 
-          {/* Right Navigation - Desktop */}
-          <div className="hidden lg:flex items-center justify-end gap-1 flex-1">
-            {navItemsRight.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className={navLinkClass}
+            {/* Right: Language + CTA + Separator + Auth */}
+            <div className="hidden lg:flex items-center gap-3">
+              {/* Language Switcher */}
+              <LanguageSwitcher variant="vertical" isDark={!isLightMode} />
+
+              {/* CTA Button */}
+              <button
+                onClick={() => openBooking()}
+                className={ctaButtonClass}
               >
-                {item.label}
-              </a>
-            ))}
+                {t('bookNow')}
+              </button>
+
+              {/* Separator */}
+              <div className={separatorClass} />
+
+              {/* Auth Section */}
+              {isAuthenticated ? (
+                <button
+                  onClick={() => setShowCustomerPortal(true)}
+                  className={cn(
+                    'h-9 w-9 rounded-sm border transition-all duration-300 flex items-center justify-center',
+                    isLightMode
+                      ? 'text-gold border-gold/50 hover:bg-gold/10'
+                      : 'text-gold border-gold/50 hover:bg-white/10'
+                  )}
+                  aria-label={t('myArea')}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => openLoginModal('login')}
+                    className={authButtonClass}
+                  >
+                    {t('login')}
+                  </button>
+                  <button
+                    onClick={() => openLoginModal('register')}
+                    className={authButtonClass}
+                  >
+                    {t('register')}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Menu Button */}
             <button
-              onClick={() => openBooking()}
-              className={navButtonClass}
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className={cn(
+                'lg:hidden p-2 transition-colors',
+                isLightMode ? 'text-gray-700 hover:text-gold' : 'text-gray-300 hover:text-white'
+              )}
+              aria-label="Toggle menu"
+              aria-expanded={isMobileMenuOpen}
             >
-              {t('bookNow')}
+              {isMobileMenuOpen ? (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
             </button>
           </div>
+        </nav>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden absolute right-8 p-2 text-gray-300 hover:text-white transition-colors"
-            aria-label="Toggle menu"
-            aria-expanded={isMobileMenuOpen}
+        {/* Mobile Menu */}
+        <div
+          className={cn(
+            'lg:hidden fixed inset-x-0 top-14 bottom-0 z-40 transition-all duration-300',
+            isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
+          )}
+        >
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+
+          {/* Menu Content */}
+          <div
+            className={cn(
+              'relative mx-4 mt-4 rounded-lg overflow-hidden',
+              isLightMode
+                ? 'bg-white/95 backdrop-blur-md border border-gray-200'
+                : 'bg-black/90 backdrop-blur-md border border-white/10'
+            )}
           >
-            {isMobileMenuOpen ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
-          </button>
-        </div>
-      </nav>
+            <nav className="p-6 flex flex-col gap-2">
+              {/* Navigation Links */}
+              {navItems.map((item) => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={cn(
+                    'py-3 text-center text-sm tracking-[0.15em] uppercase transition-colors',
+                    isLightMode ? 'text-gray-700 hover:text-gold' : 'text-white hover:text-gold'
+                  )}
+                >
+                  {item.label}
+                </a>
+              ))}
 
-      {/* Mobile Menu */}
-      <div
-        className={cn(
-          'lg:hidden absolute inset-x-0 top-full mt-2 bg-black/20 backdrop-blur-sm border border-white/20 rounded-lg transition-all duration-300',
-          isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
-        )}
-      >
-        <div className="px-4 py-8">
-          <nav className="flex flex-col items-center space-y-4">
-            {allNavItems.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className="px-6 py-3 text-base font-light tracking-[0.2em] uppercase text-gray-300 border border-transparent hover:border-gold/60 transition-all duration-300"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {item.label}
-              </a>
-            ))}
-            <button
-              onClick={() => {
-                openBooking();
-                setIsMobileMenuOpen(false);
-              }}
-              className="px-6 py-3 text-base font-light tracking-[0.2em] uppercase bg-gold text-black hover:bg-gold-light transition-all duration-300"
-            >
-              {t('bookNow')}
-            </button>
+              {/* Divider */}
+              <div className={cn('h-px my-3', isLightMode ? 'bg-gray-200' : 'bg-white/20')} />
 
-            {/* Mobile User Button */}
-            {isAuthenticated ? (
+              {/* CTA Button */}
               <button
                 onClick={() => {
-                  setShowCustomerPortal(true);
+                  openBooking();
                   setIsMobileMenuOpen(false);
                 }}
-                className="px-6 py-3 text-base font-light tracking-[0.2em] uppercase text-gold border border-gold/60 transition-all duration-300"
+                className="py-3 bg-gold text-black text-sm font-medium tracking-[0.15em] uppercase rounded"
               >
-                {t('myArea')}
+                {t('bookNow')}
               </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setShowLoginModal(true);
-                  setIsMobileMenuOpen(false);
-                }}
-                className="px-6 py-3 text-base font-light tracking-[0.2em] uppercase text-gray-300 border border-gold/60 transition-all duration-300"
-              >
-                {t('login')}
-              </button>
-            )}
 
-            {/* Mobile Language Switcher */}
-            <div className="pt-4 border-t border-white/20 mt-4">
-              <LanguageSwitcher />
-            </div>
-          </nav>
+              {/* Auth Section */}
+              {isAuthenticated ? (
+                <button
+                  onClick={() => {
+                    setShowCustomerPortal(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={cn(
+                    'py-3 text-sm tracking-[0.15em] uppercase border rounded',
+                    isLightMode
+                      ? 'text-gold border-gold/50'
+                      : 'text-gold border-gold/50'
+                  )}
+                >
+                  {t('myArea')}
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      openLoginModal('login');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={cn(
+                      'flex-1 py-3 text-sm tracking-[0.15em] uppercase border rounded transition-colors',
+                      isLightMode
+                        ? 'text-gray-700 border-gray-300 hover:border-gold hover:text-gold'
+                        : 'text-gray-300 border-white/30 hover:border-gold hover:text-gold'
+                    )}
+                  >
+                    {t('login')}
+                  </button>
+                  <button
+                    onClick={() => {
+                      openLoginModal('register');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={cn(
+                      'flex-1 py-3 text-sm tracking-[0.15em] uppercase border rounded transition-colors',
+                      isLightMode
+                        ? 'text-gray-700 border-gray-300 hover:border-gold hover:text-gold'
+                        : 'text-gray-300 border-white/30 hover:border-gold hover:text-gold'
+                    )}
+                  >
+                    {t('register')}
+                  </button>
+                </div>
+              )}
+
+              {/* Language Switcher */}
+              <div className="flex justify-center pt-3">
+                <LanguageSwitcher variant="vertical" />
+              </div>
+            </nav>
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Customer Portal Modal */}
       {showCustomerPortal && (
@@ -269,6 +349,7 @@ export function Header() {
       {/* Login Modal */}
       {showLoginModal && (
         <LoginModal
+          initialTab={loginModalTab}
           onClose={() => setShowLoginModal(false)}
           onSuccess={() => {
             setShowLoginModal(false);
@@ -276,6 +357,6 @@ export function Header() {
           }}
         />
       )}
-    </header>
+    </>
   );
 }

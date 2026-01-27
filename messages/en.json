@@ -11,7 +11,8 @@
     "location": "Location",
     "bookNow": "Book Appointment",
     "myArea": "My Area",
-    "login": "Login"
+    "login": "Login",
+    "register": "Register"
   },
   "hero": {
     "title": "Men's Culture since 2016",

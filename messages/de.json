@@ -11,7 +11,8 @@
     "location": "Anfahrt",
     "bookNow": "Termin buchen",
     "myArea": "Mein Bereich",
-    "login": "Anmelden"
+    "login": "Einloggen",
+    "register": "Registrieren"
   },
   "hero": {
     "title": "Herrenkultur seit 2016",

@@ -10,14 +10,15 @@ import { DatePicker } from '@/components/ui/DatePicker';
 interface LoginModalProps {
   onClose: () => void;
   onSuccess?: () => void;
+  initialTab?: 'login' | 'register';
 }
 
 type Tab = 'login' | 'register' | 'forgot';
 
-export function LoginModal({ onClose, onSuccess }: LoginModalProps) {
+export function LoginModal({ onClose, onSuccess, initialTab = 'login' }: LoginModalProps) {
   const t = useTranslations('auth');
   const { signIn, signUp } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>('login');
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
