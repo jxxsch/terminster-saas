@@ -44,12 +44,37 @@
     "duration": "{minutes} Min",
     "from": "from",
     "badge": "Our Services",
-    "headline": "Precision, Craftsmanship & Style"
+    "headline": "Precision, Craftsmanship & Style",
+    "items": {
+      "haircut": { "name": "Haircut", "description": "Modern & Classic" },
+      "shave": { "name": "Beard Shave", "description": "Wet Shave & Hot Towel" },
+      "combo": { "name": "Hair & Beard", "description": "The Combo Package" },
+      "eyebrows": { "name": "Eyebrows", "description": "Precise Shaping" },
+      "clipper": { "name": "Clipper", "description": "Machine Haircut" },
+      "wash": { "name": "Wash", "description": "With Head Massage" },
+      "complete": { "name": "Complete", "description": "Wash, Cut, Beard Shave, Eyebrows" },
+      "kids": { "name": "Kids", "description": "Children's Haircut" }
+    }
   },
   "about": {
     "title": "About Us",
     "subtitle": "Tradition Meets Modern",
-    "description": "Since 2016, we've been providing first-class barbershop services in a relaxed atmosphere. Our experienced team values quality, precision, and individual consultation."
+    "description": "Since 2016, we've been providing first-class barbershop services in a relaxed atmosphere. Our experienced team values quality, precision, and individual consultation.",
+    "badge": "Since 2016",
+    "headline": "Beban Barber Shop, Barber & Lifestyle",
+    "intro": {
+      "paragraph1": "Welcome to Beban Barber Shop 2.0 – your exclusive refuge for men's grooming in the heart of Leverkusen Wiesdorf. We offer not just a haircut or beard shave, but an experience that combines style, precision, and comfort.",
+      "paragraph2": "Exclusively for men, we offer more than just a service: We offer a passion for excellence in every cut and shave. Let our experienced barbers pamper you with meticulous care and an eye for detail to perfect your look.",
+      "paragraph3": "Step into a world where tradition meets trend, and experience why we are the first choice for many men in Leverkusen. A place of relaxation and style awaits you at the Rathaus Galerie."
+    },
+    "stats": {
+      "yearsExperience": "Years Experience",
+      "satisfiedCustomers": "Satisfied Customers",
+      "googleRating": "Google Rating",
+      "passion": "Passion"
+    },
+    "quote": "With us, every customer is a guest. We don't just cut hair – we create experiences and nurture traditions that last for generations.",
+    "ownerTitle": "Owner & Master Barber"
   },
   "team": {
     "title": "Our Team",
@@ -109,7 +134,46 @@
   "footer": {
     "rights": "All Rights Reserved",
     "imprint": "Imprint",
-    "privacy": "Privacy Policy"
+    "privacy": "Privacy Policy",
+    "badge": "Contact",
+    "headline": "Visit Us",
+    "address": {
+      "label": "Address",
+      "building": "Rathaus Galerie",
+      "street": "Friedrich-Ebert-Platz 3a",
+      "city": "51373 Leverkusen"
+    },
+    "hours": {
+      "label": "Opening Hours",
+      "weekdays": "Monday - Friday",
+      "weekdaysTime": "10:00 - 19:00",
+      "saturday": "Saturday",
+      "saturdayTime": "10:00 - 18:00",
+      "sunday": "Sunday",
+      "closed": "Closed"
+    },
+    "phone": {
+      "label": "Phone"
+    },
+    "email": {
+      "label": "Email"
+    },
+    "bookButton": "Book Appointment",
+    "messageButton": "Send Message",
+    "location": "Rathaus Galerie · Upper Floor",
+    "form": {
+      "badge": "Contact",
+      "title": "Send Message",
+      "nameLabel": "Name",
+      "namePlaceholder": "Your Name",
+      "emailLabel": "Email",
+      "emailPlaceholder": "your@email.com",
+      "phoneLabel": "Phone (optional)",
+      "phonePlaceholder": "+49 ...",
+      "messageLabel": "Message",
+      "messagePlaceholder": "Your message...",
+      "submitButton": "Send Message"
+    }
   },
   "booking": {
     "title": "Book Appointment",

@@ -39,13 +39,13 @@ export function Contact() {
           {/* Badge - Zentriert */}
           <div className={`flex items-center justify-center gap-4 mb-8 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <div className="h-px w-12 bg-gold/30" />
-            <span className="text-sm font-light tracking-[0.3em] text-gold uppercase">Kontakt</span>
+            <span className="text-sm font-light tracking-[0.3em] text-gold uppercase">{t('badge')}</span>
             <div className="h-px w-12 bg-gold/30" />
           </div>
 
           {/* Header - Zentriert */}
           <h2 className={`text-3xl md:text-4xl lg:text-5xl font-light text-black tracking-wide mb-16 text-center transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            Besuchen Sie uns
+            {t('headline')}
           </h2>
 
           {/* Content Grid */}
@@ -64,10 +64,10 @@ export function Contact() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-xs font-light text-gold tracking-[0.2em] uppercase mb-3">Adresse</h3>
-                    <p className="text-sm font-light text-black leading-relaxed">Rathaus Galerie</p>
-                    <p className="text-sm font-light text-black leading-relaxed">Friedrich-Ebert-Platz 3a</p>
-                    <p className="text-sm font-light text-black leading-relaxed">51373 Leverkusen</p>
+                    <h3 className="text-xs font-light text-gold tracking-[0.2em] uppercase mb-3">{t('address.label')}</h3>
+                    <p className="text-sm font-light text-black leading-relaxed">{t('address.building')}</p>
+                    <p className="text-sm font-light text-black leading-relaxed">{t('address.street')}</p>
+                    <p className="text-sm font-light text-black leading-relaxed">{t('address.city')}</p>
                   </div>
                 </div>
               </div>
@@ -81,19 +81,19 @@ export function Contact() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-xs font-light text-gold tracking-[0.2em] uppercase mb-3">Öffnungszeiten</h3>
+                    <h3 className="text-xs font-light text-gold tracking-[0.2em] uppercase mb-3">{t('hours.label')}</h3>
                     <div className="space-y-2">
                       <div className="flex justify-between gap-8">
-                        <span className="text-sm font-light text-gray-500">Montag - Freitag</span>
-                        <span className="text-sm font-light text-black">10:00 - 19:00</span>
+                        <span className="text-sm font-light text-gray-500">{t('hours.weekdays')}</span>
+                        <span className="text-sm font-light text-black">{t('hours.weekdaysTime')}</span>
                       </div>
                       <div className="flex justify-between gap-8">
-                        <span className="text-sm font-light text-gray-500">Samstag</span>
-                        <span className="text-sm font-light text-black">10:00 - 18:00</span>
+                        <span className="text-sm font-light text-gray-500">{t('hours.saturday')}</span>
+                        <span className="text-sm font-light text-black">{t('hours.saturdayTime')}</span>
                       </div>
                       <div className="flex justify-between gap-8">
-                        <span className="text-sm font-light text-gray-500">Sonntag</span>
-                        <span className="text-sm font-light text-black">Geschlossen</span>
+                        <span className="text-sm font-light text-gray-500">{t('hours.sunday')}</span>
+                        <span className="text-sm font-light text-black">{t('hours.closed')}</span>
                       </div>
                     </div>
                   </div>
@@ -109,7 +109,7 @@ export function Contact() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-xs font-light text-gold tracking-[0.2em] uppercase mb-3">Telefon</h3>
+                    <h3 className="text-xs font-light text-gold tracking-[0.2em] uppercase mb-3">{t('phone.label')}</h3>
                     <a href="tel:+4921421234567" className="text-sm font-light text-black hover:text-gold transition-colors">
                       +49 214 123 4567
                     </a>
@@ -126,7 +126,7 @@ export function Contact() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-xs font-light text-gold tracking-[0.2em] uppercase mb-3">E-Mail</h3>
+                    <h3 className="text-xs font-light text-gold tracking-[0.2em] uppercase mb-3">{t('email.label')}</h3>
                     <a href="mailto:info@beban-barbershop.de" className="text-sm font-light text-black hover:text-gold transition-colors">
                       info@beban-barbershop.de
                     </a>
@@ -140,13 +140,13 @@ export function Contact() {
                   onClick={() => openBooking()}
                   className="inline-flex items-center justify-center px-8 py-3 bg-black text-white text-xs font-light tracking-[0.2em] uppercase hover:bg-gold transition-all duration-300"
                 >
-                  Termin buchen
+                  {t('bookButton')}
                 </button>
                 <button
                   onClick={() => setIsFormOpen(true)}
                   className="inline-flex items-center justify-center px-8 py-3 border border-black text-black text-xs font-light tracking-[0.2em] uppercase hover:bg-gold hover:border-gold transition-all duration-300"
                 >
-                  Nachricht senden
+                  {t('messageButton')}
                 </button>
               </div>
 
@@ -171,7 +171,7 @@ export function Contact() {
               </div>
 
               <div className="mt-6 text-center">
-                <p className="text-xs font-light text-gray-400 tracking-[0.15em] uppercase">Rathaus Galerie · Obergeschoss</p>
+                <p className="text-xs font-light text-gray-400 tracking-[0.15em] uppercase">{t('location')}</p>
               </div>
             </div>
 
@@ -235,8 +235,8 @@ export function Contact() {
             {/* Header */}
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
               <div>
-                <span className="text-xs font-light text-gold tracking-[0.2em] uppercase">Kontakt</span>
-                <h2 className="text-xl font-light text-black">Nachricht senden</h2>
+                <span className="text-xs font-light text-gold tracking-[0.2em] uppercase">{t('form.badge')}</span>
+                <h2 className="text-xl font-light text-black">{t('form.title')}</h2>
               </div>
               <button onClick={() => setIsFormOpen(false)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -249,41 +249,41 @@ export function Contact() {
             <form className="p-6" onSubmit={(e) => { e.preventDefault(); setIsFormOpen(false); }}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-2">Name</label>
+                  <label className="block text-xs text-gray-500 mb-2">{t('form.nameLabel')}</label>
                   <input
                     type="text"
                     required
                     className="w-full p-4 border border-gray-200 rounded-lg text-sm font-light focus:border-gold focus:outline-none"
-                    placeholder="Ihr Name"
+                    placeholder={t('form.namePlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-2">E-Mail</label>
+                  <label className="block text-xs text-gray-500 mb-2">{t('form.emailLabel')}</label>
                   <input
                     type="email"
                     required
                     className="w-full p-4 border border-gray-200 rounded-lg text-sm font-light focus:border-gold focus:outline-none"
-                    placeholder="ihre@email.de"
+                    placeholder={t('form.emailPlaceholder')}
                   />
                 </div>
               </div>
 
               <div className="mb-4">
-                <label className="block text-xs text-gray-500 mb-2">Telefon (optional)</label>
+                <label className="block text-xs text-gray-500 mb-2">{t('form.phoneLabel')}</label>
                 <input
                   type="tel"
                   className="w-full p-4 border border-gray-200 rounded-lg text-sm font-light focus:border-gold focus:outline-none"
-                  placeholder="+49 ..."
+                  placeholder={t('form.phonePlaceholder')}
                 />
               </div>
 
               <div className="mb-6">
-                <label className="block text-xs text-gray-500 mb-2">Nachricht</label>
+                <label className="block text-xs text-gray-500 mb-2">{t('form.messageLabel')}</label>
                 <textarea
                   required
                   rows={5}
                   className="w-full p-4 border border-gray-200 rounded-lg text-sm font-light focus:border-gold focus:outline-none resize-none"
-                  placeholder="Ihre Nachricht..."
+                  placeholder={t('form.messagePlaceholder')}
                 />
               </div>
 
@@ -293,7 +293,7 @@ export function Contact() {
                   type="submit"
                   className="px-8 py-3 bg-black text-white text-xs font-light tracking-[0.2em] uppercase hover:bg-gold transition-all"
                 >
-                  Nachricht senden
+                  {t('form.submitButton')}
                 </button>
               </div>
             </form>

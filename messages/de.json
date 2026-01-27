@@ -44,12 +44,37 @@
     "duration": "{minutes} Min",
     "from": "ab",
     "badge": "Unsere Leistungen",
-    "headline": "Präzision, Handwerk & Stil"
+    "headline": "Präzision, Handwerk & Stil",
+    "items": {
+      "haircut": { "name": "Haarschnitt", "description": "Modern & Klassisch" },
+      "shave": { "name": "Bartrasur", "description": "Nassrasur & Hot Towel" },
+      "combo": { "name": "Haare & Bart", "description": "Das Kombi-Paket" },
+      "eyebrows": { "name": "Augenbrauen", "description": "Präzise Formung" },
+      "clipper": { "name": "Clipper", "description": "Maschinenhaarschnitt" },
+      "wash": { "name": "Waschen", "description": "Mit Kopfmassage" },
+      "complete": { "name": "Komplett", "description": "Waschen, Schneiden, Bartrasur, Augenbrauen" },
+      "kids": { "name": "Kids", "description": "Kinderhaarschnitt" }
+    }
   },
   "about": {
     "title": "Über uns",
     "subtitle": "Tradition trifft Moderne",
-    "description": "Seit 2016 bieten wir erstklassige Barbershop-Services in einer entspannten Atmosphäre. Unser erfahrenes Team legt Wert auf Qualität, Präzision und individuelle Beratung."
+    "description": "Seit 2016 bieten wir erstklassige Barbershop-Services in einer entspannten Atmosphäre. Unser erfahrenes Team legt Wert auf Qualität, Präzision und individuelle Beratung.",
+    "badge": "Seit 2016",
+    "headline": "Beban Barber Shop, Barber & Lifestyle",
+    "intro": {
+      "paragraph1": "Herzlich willkommen im Beban Barber Shop 2.0 – Ihrem exklusiven Refugium für Herrenpflege im Herzen von Leverkusen Wiesdorf. Bei uns erwartet Sie nicht nur ein Haarschnitt oder eine Bartrasur, sondern ein Erlebnis, das Stil, Präzision und Komfort vereint.",
+      "paragraph2": "Exklusiv für Herren bieten wir mehr als nur eine Dienstleistung: Wir bieten eine Leidenschaft für Exzellenz in jedem Schnitt und jeder Rasur. Lassen Sie sich von unseren erfahrenen Barbieren verwöhnen, die mit akribischer Sorgfalt und einem Auge fürs Detail Ihren Look perfektionieren.",
+      "paragraph3": "Treten Sie ein in eine Welt, in der Tradition auf Trend trifft, und erleben Sie, warum wir für viele Männer in Leverkusen die erste Wahl sind. In der Rathaus Galerie erwartet Sie ein Ort der Entspannung und des Stils."
+    },
+    "stats": {
+      "yearsExperience": "Jahre Erfahrung",
+      "satisfiedCustomers": "Zufriedene Kunden",
+      "googleRating": "Google Bewertung",
+      "passion": "Leidenschaft"
+    },
+    "quote": "Bei uns ist jeder Kunde ein Gast. Wir schneiden nicht nur Haare – wir schaffen Erlebnisse und pflegen Traditionen, die Generationen überdauern.",
+    "ownerTitle": "Inhaber & Master Barber"
   },
   "team": {
     "title": "Unser Team",
@@ -109,7 +134,46 @@
   "footer": {
     "rights": "Alle Rechte vorbehalten",
     "imprint": "Impressum",
-    "privacy": "Datenschutz"
+    "privacy": "Datenschutz",
+    "badge": "Kontakt",
+    "headline": "Besuchen Sie uns",
+    "address": {
+      "label": "Adresse",
+      "building": "Rathaus Galerie",
+      "street": "Friedrich-Ebert-Platz 3a",
+      "city": "51373 Leverkusen"
+    },
+    "hours": {
+      "label": "Öffnungszeiten",
+      "weekdays": "Montag - Freitag",
+      "weekdaysTime": "10:00 - 19:00",
+      "saturday": "Samstag",
+      "saturdayTime": "10:00 - 18:00",
+      "sunday": "Sonntag",
+      "closed": "Geschlossen"
+    },
+    "phone": {
+      "label": "Telefon"
+    },
+    "email": {
+      "label": "E-Mail"
+    },
+    "bookButton": "Termin buchen",
+    "messageButton": "Nachricht senden",
+    "location": "Rathaus Galerie · Obergeschoss",
+    "form": {
+      "badge": "Kontakt",
+      "title": "Nachricht senden",
+      "nameLabel": "Name",
+      "namePlaceholder": "Ihr Name",
+      "emailLabel": "E-Mail",
+      "emailPlaceholder": "ihre@email.de",
+      "phoneLabel": "Telefon (optional)",
+      "phonePlaceholder": "+49 ...",
+      "messageLabel": "Nachricht",
+      "messagePlaceholder": "Ihre Nachricht...",
+      "submitButton": "Nachricht senden"
+    }
   },
   "booking": {
     "title": "Termin buchen",

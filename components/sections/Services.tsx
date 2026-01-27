@@ -6,8 +6,7 @@ import { useTranslations } from 'next-intl';
 
 interface Service {
   id: string;
-  name: string;
-  description: string;
+  key: string;
   duration: number;
   price: string;
   image: string;
@@ -17,14 +16,14 @@ interface Service {
 }
 
 const SERVICES: Service[] = [
-  { id: '1', name: 'Haarschnitt', description: 'Modern & Klassisch', duration: 30, price: '20 €', image: 'https://images.pexels.com/photos/3998415/pexels-photo-3998415.jpeg?auto=compress&cs=tinysrgb&w=800' },
-  { id: '2', name: 'Bartrasur', description: 'Nassrasur & Hot Towel', duration: 20, price: '15 €', image: '/services/shave.jpg', brightness: '110%' },
-  { id: '3', name: 'Haare & Bart', description: 'Das Kombi-Paket', duration: 45, price: '35 €', image: '/services/combo.jpg' },
-  { id: '4', name: 'Augenbrauen', description: 'Präzise Formung', duration: 10, price: '8 €', image: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=600&h=600&fit=crop' },
-  { id: '5', name: 'Clipper', description: 'Maschinenhaarschnitt', duration: 15, price: '12 €', image: 'https://images.unsplash.com/photo-1493256338651-d82f7acb2b38?w=600&h=600&fit=crop', brightness: '110%' },
-  { id: '6', name: 'Waschen', description: 'Mit Kopfmassage', duration: 5, price: '3 €', image: 'https://images.pexels.com/photos/7518730/pexels-photo-7518730.jpeg?auto=compress&cs=tinysrgb&w=800', position: '35% 100%', scale: '1.3' },
-  { id: '7', name: 'Komplett', description: 'Waschen, Schneiden, Bartrasur, Augenbrauen', duration: 60, price: '40 €', image: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=600&h=600&fit=crop' },
-  { id: '8', name: 'Kids', description: 'Kinderhaarschnitt', duration: 25, price: '15 €', image: 'https://images.unsplash.com/photo-1534297635766-a262cdcb8ee4?w=600&h=600&fit=crop' },
+  { id: '1', key: 'haircut', duration: 30, price: '20 €', image: 'https://images.pexels.com/photos/3998415/pexels-photo-3998415.jpeg?auto=compress&cs=tinysrgb&w=800' },
+  { id: '2', key: 'shave', duration: 20, price: '15 €', image: '/services/shave.jpg', brightness: '110%' },
+  { id: '3', key: 'combo', duration: 45, price: '35 €', image: '/services/combo.jpg' },
+  { id: '4', key: 'eyebrows', duration: 10, price: '8 €', image: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?w=600&h=600&fit=crop' },
+  { id: '5', key: 'clipper', duration: 15, price: '12 €', image: 'https://images.unsplash.com/photo-1493256338651-d82f7acb2b38?w=600&h=600&fit=crop', brightness: '110%' },
+  { id: '6', key: 'wash', duration: 5, price: '3 €', image: 'https://images.pexels.com/photos/7518730/pexels-photo-7518730.jpeg?auto=compress&cs=tinysrgb&w=800', position: '35% 100%', scale: '1.3' },
+  { id: '7', key: 'complete', duration: 60, price: '40 €', image: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?w=600&h=600&fit=crop' },
+  { id: '8', key: 'kids', duration: 25, price: '15 €', image: 'https://images.unsplash.com/photo-1534297635766-a262cdcb8ee4?w=600&h=600&fit=crop' },
 ];
 
 export function Services() {
@@ -72,11 +71,11 @@ export function Services() {
             <div key={service.id} className="group text-center">
               <div className="p-1.5 border-2 border-gold rounded-full max-w-[200px] mx-auto">
                 <div className="aspect-square bg-gray-100 overflow-hidden relative rounded-full border-2 border-gold">
-                  <Image src={service.image} alt={service.name} fill className="object-cover" style={{ objectPosition: service.position || '50% 50%', transform: `scale(${service.scale || '1'})`, filter: `grayscale(100%) sepia(30%) contrast(110%) brightness(${service.brightness || '90%'})` }} />
+                  <Image src={service.image} alt={t(`items.${service.key}.name`)} fill className="object-cover" style={{ objectPosition: service.position || '50% 50%', transform: `scale(${service.scale || '1'})`, filter: `grayscale(100%) sepia(30%) contrast(110%) brightness(${service.brightness || '90%'})` }} />
                 </div>
               </div>
-              <h3 className="text-xs font-light text-black tracking-[0.15em] uppercase mb-0 mt-3">{service.name}</h3>
-              <p className="text-[10px] text-gray-500 font-light mb-2">{service.description}</p>
+              <h3 className="text-xs font-light text-black tracking-[0.15em] uppercase mb-0 mt-3">{t(`items.${service.key}.name`)}</h3>
+              <p className="text-[10px] text-gray-500 font-light mb-2">{t(`items.${service.key}.description`)}</p>
               <span className="text-sm font-medium text-gold">{service.price}</span>
             </div>
           ))}

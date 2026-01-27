@@ -2,10 +2,12 @@
 
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 export function About() {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
+  const t = useTranslations('about');
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -31,25 +33,25 @@ export function About() {
         {/* Timeline Badge - Zentriert */}
         <div className={`flex items-center justify-center gap-4 mb-8 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="h-px w-12 bg-gold/30" />
-          <span className="text-sm font-light tracking-[0.3em] text-gold uppercase">Seit 2016</span>
+          <span className="text-sm font-light tracking-[0.3em] text-gold uppercase">{t('badge')}</span>
           <div className="h-px w-12 bg-gold/30" />
         </div>
 
         {/* Header - Zentriert */}
         <h2 className={`text-3xl md:text-4xl lg:text-5xl font-light text-black tracking-wide mb-12 text-center transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          Beban Barber Shop, Barber & Lifestyle
+          {t('headline')}
         </h2>
 
         {/* Intro Text - 3 Spalten, Blocksatz */}
         <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 mb-20 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <p className="text-gray-700 text-sm leading-relaxed font-light text-justify">
-            Herzlich willkommen im Beban Barber Shop 2.0 – Ihrem exklusiven Refugium für Herrenpflege im Herzen von Leverkusen Wiesdorf. Bei uns erwartet Sie nicht nur ein Haarschnitt oder eine Bartrasur, sondern ein Erlebnis, das Stil, Präzision und Komfort vereint.
+            {t('intro.paragraph1')}
           </p>
           <p className="text-gray-700 text-sm leading-relaxed font-light text-justify">
-            Exklusiv für Herren bieten wir mehr als nur eine Dienstleistung: Wir bieten eine Leidenschaft für Exzellenz in jedem Schnitt und jeder Rasur. Lassen Sie sich von unseren erfahrenen Barbieren verwöhnen, die mit akribischer Sorgfalt und einem Auge fürs Detail Ihren Look perfektionieren.
+            {t('intro.paragraph2')}
           </p>
           <p className="text-gray-700 text-sm leading-relaxed font-light text-justify">
-            Treten Sie ein in eine Welt, in der Tradition auf Trend trifft, und erleben Sie, warum wir für viele Männer in Leverkusen die erste Wahl sind. In der Rathaus Galerie erwartet Sie ein Ort der Entspannung und des Stils.
+            {t('intro.paragraph3')}
           </p>
         </div>
 
@@ -62,19 +64,19 @@ export function About() {
         <div className={`grid grid-cols-2 md:grid-cols-4 gap-8 mb-20 transition-all duration-700 delay-400 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="text-center">
             <span className="block text-4xl md:text-5xl font-extralight text-black mb-2">8+</span>
-            <span className="text-xs font-light tracking-[0.2em] text-gray-500 uppercase">Jahre Erfahrung</span>
+            <span className="text-xs font-light tracking-[0.2em] text-gray-500 uppercase">{t('stats.yearsExperience')}</span>
           </div>
           <div className="text-center">
             <span className="block text-4xl md:text-5xl font-extralight text-black mb-2">5000+</span>
-            <span className="text-xs font-light tracking-[0.2em] text-gray-500 uppercase">Zufriedene Kunden</span>
+            <span className="text-xs font-light tracking-[0.2em] text-gray-500 uppercase">{t('stats.satisfiedCustomers')}</span>
           </div>
           <div className="text-center">
             <span className="block text-4xl md:text-5xl font-extralight text-black mb-2">4.9</span>
-            <span className="text-xs font-light tracking-[0.2em] text-gray-500 uppercase">Google Bewertung</span>
+            <span className="text-xs font-light tracking-[0.2em] text-gray-500 uppercase">{t('stats.googleRating')}</span>
           </div>
           <div className="text-center">
             <span className="block text-4xl md:text-5xl font-extralight text-black mb-2">100%</span>
-            <span className="text-xs font-light tracking-[0.2em] text-gray-500 uppercase">Leidenschaft</span>
+            <span className="text-xs font-light tracking-[0.2em] text-gray-500 uppercase">{t('stats.passion')}</span>
           </div>
         </div>
 
@@ -121,7 +123,7 @@ export function About() {
               <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
             </svg>
             <blockquote className="text-2xl md:text-3xl font-extralight text-gray-800 leading-relaxed mb-6 italic">
-              Bei uns ist jeder Kunde ein Gast. Wir schneiden nicht nur Haare – wir schaffen Erlebnisse und pflegen Traditionen, die Generationen überdauern.
+              {t('quote')}
             </blockquote>
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
@@ -129,7 +131,7 @@ export function About() {
               </div>
               <div>
                 <p className="text-sm font-medium text-black">Beban</p>
-                <p className="text-xs text-gray-500 tracking-wide">Inhaber & Master Barber</p>
+                <p className="text-xs text-gray-500 tracking-wide">{t('ownerTitle')}</p>
               </div>
             </div>
           </div>
