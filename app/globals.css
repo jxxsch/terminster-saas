@@ -264,10 +264,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 /* Header color transition */
 .header-transition {
-  transition: background-color 500ms ease,
-              backdrop-filter 500ms ease,
-              box-shadow 500ms ease,
-              border-color 500ms ease;
+  transition: all 800ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Vertical separator in header */
