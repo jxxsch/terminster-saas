@@ -95,6 +95,7 @@ Wichtige Änderungen hier dokumentieren:
 | 2026-01-21 | **Erweiterte Mitarbeiter-Daten:** Neue Felder in team-Tabelle (phone, birthday, vacation_days, start_date), Anzeige in Listenansicht und Bearbeitungsformular | `lib/supabase.ts`, `app/admin/team/page.tsx` |
 | 2026-01-25 | **Multi-Delete für Kalender:** Auswahl-Modus zum gesammelten Löschen mehrerer Termine. Toggle-Button "Auswählen", Checkboxen bei Terminen, Toolbar mit Barber/Zeit-Filter, Bereichsauswahl per Shift-Klick, 2-stufiges Bestätigungs-Modal | `app/(internal)/dashboard/page.tsx`, `components/dashboard/WeekView.tsx`, `components/dashboard/AppointmentSlot.tsx`, `components/dashboard/SelectionToolbar.tsx` (NEU), `components/dashboard/DragContext.tsx` |
 | 2026-01-26 | **Freier Tag pro Barber:** Jeder Mitarbeiter kann einen festen wöchentlichen freien Tag haben (Mo-Fr). Admin-UI im Tab "Sondertage", automatische Blockierung im BookingModal und Dashboard. Neues Feld `free_day` in team-Tabelle, Helper `isBarberFreeDay()` | `lib/supabase.ts`, `app/(internal)/admin/zeiten/page.tsx`, `components/sections/BookingModal.tsx`, `components/dashboard/WeekView.tsx`, `messages/*.json` |
+| 2026-01-27 | **Produkte-Sektion:** Neue Website-Sektion mit Kategorie-Tabs (Bart, Haare, Rasur, Pflege), Admin-Verwaltung für Produkte (CRUD), Navigation-Item im Header, i18n-Support | `components/sections/Products.tsx`, `app/(internal)/admin/produkte/page.tsx`, `components/shared/AppSidebar.tsx`, `lib/supabase.ts`, `messages/*.json` |
 
 ## Dateistruktur
 
@@ -114,6 +115,7 @@ my-website/
 │   │   ├── time-off/     # Urlaubs-Verwaltung
 │   │   ├── zeiten/       # Kombiniert: Zeitslots + Öffnungszeiten + Sondertage
 │   │   ├── medien/       # Kombiniert: Galerie + Content
+│   │   ├── produkte/     # Produkte-Verwaltung (CRUD)
 │   │   ├── settings/     # Buchungseinstellungen
 │   │   ├── time-slots/   # (Redirect → /admin/zeiten?tab=slots)
 │   │   ├── opening-hours/# (Redirect → /admin/zeiten?tab=hours)
@@ -150,6 +152,7 @@ my-website/
 │   └── sections/         # Homepage-Sektionen
 │       ├── BookingModal.tsx
 │       ├── Contact.tsx
+│       ├── Products.tsx    # Produkte-Sektion
 │       └── ...
 ├── i18n/                 # Internationalisierung
 │   ├── config.ts
@@ -184,6 +187,7 @@ my-website/
 | `site_settings` | Einstellungen & Content | key, value (JSONB), updated_at |
 | `closed_dates` | Geschlossene Tage | id, date, reason, created_at |
 | `open_sundays` | Verkaufsoffene Sonntage | id, date, open_time, close_time, created_at |
+| `products` | Produkte im Laden | id, name, price (Cent), category, image, sort_order, active, created_at |
 
 ### Supabase Funktionen (lib/supabase.ts)
 
@@ -256,6 +260,17 @@ getOpenSundays(): Promise<OpenSunday[]>
 createOpenSunday(date, openTime, closeTime): Promise<OpenSunday | null>
 deleteOpenSunday(id): Promise<boolean>
 isOpenSunday(date): Promise<boolean>
+
+// Products (Produkte)
+getProducts(): Promise<Product[]>
+getProductsByCategory(category): Promise<Product[]>
+getAllProducts(): Promise<Product[]>
+createProduct(data): Promise<Product | null>
+updateProduct(id, updates): Promise<Product | null>
+deleteProduct(id): Promise<boolean>
+updateProductOrder(items): Promise<boolean>
+formatProductPrice(priceInCent): string
+productCategories: { bart, haare, rasur, pflege }
 
 // Admin Dashboard - Geburtstage & Neukunden
 getTodaysBirthdayAppointments(): Promise<BirthdayAppointment[]>  // Kunden mit Geburtstag die heute Termin haben

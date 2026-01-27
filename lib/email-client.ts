@@ -1,7 +1,7 @@
 // Client-seitige Funktionen zum Senden von E-Mails über die API
 
 export interface SendEmailParams {
-  type: 'booking_confirmation' | 'reminder' | 'cancellation';
+  type: 'booking_confirmation' | 'reminder';
   data: {
     customerName: string;
     customerEmail: string;
@@ -13,7 +13,6 @@ export interface SendEmailParams {
     time: string;
     duration?: number;
     price?: string;
-    reason?: string;
     appointmentId?: string;
   };
 }
@@ -61,18 +60,3 @@ export async function sendBookingConfirmationEmail(data: {
   });
 }
 
-// Stornierungsbestätigung senden
-export async function sendCancellationEmail(data: {
-  customerName: string;
-  customerEmail: string;
-  barberName: string;
-  serviceName: string;
-  date: string;
-  time: string;
-  reason?: string;
-}): Promise<{ success: boolean; error?: string }> {
-  return sendEmail({
-    type: 'cancellation',
-    data,
-  });
-}

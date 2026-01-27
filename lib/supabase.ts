@@ -2066,3 +2066,150 @@ export async function isOpenHoliday(date: string): Promise<boolean> {
 
   return (data?.length || 0) > 0;
 }
+
+// ============================================
+// PRODUCTS - Produkte im Laden
+// ============================================
+
+export interface Product {
+  id: string;
+  name: string;
+  price: number; // in Cent
+  category: 'bart' | 'haare' | 'rasur' | 'pflege';
+  image: string | null;
+  sort_order: number;
+  active: boolean;
+  created_at: string;
+}
+
+// Alle aktiven Produkte abrufen
+export async function getProducts(): Promise<Product[]> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('active', true)
+    .order('category')
+    .order('sort_order');
+
+  if (error) {
+    console.error('Error fetching products:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// Produkte nach Kategorie abrufen
+export async function getProductsByCategory(category: string): Promise<Product[]> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('active', true)
+    .eq('category', category)
+    .order('sort_order');
+
+  if (error) {
+    console.error('Error fetching products by category:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// Alle Produkte abrufen (Admin - inkl. inaktive)
+export async function getAllProducts(): Promise<Product[]> {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .order('category')
+    .order('sort_order');
+
+  if (error) {
+    console.error('Error fetching all products:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// Produkt erstellen
+export async function createProduct(product: Omit<Product, 'id' | 'created_at'>): Promise<Product | null> {
+  const { data, error } = await supabase
+    .from('products')
+    .insert([product])
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating product:', error);
+    return null;
+  }
+
+  return data;
+}
+
+// Produkt aktualisieren
+export async function updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
+  const { data, error } = await supabase
+    .from('products')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating product:', error);
+    return null;
+  }
+
+  return data;
+}
+
+// Produkt löschen
+export async function deleteProduct(id: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('products')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting product:', error);
+    return false;
+  }
+
+  return true;
+}
+
+// Produkt-Reihenfolge aktualisieren
+export async function updateProductOrder(items: { id: string; sort_order: number }[]): Promise<boolean> {
+  try {
+    for (const item of items) {
+      const { error } = await supabase
+        .from('products')
+        .update({ sort_order: item.sort_order })
+        .eq('id', item.id);
+
+      if (error) {
+        console.error('Error updating product order:', error);
+        return false;
+      }
+    }
+    return true;
+  } catch (error) {
+    console.error('Error updating product order:', error);
+    return false;
+  }
+}
+
+// Preis formatieren (Cent zu Euro)
+export function formatProductPrice(priceInCent: number): string {
+  return (priceInCent / 100).toFixed(2).replace('.', ',') + ' €';
+}
+
+// Kategorie-Labels
+export const productCategories = {
+  bart: 'Bart',
+  haare: 'Haare',
+  rasur: 'Rasur',
+  pflege: 'Pflege',
+} as const;

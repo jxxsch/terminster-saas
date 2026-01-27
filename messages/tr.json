@@ -3,6 +3,7 @@
     "services": "Hizmetler",
     "about": "Hakkımızda",
     "team": "Ekip",
+    "products": "Ürünler",
     "gallery": "Galeri",
     "reviews": "Değerlendirmeler",
     "contact": "İletişim",
@@ -55,6 +56,19 @@
     "badge": "Ekibimiz",
     "headline": "Alanlarının Ustaları",
     "bookButton": "Randevu"
+  },
+  "products": {
+    "badge": "Ürün Yelpazemiz",
+    "headline": "Ürünler",
+    "subtitle": "Modern erkek için premium bakım ürünleri",
+    "availableInStore": "Tüm ürünler mağazamızda mevcut",
+    "categories": {
+      "all": "Tümü",
+      "bart": "Sakal",
+      "haare": "Saç",
+      "rasur": "Tıraş",
+      "pflege": "Bakım"
+    }
   },
   "gallery": {
     "title": "Galeri",

@@ -83,7 +83,6 @@ export async function GET(
       description: `Dein Termin bei Beban Barbershop mit ${appointment.team?.name || 'deinem Barber'}`,
     });
 
-    // Als .ics Datei zurückgeben
     return new NextResponse(icsContent, {
       headers: {
         'Content-Type': 'text/calendar; charset=utf-8',

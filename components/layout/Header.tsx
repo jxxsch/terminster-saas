@@ -65,6 +65,7 @@ export function Header() {
   ];
 
   const navItemsRight = [
+    { href: '#products', label: t('products') },
     { href: '#gallery', label: t('gallery') },
     { href: '#contact', label: t('contact') },
   ];

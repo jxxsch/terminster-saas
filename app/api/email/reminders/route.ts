@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAppointments, getTeam, getServices } from '@/lib/supabase';
-import { sendAppointmentReminder, formatDateForEmail } from '@/lib/email';
+import { getAppointments, getTeam, getServices, formatPrice } from '@/lib/supabase';
+import { sendAppointmentReminder } from '@/lib/email';
 
 // Diese Route wird von einem Cron-Job aufgerufen (täglich um 00:01 deutscher Zeit / 23:01 UTC)
 // Vercel Cron: https://vercel.com/docs/cron-jobs
@@ -54,10 +54,13 @@ export async function GET(request: NextRequest) {
         customerName: appointment.customer_name,
         customerEmail: appointment.customer_email,
         barberName: barber.name,
+        barberImage: barber.image || undefined,
         serviceName: service.name,
-        date: formatDateForEmail(appointment.date),
+        date: appointment.date,
         time: appointment.time_slot,
         duration: service.duration,
+        price: formatPrice(service.price),
+        appointmentId: appointment.id,
       });
 
       if (result.success) {

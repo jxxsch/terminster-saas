@@ -33,7 +33,7 @@ export function Contact() {
 
   return (
     <>
-      <section ref={sectionRef} id="contact" className="relative py-16 md:py-20 bg-stone-50 overflow-hidden">
+      <section ref={sectionRef} id="contact" className="relative py-16 md:py-20 bg-white overflow-hidden">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
 
           {/* Badge - Zentriert */}

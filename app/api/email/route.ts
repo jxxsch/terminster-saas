@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   sendBookingConfirmation,
   sendAppointmentReminder,
-  sendCancellationConfirmation,
   formatDateForEmail,
   BookingEmailData,
-  CancellationEmailData,
   ReminderEmailData,
 } from '@/lib/email';
 
@@ -47,26 +45,15 @@ export async function POST(request: NextRequest) {
           customerName: data.customerName,
           customerEmail: data.customerEmail,
           barberName: data.barberName,
+          barberImage: data.barberImage,
           serviceName: data.serviceName,
-          date: data.date.includes(',') ? data.date : formatDateForEmail(data.date),
+          date: data.date,
           time: data.time,
           duration: data.duration,
+          price: data.price,
+          appointmentId: data.appointmentId,
         };
         result = await sendAppointmentReminder(reminderData);
-        break;
-      }
-
-      case 'cancellation': {
-        const cancellationData: CancellationEmailData = {
-          customerName: data.customerName,
-          customerEmail: data.customerEmail,
-          barberName: data.barberName,
-          serviceName: data.serviceName,
-          date: data.date.includes(',') ? data.date : formatDateForEmail(data.date),
-          time: data.time,
-          reason: data.reason,
-        };
-        result = await sendCancellationConfirmation(cancellationData);
         break;
       }
 

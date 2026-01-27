@@ -3,6 +3,7 @@
     "services": "Services",
     "about": "Über uns",
     "team": "Team",
+    "products": "Produkte",
     "gallery": "Galerie",
     "reviews": "Bewertungen",
     "contact": "Kontakt",
@@ -55,6 +56,19 @@
     "badge": "Unser Team",
     "headline": "Die Meister ihres Fachs",
     "bookButton": "Termin"
+  },
+  "products": {
+    "badge": "Unser Sortiment",
+    "headline": "Produkte",
+    "subtitle": "Premium Pflegeprodukte für den modernen Mann",
+    "availableInStore": "Alle Produkte bei uns im Laden erhältlich",
+    "categories": {
+      "all": "Alle",
+      "bart": "Bart",
+      "haare": "Haare",
+      "rasur": "Rasur",
+      "pflege": "Pflege"
+    }
   },
   "gallery": {
     "title": "Galerie",

@@ -3,6 +3,7 @@
     "services": "Services",
     "about": "About Us",
     "team": "Team",
+    "products": "Products",
     "gallery": "Gallery",
     "reviews": "Reviews",
     "contact": "Contact",
@@ -55,6 +56,19 @@
     "badge": "Our Team",
     "headline": "Masters of Their Craft",
     "bookButton": "Book"
+  },
+  "products": {
+    "badge": "Our Selection",
+    "headline": "Products",
+    "subtitle": "Premium grooming products for the modern man",
+    "availableInStore": "All products available in our store",
+    "categories": {
+      "all": "All",
+      "bart": "Beard",
+      "haare": "Hair",
+      "rasur": "Shave",
+      "pflege": "Care"
+    }
   },
   "gallery": {
     "title": "Gallery",

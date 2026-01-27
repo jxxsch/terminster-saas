@@ -16,7 +16,6 @@ import {
   Service,
   formatPrice,
 } from '@/lib/supabase';
-import { sendCancellationEmail } from '@/lib/email-client';
 import { DatePicker } from '@/components/ui/DatePicker';
 
 interface CustomerPortalProps {
@@ -171,33 +170,11 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
     const result = await cancelAppointment(id);
 
     if (result.success) {
-      // Finde den Termin für die E-Mail
-      const apt = appointments.find(a => a.id === id);
-
       setAppointments(prev =>
         prev.map(a =>
           a.id === id ? { ...a, status: 'cancelled' as const } : a
         )
       );
-
-      // Stornierungsbestätigung per E-Mail senden
-      if (apt && apt.customer_email && customer) {
-        const barber = team.find(b => b.id === apt.barber_id);
-        const service = services.find(s => s.id === apt.service_id);
-
-        if (barber && service) {
-          sendCancellationEmail({
-            customerName: customer.name,
-            customerEmail: apt.customer_email,
-            barberName: barber.name,
-            serviceName: service.name,
-            date: formatDate(apt.date),
-            time: apt.time_slot,
-          }).catch(err => {
-            console.error('Failed to send cancellation email:', err);
-          });
-        }
-      }
     } else {
       setCancelError(result.error);
     }

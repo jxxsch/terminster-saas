@@ -38,7 +38,7 @@ export function Gallery() {
   }, []);
 
   return (
-    <section ref={sectionRef} id="gallery" className="relative py-16 md:py-20 bg-white overflow-hidden">
+    <section ref={sectionRef} id="gallery" className="relative py-16 md:py-20 bg-gray-50 overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
 
         {/* Badge */}
