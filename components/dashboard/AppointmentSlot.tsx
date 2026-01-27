@@ -64,6 +64,7 @@ export function AppointmentSlot({
   formatName = (name) => name,
 }: AppointmentSlotProps) {
   const [showDetails, setShowDetails] = useState(false);
+  const [backdropReady, setBackdropReady] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showPauseDeleteModal, setShowPauseDeleteModal] = useState(false);
   const [showSeriesCancelModal, setShowSeriesCancelModal] = useState(false);
@@ -105,6 +106,18 @@ export function AppointmentSlot({
       } else {
         setPopupPosition('bottom');
       }
+    }
+  }, [showDetails]);
+
+  // Backdrop erst nach kurzem Delay aktivieren, um zu verhindern dass der
+  // öffnende Klick sofort auf dem Backdrop landet und das Popup schließt
+  useEffect(() => {
+    if (showDetails) {
+      setBackdropReady(false);
+      const timer = setTimeout(() => setBackdropReady(true), 50);
+      return () => clearTimeout(timer);
+    } else {
+      setBackdropReady(false);
     }
   }, [showDetails]);
 
@@ -433,9 +446,11 @@ export function AppointmentSlot({
               className="fixed inset-0 z-10"
               onClick={(e) => {
                 e.stopPropagation();
-                setShowDetails(false);
-                setIsEditingRhythm(false);
-                setIsEditingSeriesContact(false);
+                if (backdropReady) {
+                  setShowDetails(false);
+                  setIsEditingRhythm(false);
+                  setIsEditingSeriesContact(false);
+                }
               }}
             />
             <div className={`absolute z-20 left-0 right-0 bg-white shadow-xl rounded-lg border border-gray-200 p-2 ${
@@ -949,13 +964,15 @@ export function AppointmentSlot({
       {/* Details Popup */}
       {showDetails && appointment && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop - erst nach kurzem Delay klickbar */}
           <div
             className="fixed inset-0 z-10"
             onClick={(e) => {
               e.stopPropagation();
-              setShowDetails(false);
-              setIsEditing(false);
+              if (backdropReady) {
+                setShowDetails(false);
+                setIsEditing(false);
+              }
             }}
           />
 

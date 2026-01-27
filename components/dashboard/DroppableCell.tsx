@@ -1,8 +1,7 @@
 'use client';
 
-import { useDroppable } from '@dnd-kit/core';
 import { ReactNode } from 'react';
-import { useDragContext } from './DragContext';
+import { useDroppable } from '@dnd-kit/core';
 
 interface DroppableCellProps {
   id: string;
@@ -10,24 +9,21 @@ interface DroppableCellProps {
   disabled?: boolean;
 }
 
+// DroppableCell - Wrapper für Drop-Zonen im Kalender
+// Ermöglicht das Ablegen von gezogenen Terminen
 export function DroppableCell({ id, children, disabled }: DroppableCellProps) {
-  const { isOver, setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id,
     disabled,
   });
 
-  const { isDragging } = useDragContext();
-
   return (
     <div
       ref={setNodeRef}
-      className={`h-full transition-colors ${
-        isDragging && !disabled
-          ? isOver
-            ? 'bg-gold/20 ring-2 ring-gold/50 ring-inset'
-            : 'bg-gold/5'
-          : ''
-      } ${disabled && isDragging ? 'bg-gray-200/50' : ''}`}
+      className="h-full"
+      style={{
+        backgroundColor: isOver ? 'rgba(212, 175, 55, 0.1)' : undefined,
+      }}
     >
       {children}
     </div>

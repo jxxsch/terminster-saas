@@ -764,7 +764,7 @@ export function BarberWeekView({
                           style={isCurrentSlotToday ? { boxShadow: 'inset 0 0 0 1px rgb(248, 113, 113)' } : undefined}
                         >
                           {/* Absolut positionierter Container verhindert Zellen-Dehnung */}
-                          <div className="absolute inset-0 overflow-hidden">
+                          <div className="absolute inset-0 overflow-visible">
                             <DroppableCell id={dropId} disabled={isDisabled}>
                               {appointment && appointment.status === 'confirmed' ? (
                                 <DraggableSlot id={appointment.id} disabled={appointment.customer_name?.includes('Pause') || selectionMode}>

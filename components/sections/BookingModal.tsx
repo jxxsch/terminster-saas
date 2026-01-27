@@ -891,9 +891,12 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
   const selectedBarberData = team.find(b => b.id === selectedBarber);
   const selectedDayData = days.find(d => d.dateStr === selectedDay);
 
-  // Kalender-Download Funktion (.ics)
-  const downloadCalendarEvent = () => {
-    if (!selectedDay || !selectedSlot || !selectedServiceData || !selectedBarberData) return;
+  // Kalender-Dropdown State
+  const [showCalendarOptions, setShowCalendarOptions] = useState(false);
+
+  // Kalender-Hilfsfunktionen
+  const getCalendarData = () => {
+    if (!selectedDay || !selectedSlot || !selectedServiceData || !selectedBarberData) return null;
 
     const [hour, minute] = selectedSlot.split(':').map(Number);
     const startDate = new Date(selectedDay + 'T00:00:00');
@@ -902,24 +905,54 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     const endDate = new Date(startDate);
     endDate.setMinutes(endDate.getMinutes() + (selectedServiceData.duration || 30));
 
-    // Format: YYYYMMDDTHHMMSS
-    const formatICSDate = (date: Date) => {
+    const title = `${selectedServiceData.name} bei ${selectedBarberData.name} - Beban Barbershop`;
+    const location = 'Beban Barbershop, Friedrich-Ebert-Platz 3a, 51373 Leverkusen';
+    const details = `Dein Termin im Beban Barbershop:\n${selectedServiceData.name} bei ${selectedBarberData.name}\n\nAdresse: ${location}`;
+
+    return { startDate, endDate, title, location, details };
+  };
+
+  // Google Calendar
+  const addToGoogleCalendar = () => {
+    const data = getCalendarData();
+    if (!data) return;
+
+    const formatDate = (date: Date) => {
       const pad = (n: number) => n.toString().padStart(2, '0');
       return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
     };
 
-    const title = `${selectedServiceData.name} bei ${selectedBarberData.name} - Beban Barbershop`;
-    const location = 'Beban Barbershop, Friedrich-Ebert-Platz 3a, 51373 Leverkusen';
+    const url = new URL('https://calendar.google.com/calendar/render');
+    url.searchParams.set('action', 'TEMPLATE');
+    url.searchParams.set('text', data.title);
+    url.searchParams.set('dates', `${formatDate(data.startDate)}/${formatDate(data.endDate)}`);
+    url.searchParams.set('location', data.location);
+    url.searchParams.set('details', data.details);
+
+    window.open(url.toString(), '_blank');
+    setShowCalendarOptions(false);
+  };
+
+  // Apple Calendar (ICS Download)
+  const addToAppleCalendar = () => {
+    const data = getCalendarData();
+    if (!data) return;
+
+    const formatICSDate = (date: Date) => {
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
+    };
 
     const icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
       'PRODID:-//Beban Barbershop//Booking//DE',
       'BEGIN:VEVENT',
-      `DTSTART:${formatICSDate(startDate)}`,
-      `DTEND:${formatICSDate(endDate)}`,
-      `SUMMARY:${title}`,
-      `LOCATION:${location}`,
+      `DTSTART:${formatICSDate(data.startDate)}`,
+      `DTEND:${formatICSDate(data.endDate)}`,
+      `SUMMARY:${data.title}`,
+      `LOCATION:${data.location}`,
+      `DESCRIPTION:${data.details.replace(/\n/g, '\\n')}`,
       'BEGIN:VALARM',
       'TRIGGER:-PT1H',
       'ACTION:DISPLAY',
@@ -938,6 +971,26 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    setShowCalendarOptions(false);
+  };
+
+  // Outlook Calendar
+  const addToOutlookCalendar = () => {
+    const data = getCalendarData();
+    if (!data) return;
+
+    const formatOutlookDate = (date: Date) => date.toISOString();
+
+    const url = new URL('https://outlook.live.com/calendar/0/action/compose');
+    url.searchParams.set('rru', 'addevent');
+    url.searchParams.set('subject', data.title);
+    url.searchParams.set('startdt', formatOutlookDate(data.startDate));
+    url.searchParams.set('enddt', formatOutlookDate(data.endDate));
+    url.searchParams.set('location', data.location);
+    url.searchParams.set('body', data.details);
+
+    window.open(url.toString(), '_blank');
+    setShowCalendarOptions(false);
   };
 
   // Inline Styles
@@ -1399,10 +1452,8 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       flexDirection: 'column' as const,
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '3rem 2rem',
+      padding: '2.5rem',
       textAlign: 'center' as const,
-      maxWidth: '320px',
-      margin: '0 auto',
     },
     successIcon: {
       width: '4rem',
@@ -1479,7 +1530,10 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       `}</style>
       <div style={styles.overlay}>
         <div style={styles.backdrop} onClick={handleClose} />
-        <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+        <div style={{
+          ...styles.modal,
+          ...(bookingSuccess ? { maxWidth: '400px' } : {})
+        }} onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div style={styles.header}>
             <span style={styles.headerTitle}>{t('title')}</span>
@@ -1514,17 +1568,115 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                 {t('success.message', { barber: selectedBarberData?.name || '', date: `${selectedDayData?.dayNameLong || ''}, ${selectedDayData?.dayNumFullDate || ''}`, time: selectedSlot || '' })}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%', marginTop: '0.5rem' }}>
-                <button
-                  onClick={downloadCalendarEvent}
-                  style={{ ...styles.submitBtn, backgroundColor: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d4a853'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0f172a'}
-                >
-                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  {t('success.addToCalendar')}
-                </button>
+                {/* Kalender-Dropdown */}
+                <div style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => setShowCalendarOptions(!showCalendarOptions)}
+                    style={{ ...styles.submitBtn, backgroundColor: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#d4a853'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0f172a'}
+                  >
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {t('success.addToCalendar')}
+                    <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ marginLeft: '0.25rem', transform: showCalendarOptions ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Dropdown Menu - öffnet nach oben */}
+                  {showCalendarOptions && (
+                    <div style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: 0,
+                      right: 0,
+                      marginBottom: '0.25rem',
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '0.5rem',
+                      boxShadow: '0 -4px 12px rgba(0,0,0,0.1)',
+                      zIndex: 10,
+                      overflow: 'hidden',
+                    }}>
+                      <button
+                        onClick={addToGoogleCalendar}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          fontSize: '0.8125rem',
+                          color: '#374151',
+                          transition: 'background-color 0.15s',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                          <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" fill="#4285F4"/>
+                          <path d="M12 7v5l4 2" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                        Google Calendar
+                      </button>
+                      <button
+                        onClick={addToAppleCalendar}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          borderTop: '1px solid #e2e8f0',
+                          cursor: 'pointer',
+                          fontSize: '0.8125rem',
+                          color: '#374151',
+                          transition: 'background-color 0.15s',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                          <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83" fill="#333"/>
+                          <path d="M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" fill="#333"/>
+                        </svg>
+                        Apple Kalender
+                      </button>
+                      <button
+                        onClick={addToOutlookCalendar}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem 1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem',
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          borderTop: '1px solid #e2e8f0',
+                          cursor: 'pointer',
+                          fontSize: '0.8125rem',
+                          color: '#374151',
+                          transition: 'background-color 0.15s',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f3f4f6'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                          <path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6z" fill="#0078D4"/>
+                          <path d="M22 6l-10 7L2 6" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                        Outlook
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={handleClose}
                   style={{ ...styles.submitBtn, backgroundColor: 'transparent', border: '1px solid #e2e8f0', color: '#64748b', justifyContent: 'center' }}

@@ -95,14 +95,14 @@ export function DragProvider({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        delay: 150, // 150ms Verzögerung - erlaubt normale Klicks
-        tolerance: 5,
+        delay: 150, // 150ms Verzögerung bevor Drag startet - Klicks funktionieren
+        tolerance: 5, // 5px Toleranz während der Verzögerung
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 250, // 250ms Verzögerung für Touch
-        tolerance: 5,
+        delay: 200, // 200ms Verzögerung für Touch
+        tolerance: 8,
       },
     })
   );
