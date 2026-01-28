@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { Header } from '@/components/layout';
 import { Hero } from '@/components/sections/Hero';
 import { Services } from '@/components/sections/Services';
@@ -24,8 +25,10 @@ export default function HomePage() {
         <Contact />
       </main>
       <ScrollToTop />
-      <AuthErrorHandler />
-      <CancellationConfirmHandler />
+      <Suspense fallback={null}>
+        <AuthErrorHandler />
+        <CancellationConfirmHandler />
+      </Suspense>
     </>
   );
 }

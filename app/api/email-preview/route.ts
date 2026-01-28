@@ -1,138 +1,76 @@
-import { Resend } from 'resend';
-import { getSetting } from '@/lib/supabase';
+import { NextRequest, NextResponse } from 'next/server';
+import { getSetting, getTeam } from '@/lib/supabase';
 
-// Resend Client initialisieren
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Temporary route for email template preview
+export async function GET(request: NextRequest) {
+  const type = request.nextUrl.searchParams.get('type') || 'booking';
 
-// Base URL für E-Mail-Links (aus Umgebungsvariable oder Fallback)
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://terminster.com';
-
-// Absender-E-Mail (muss in Resend verifiziert sein)
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@beban-barbershop.de';
-const FROM_NAME = 'Beban Barbershop';
-
-// Logo-URL aus Settings laden (mit Fallback)
-async function getLogoUrl(): Promise<string> {
-  const data = await getSetting<{ value: string }>('logo_url');
-  return data?.value || `${BASE_URL}/logo.png`;
-}
-
-// Typen
-export interface BookingEmailData {
-  customerName: string;
-  customerEmail: string;
-  customerPhone?: string;
-  barberName: string;
-  barberImage?: string; // URL zum Barber-Bild
-  imagePosition?: string; // CSS object-position z.B. "51% 32%"
-  serviceName: string;
-  date: string; // Format: "2026-01-27" (ISO)
-  time: string; // Format: "14:00"
-  duration: number; // in Minuten
-  price: string; // Format: "20,00 €"
-  appointmentId: string; // Für Stornierungslink
-}
-
-export interface ReminderEmailData {
-  customerName: string;
-  customerEmail: string;
-  barberName: string;
-  barberImage?: string;
-  imagePosition?: string; // CSS object-position z.B. "51% 32%"
-  serviceName: string;
-  date: string;
-  time: string;
-  duration: number;
-  price: string;
-  appointmentId: string;
-}
-
-// Buchungsbestätigung senden
-export async function sendBookingConfirmation(data: BookingEmailData): Promise<{ success: boolean; error?: string }> {
+  // Get logo URL from settings
+  let logoUrl = '/logo.png';
   try {
-    // .ics Datei generieren
-    const icsContent = generateIcsContent({
-      title: `${data.serviceName} bei Beban Barbershop`,
-      date: data.date,
-      time: data.time,
-      duration: data.duration,
-      location: 'Beban Barbershop, Friedrich-Ebert-Platz 3a, 51373 Leverkusen',
-      description: `Dein Termin bei Beban Barbershop mit ${data.barberName}`,
-    });
-
-    const { error } = await resend.emails.send({
-      from: `${FROM_NAME} <${FROM_EMAIL}>`,
-      to: data.customerEmail,
-      subject: `Terminbestätigung - ${formatDateShort(data.date)} um ${data.time}`,
-      html: generateBookingConfirmationHtml(data, await getLogoUrl()),
-      attachments: [
-        {
-          filename: 'termin.ics',
-          content: Buffer.from(icsContent).toString('base64'),
-          contentType: 'text/calendar',
-        },
-      ],
-    });
-
-    if (error) {
-      console.error('Resend error:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (err) {
-    console.error('Email sending failed:', err);
-    return { success: false, error: 'E-Mail konnte nicht gesendet werden' };
+    const data = await getSetting<{ value: string }>('logo_url');
+    if (data?.value) logoUrl = data.value;
+  } catch {
+    // fallback
   }
-}
 
-// Terminerinnerung senden
-export async function sendAppointmentReminder(data: ReminderEmailData): Promise<{ success: boolean; error?: string }> {
+  // Get actual team data for barber image
+  let barberName = 'Sahir';
+  let barberImage = '';
+  let imagePosition = 'center 30%';
   try {
-    // .ics Datei generieren
-    const icsContent = generateIcsContent({
-      title: `${data.serviceName} bei Beban Barbershop`,
-      date: data.date,
-      time: data.time,
-      duration: data.duration,
-      location: 'Beban Barbershop, Friedrich-Ebert-Platz 3a, 51373 Leverkusen',
-      description: `Dein Termin bei Beban Barbershop mit ${data.barberName}`,
-    });
-
-    const { error } = await resend.emails.send({
-      from: `${FROM_NAME} <${FROM_EMAIL}>`,
-      to: data.customerEmail,
-      subject: `Erinnerung an deinen Termin`,
-      html: generateReminderHtml(data, await getLogoUrl()),
-      attachments: [
-        {
-          filename: 'termin.ics',
-          content: Buffer.from(icsContent).toString('base64'),
-          contentType: 'text/calendar',
-        },
-      ],
-    });
-
-    if (error) {
-      console.error('Resend error:', error);
-      return { success: false, error: error.message };
+    const team = await getTeam();
+    const barber = team[0]; // First active barber
+    if (barber) {
+      barberName = barber.name;
+      barberImage = barber.image || '';
+      imagePosition = barber.image_position || 'center 30%';
     }
-
-    return { success: true };
-  } catch (err) {
-    console.error('Email sending failed:', err);
-    return { success: false, error: 'E-Mail konnte nicht gesendet werden' };
+  } catch {
+    // fallback
   }
+
+  const testData = {
+    customerName: 'Max Mustermann',
+    customerEmail: 'max@test.de',
+    barberName,
+    barberImage,
+    imagePosition,
+    serviceName: 'Haarschnitt',
+    date: '2026-01-29',
+    time: '14:00',
+    duration: 30,
+    price: '20,00 €',
+    appointmentId: 'test-preview-123',
+  };
+
+  let html: string;
+
+  if (type === 'reminder') {
+    html = generateReminderHtml(testData, logoUrl);
+  } else {
+    html = generateBookingConfirmationHtml(testData, logoUrl);
+  }
+
+  return new NextResponse(html, {
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  });
 }
 
-// HTML-Templates
+function formatDateShort(dateString: string): string {
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
+}
 
-function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string): string {
+function generateBookingConfirmationHtml(data: { customerName: string; barberName: string; barberImage?: string; imagePosition?: string; serviceName: string; date: string; time: string; duration: number; price: string; appointmentId: string }, logoUrl: string): string {
   const dateFormatted = formatDateShort(data.date);
-  const barberImage = data.barberImage || `${BASE_URL}/team/default.webp`;
+  const barberImage = data.barberImage || `https://terminster.com/team/default.webp`;
   const barberImagePosition = data.imagePosition || 'center 30%';
-  const icsDownloadUrl = `${BASE_URL}/api/calendar/${data.appointmentId}`;
-  const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
+  const icsDownloadUrl = `https://terminster.com/api/calendar/${data.appointmentId}`;
+  const cancelUrl = `https://terminster.com/de?cancel=${data.appointmentId}`;
 
   return `
 <!DOCTYPE html>
@@ -140,20 +78,18 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buchungsbestätigung - Vorschau</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8f9fa; -webkit-font-smoothing: antialiased;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
       <td style="padding: 24px 16px;">
-        <!-- Main Card -->
         <table role="presentation" style="max-width: 420px; margin: 0 auto; background-color: #ffffff; border-radius: 32px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);">
-
-          <!-- Header mit Logo -->
           <tr>
             <td style="padding: 48px 24px 24px; text-align: center;">
               <div style="margin-bottom: 24px;">
-                <a href="${BASE_URL}/de" target="_blank" style="text-decoration: none;">
+                <a href="https://terminster.com/de" target="_blank" style="text-decoration: none;">
                   <img src="${logoUrl}" alt="Beban Barbershop" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover;">
                 </a>
               </div>
@@ -161,12 +97,8 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
               <p style="margin: 0; font-size: 14px; color: #6b7280; font-weight: 500; text-align: center;">Wir freuen uns auf deinen Besuch.</p>
             </td>
           </tr>
-
-          <!-- Content -->
           <tr>
             <td style="padding: 0 24px 24px;">
-
-              <!-- Termin Box -->
               <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 20px; border: 1px solid #e5e7eb; margin-bottom: 12px;">
                 <tr>
                   <td style="padding: 28px; text-align: center;">
@@ -176,12 +108,9 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
                   </td>
                 </tr>
               </table>
-
-              <!-- Barber & Status Row -->
               <table role="presentation" style="width: 100%; margin-bottom: 12px; table-layout: fixed;">
                 <tr>
                   <td style="width: 50%; padding-right: 6px; vertical-align: top;">
-                    <!-- Barber Box -->
                     <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">
                       <tr>
                         <td style="padding: 5px 10px; height: 54px; text-align: center;">
@@ -201,7 +130,6 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
                     </table>
                   </td>
                   <td style="width: 50%; padding-left: 6px; vertical-align: top;">
-                    <!-- Status Box -->
                     <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">
                       <tr>
                         <td style="padding: 5px 10px; height: 54px; text-align: center;">
@@ -224,8 +152,6 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
                   </td>
                 </tr>
               </table>
-
-              <!-- Standort Box -->
               <a href="https://maps.google.com/?q=Beban+Barbershop,+Friedrich-Ebert-Platz+3a,+51373+Leverkusen" target="_blank" style="text-decoration: none; display: block;">
                 <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb; margin-bottom: 12px;">
                   <tr>
@@ -249,8 +175,6 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
                   </tr>
                 </table>
               </a>
-
-              <!-- Parken Box -->
               <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb; margin-bottom: 32px;">
                 <tr>
                   <td style="padding: 20px;">
@@ -271,108 +195,53 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
                   </td>
                 </tr>
               </table>
-
-              <!-- Buttons -->
               <table role="presentation" style="width: 100%;">
                 <tr>
                   <td>
-                    <!-- Kalender Button -->
-                    <a href="${icsDownloadUrl}" target="_blank" style="display: block; background-color: #d4a853; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; padding: 18px 24px; border-radius: 16px; text-align: center; box-shadow: 0 10px 25px -5px rgba(212, 168, 83, 0.4);">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>Termin speichern (.ics)
-                    </a>
+                    <a href="${icsDownloadUrl}" target="_blank" style="display: block; background-color: #d4a853; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; padding: 18px 24px; border-radius: 16px; text-align: center; box-shadow: 0 10px 25px -5px rgba(212, 168, 83, 0.4);">Termin speichern (.ics)</a>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding-top: 16px; text-align: center;">
-                    <!-- Stornieren Link -->
-                    <a href="${cancelUrl}" target="_blank" style="display: inline-block; color: #6b7280; text-decoration: none; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid transparent;">
-                      Termin stornieren
-                    </a>
+                    <a href="${cancelUrl}" target="_blank" style="display: inline-block; color: #6b7280; text-decoration: none; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Termin stornieren</a>
                   </td>
                 </tr>
               </table>
-
             </td>
           </tr>
-
-          <!-- Footer -->
           <tr>
             <td style="padding: 40px 32px; background-color: #f9fafb; border-top: 1px solid #e5e7eb;">
-
-              <!-- Kontakt -->
               <table role="presentation" style="width: 100%; margin-bottom: 24px;">
                 <tr>
                   <td style="text-align: center;">
                     <p style="margin: 0 0 6px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">KONTAKT</p>
-                    <p style="margin: 0 0 4px;">
-                      <a href="mailto:info@beban-barbershop.de" style="color: #4b5563; text-decoration: none; font-size: 14px; font-weight: 500;">info@beban-barbershop.de</a>
-                    </p>
-                    <p style="margin: 0;">
-                      <a href="tel:+4921475004590" style="color: #4b5563; text-decoration: none; font-size: 14px; font-weight: 500;">0214 7500 4590</a>
-                    </p>
+                    <p style="margin: 0 0 4px;"><a href="mailto:info@beban-barbershop.de" style="color: #4b5563; text-decoration: none; font-size: 14px; font-weight: 500;">info@beban-barbershop.de</a></p>
+                    <p style="margin: 0;"><a href="tel:+4921475004590" style="color: #4b5563; text-decoration: none; font-size: 14px; font-weight: 500;">0214 7500 4590</a></p>
                   </td>
                 </tr>
               </table>
-
-              <!-- Öffnungszeiten -->
-              <table role="presentation" style="width: 100%; margin-bottom: 24px;">
-                <tr>
-                  <td style="text-align: center;">
-                    <p style="margin: 0 0 6px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">ÖFFNUNGSZEITEN</p>
-                    <p style="margin: 0 0 4px; font-size: 14px; color: #4b5563; font-weight: 500;">Mo – Sa: 10:00 – 19:00 Uhr</p>
-                    <p style="margin: 0; font-size: 14px; color: #9ca3af; font-weight: 500;">So: Geschlossen</p>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Social Media -->
-              <table role="presentation" style="width: 100%; margin-bottom: 24px; border-top: 1px solid #e5e7eb; padding-top: 24px;">
-                <tr>
-                  <td style="text-align: center; padding-top: 24px;">
-                    <a href="https://www.instagram.com/beban_barber_shop2.0/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-                    </a>
-                    <a href="https://www.facebook.com/share/1MtAAD8TAW/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-                    </a>
-                    <a href="https://www.youtube.com/@barbershopbeban7716" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Copyright -->
               <table role="presentation" style="width: 100%;">
                 <tr>
                   <td style="text-align: center;">
-                    <p style="margin: 0 0 8px; font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;">© ${new Date().getFullYear()} BEBAN BARBERSHOP</p>
-                    <p style="margin: 0;">
-                      <a href="${BASE_URL}/de/datenschutz" target="_blank" style="color: #9ca3af; text-decoration: none; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Datenschutz</a>
-                      <span style="color: #d1d5db; margin: 0 8px;">•</span>
-                      <a href="${BASE_URL}/de/impressum" target="_blank" style="color: #9ca3af; text-decoration: none; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Impressum</a>
-                    </p>
+                    <p style="margin: 0 0 8px; font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;">© 2026 BEBAN BARBERSHOP</p>
                   </td>
                 </tr>
               </table>
-
             </td>
           </tr>
-
         </table>
       </td>
     </tr>
   </table>
 </body>
-</html>
-  `;
+</html>`;
 }
 
-function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string {
+function generateReminderHtml(data: { customerName: string; barberName: string; barberImage?: string; imagePosition?: string; serviceName: string; date: string; time: string; duration: number; price: string; appointmentId: string }, logoUrl: string): string {
   const dateFormatted = formatDateShort(data.date);
-  const barberImage = data.barberImage || `${BASE_URL}/team/default.webp`;
+  const barberImage = data.barberImage || `https://terminster.com/team/default.webp`;
   const barberImagePosition = data.imagePosition || 'center 30%';
-  const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
+  const cancelUrl = `https://terminster.com/de?cancel=${data.appointmentId}`;
 
   return `
 <!DOCTYPE html>
@@ -380,20 +249,18 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terminerinnerung - Vorschau</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8f9fa; -webkit-font-smoothing: antialiased;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
       <td style="padding: 24px 16px;">
-        <!-- Main Card -->
         <table role="presentation" style="max-width: 420px; margin: 0 auto; background-color: #ffffff; border-radius: 32px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);">
-
-          <!-- Header mit Logo -->
           <tr>
             <td style="padding: 48px 24px 24px; text-align: center;">
               <div style="margin-bottom: 24px;">
-                <a href="${BASE_URL}/de" target="_blank" style="text-decoration: none;">
+                <a href="https://terminster.com/de" target="_blank" style="text-decoration: none;">
                   <img src="${logoUrl}" alt="Beban Barbershop" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover;">
                 </a>
               </div>
@@ -401,12 +268,8 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
               <p style="margin: 0; font-size: 14px; color: #6b7280; font-weight: 500; text-align: center;">Wir erinnern dich an deinen Termin.</p>
             </td>
           </tr>
-
-          <!-- Content -->
           <tr>
             <td style="padding: 0 24px 24px;">
-
-              <!-- Termin Box -->
               <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 20px; border: 1px solid #e5e7eb; margin-bottom: 12px;">
                 <tr>
                   <td style="padding: 28px; text-align: center;">
@@ -416,12 +279,9 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
                   </td>
                 </tr>
               </table>
-
-              <!-- Barber & Stornieren Row -->
               <table role="presentation" style="width: 100%; margin-bottom: 12px; table-layout: fixed;">
                 <tr>
                   <td style="width: 50%; padding-right: 6px; vertical-align: top;">
-                    <!-- Barber Box -->
                     <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">
                       <tr>
                         <td style="padding: 5px 10px; height: 54px; text-align: center;">
@@ -441,7 +301,6 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
                     </table>
                   </td>
                   <td style="width: 50%; padding-left: 6px; vertical-align: top;">
-                    <!-- Stornieren Box -->
                     <a href="${cancelUrl}" target="_blank" style="text-decoration: none; display: block;">
                       <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">
                         <tr>
@@ -466,8 +325,6 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
                   </td>
                 </tr>
               </table>
-
-              <!-- Standort Box -->
               <a href="https://maps.google.com/?q=Beban+Barbershop,+Friedrich-Ebert-Platz+3a,+51373+Leverkusen" target="_blank" style="text-decoration: none; display: block;">
                 <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb; margin-bottom: 12px;">
                   <tr>
@@ -491,8 +348,6 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
                   </tr>
                 </table>
               </a>
-
-              <!-- Parken Box -->
               <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb; margin-bottom: 32px;">
                 <tr>
                   <td style="padding: 20px;">
@@ -513,158 +368,26 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
                   </td>
                 </tr>
               </table>
-
             </td>
           </tr>
-
-          <!-- Footer -->
           <tr>
             <td style="padding: 40px 32px; background-color: #f9fafb; border-top: 1px solid #e5e7eb;">
-
-              <!-- Kontakt -->
               <table role="presentation" style="width: 100%; margin-bottom: 24px;">
                 <tr>
                   <td style="text-align: center;">
                     <p style="margin: 0 0 6px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">KONTAKT</p>
-                    <p style="margin: 0 0 4px;">
-                      <a href="mailto:info@beban-barbershop.de" style="color: #4b5563; text-decoration: none; font-size: 14px; font-weight: 500;">info@beban-barbershop.de</a>
-                    </p>
-                    <p style="margin: 0;">
-                      <a href="tel:+4921475004590" style="color: #4b5563; text-decoration: none; font-size: 14px; font-weight: 500;">0214 7500 4590</a>
-                    </p>
+                    <p style="margin: 0 0 4px;"><a href="mailto:info@beban-barbershop.de" style="color: #4b5563; text-decoration: none; font-size: 14px; font-weight: 500;">info@beban-barbershop.de</a></p>
+                    <p style="margin: 0;"><a href="tel:+4921475004590" style="color: #4b5563; text-decoration: none; font-size: 14px; font-weight: 500;">0214 7500 4590</a></p>
                   </td>
                 </tr>
               </table>
-
-              <!-- Öffnungszeiten -->
-              <table role="presentation" style="width: 100%; margin-bottom: 24px;">
-                <tr>
-                  <td style="text-align: center;">
-                    <p style="margin: 0 0 6px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">ÖFFNUNGSZEITEN</p>
-                    <p style="margin: 0 0 4px; font-size: 14px; color: #4b5563; font-weight: 500;">Mo – Sa: 10:00 – 19:00 Uhr</p>
-                    <p style="margin: 0; font-size: 14px; color: #9ca3af; font-weight: 500;">So: Geschlossen</p>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Social Media -->
-              <table role="presentation" style="width: 100%; margin-bottom: 24px; border-top: 1px solid #e5e7eb; padding-top: 24px;">
-                <tr>
-                  <td style="text-align: center; padding-top: 24px;">
-                    <a href="https://www.instagram.com/beban_barber_shop2.0/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-                    </a>
-                    <a href="https://www.facebook.com/share/1MtAAD8TAW/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-                    </a>
-                    <a href="https://www.youtube.com/@barbershopbeban7716" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Copyright -->
               <table role="presentation" style="width: 100%;">
                 <tr>
                   <td style="text-align: center;">
-                    <p style="margin: 0 0 8px; font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;">© ${new Date().getFullYear()} BEBAN BARBERSHOP</p>
-                    <p style="margin: 0;">
-                      <a href="${BASE_URL}/de/datenschutz" target="_blank" style="color: #9ca3af; text-decoration: none; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Datenschutz</a>
-                      <span style="color: #d1d5db; margin: 0 8px;">•</span>
-                      <a href="${BASE_URL}/de/impressum" target="_blank" style="color: #9ca3af; text-decoration: none; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Impressum</a>
-                    </p>
+                    <p style="margin: 0 0 8px; font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;">© 2026 BEBAN BARBERSHOP</p>
                   </td>
                 </tr>
               </table>
-
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-  `;
-}
-
-// PIN-Reset E-Mail senden
-export async function sendPinResetEmail(email: string, pin: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    const { error } = await resend.emails.send({
-      from: `${FROM_NAME} <${FROM_EMAIL}>`,
-      to: email,
-      subject: 'Verwaltungs-PIN zurückgesetzt',
-      html: generatePinResetHtml(pin),
-    });
-
-    if (error) {
-      console.error('Resend error:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (err) {
-    console.error('Email sending failed:', err);
-    return { success: false, error: 'E-Mail konnte nicht gesendet werden' };
-  }
-}
-
-function generatePinResetHtml(pin: string): string {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
-  <table role="presentation" style="width: 100%; border-collapse: collapse;">
-    <tr>
-      <td style="padding: 40px 20px;">
-        <table role="presentation" style="max-width: 400px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);">
-          <!-- Header -->
-          <tr>
-            <td style="background-color: #1a1a1a; padding: 24px; text-align: center;">
-              <h1 style="margin: 0; color: #d4a853; font-size: 20px; font-weight: 300; letter-spacing: 2px;">BEBAN</h1>
-              <p style="margin: 4px 0 0; color: #888888; font-size: 10px; letter-spacing: 1px;">BARBERSHOP</p>
-            </td>
-          </tr>
-
-          <!-- Content -->
-          <tr>
-            <td style="padding: 32px; text-align: center;">
-              <div style="width: 48px; height: 48px; margin: 0 auto 20px; background-color: #d4a853; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-                <span style="font-size: 24px;">🔐</span>
-              </div>
-
-              <h2 style="margin: 0 0 16px; color: #1a1a1a; font-size: 18px; font-weight: 600;">
-                Verwaltungs-PIN
-              </h2>
-
-              <p style="margin: 0 0 24px; color: #666666; font-size: 14px; line-height: 1.5;">
-                Hier ist deine PIN für den Verwaltungsbereich:
-              </p>
-
-              <!-- PIN Display -->
-              <div style="background-color: #fafafa; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
-                <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #1a1a1a;">${pin}</span>
-              </div>
-
-              <p style="margin: 0; color: #999999; font-size: 12px; line-height: 1.5;">
-                Aus Sicherheitsgründen solltest du diese E-Mail nach dem Lesen löschen.
-              </p>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 16px 24px; background-color: #fafafa; text-align: center; border-top: 1px solid #eeeeee;">
-              <p style="margin: 0; color: #999999; font-size: 11px;">
-                Diese E-Mail wurde automatisch gesendet.
-              </p>
             </td>
           </tr>
         </table>
@@ -672,55 +395,5 @@ function generatePinResetHtml(pin: string): string {
     </tr>
   </table>
 </body>
-</html>
-  `;
-}
-
-// Hilfsfunktion zum Formatieren des Datums
-export function formatDateForEmail(dateString: string): string {
-  const date = new Date(dateString);
-  const days = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-  const months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
-
-  return `${days[date.getDay()]}, ${date.getDate()}. ${months[date.getMonth()]} ${date.getFullYear()}`;
-}
-
-// Formatiert Datum als TT.MM.JJJJ
-export function formatDateShort(dateString: string): string {
-  const date = new Date(dateString);
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}.${month}.${year}`;
-}
-
-// Generiert .ics Kalender-Datei Inhalt
-export function generateIcsContent(data: {
-  title: string;
-  date: string;
-  time: string;
-  duration: number;
-  location: string;
-  description: string;
-}): string {
-  const startDate = new Date(`${data.date}T${data.time}:00`);
-  const endDate = new Date(startDate.getTime() + data.duration * 60000);
-
-  const formatIcsDate = (d: Date) => {
-    return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-  };
-
-  return `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Beban Barbershop//Termin//DE
-BEGIN:VEVENT
-UID:${Date.now()}@terminster.com
-DTSTAMP:${formatIcsDate(new Date())}
-DTSTART:${formatIcsDate(startDate)}
-DTEND:${formatIcsDate(endDate)}
-SUMMARY:${data.title}
-LOCATION:${data.location}
-DESCRIPTION:${data.description}
-END:VEVENT
-END:VCALENDAR`;
+</html>`;
 }
