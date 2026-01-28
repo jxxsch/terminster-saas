@@ -81,6 +81,15 @@ const verwaltungItems: NavItem[] = [
     ),
   },
   {
+    href: '/admin/kunden',
+    label: 'Kunden',
+    icon: (
+      <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    ),
+  },
+  {
     href: '/admin',
     label: 'Statistiken',
     icon: (
@@ -110,11 +119,24 @@ interface AppSidebarProps {
 export function AppSidebar({ onLogout }: AppSidebarProps) {
   const pathname = usePathname();
 
-  // Initiale States basierend auf localStorage (nur client-side)
-  const getInitialStates = () => {
-    if (typeof window === 'undefined') {
-      return { expanded: false, unlocked: false, menuOpen: false };
-    }
+  // States initial auf false setzen (SSR-kompatibel)
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [verwaltungOpen, setVerwaltungOpen] = useState(false);
+  const [isPinUnlocked, setIsPinUnlocked] = useState(false);
+  const [showPinInput, setShowPinInput] = useState(false);
+  const [showForgotPin, setShowForgotPin] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [pin, setPin] = useState(['', '', '', '']);
+  const [pinError, setPinError] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const previousPathRef = useRef<string>(pathname);
+
+  // LocalStorage-Werte nach dem Mount laden (client-side only)
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    setHasMounted(true);
+
     const pinSession = localStorage.getItem('admin_pin_session');
     const previousPath = localStorage.getItem('admin_previous_path') || '';
 
@@ -122,33 +144,25 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
     if (previousPath.startsWith('/admin') && pathname === '/dashboard') {
       localStorage.removeItem('admin_pin_session');
       localStorage.removeItem('admin_previous_path');
-      return { expanded: false, unlocked: false, menuOpen: false };
+      return;
     }
 
     const unlocked = pinSession === 'unlocked';
     const inAdmin = pathname.startsWith('/admin');
-    return {
-      expanded: unlocked && inAdmin,
-      unlocked: unlocked,
-      menuOpen: unlocked && inAdmin
-    };
-  };
 
-  const initialStates = getInitialStates();
-  const [isExpanded, setIsExpanded] = useState(initialStates.expanded);
-  const [verwaltungOpen, setVerwaltungOpen] = useState(initialStates.menuOpen);
-  const [isPinUnlocked, setIsPinUnlocked] = useState(initialStates.unlocked);
-  const [showPinInput, setShowPinInput] = useState(false);
-  const [showForgotPin, setShowForgotPin] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [pin, setPin] = useState(['', '', '', '']);
-  const [pinError, setPinError] = useState(false);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const previousPathRef = useRef<string>(pathname);
+    if (unlocked) {
+      setIsPinUnlocked(true);
+      if (inAdmin) {
+        setIsExpanded(true);
+        setVerwaltungOpen(true);
+      }
+    }
+  }, []);
 
   // PIN und Menü-Status basierend auf Navigation steuern
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
+    if (!hasMounted) return;
+
     const wasInAdmin = previousPathRef.current.startsWith('/admin');
     const isNowOnDashboard = pathname === '/dashboard';
 
@@ -167,7 +181,7 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
     // Vorherigen Pfad aktualisieren
     previousPathRef.current = pathname;
     localStorage.setItem('admin_previous_path', pathname);
-  }, [pathname, isPinUnlocked]);
+  }, [pathname, isPinUnlocked, hasMounted]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   const isActive = (href: string) => {

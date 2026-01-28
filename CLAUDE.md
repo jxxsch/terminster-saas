@@ -96,6 +96,8 @@ Wichtige Änderungen hier dokumentieren:
 | 2026-01-25 | **Multi-Delete für Kalender:** Auswahl-Modus zum gesammelten Löschen mehrerer Termine. Toggle-Button "Auswählen", Checkboxen bei Terminen, Toolbar mit Barber/Zeit-Filter, Bereichsauswahl per Shift-Klick, 2-stufiges Bestätigungs-Modal | `app/(internal)/dashboard/page.tsx`, `components/dashboard/WeekView.tsx`, `components/dashboard/AppointmentSlot.tsx`, `components/dashboard/SelectionToolbar.tsx` (NEU), `components/dashboard/DragContext.tsx` |
 | 2026-01-26 | **Freier Tag pro Barber:** Jeder Mitarbeiter kann einen festen wöchentlichen freien Tag haben (Mo-Fr). Admin-UI im Tab "Sondertage", automatische Blockierung im BookingModal und Dashboard. Neues Feld `free_day` in team-Tabelle, Helper `isBarberFreeDay()` | `lib/supabase.ts`, `app/(internal)/admin/zeiten/page.tsx`, `components/sections/BookingModal.tsx`, `components/dashboard/WeekView.tsx`, `messages/*.json` |
 | 2026-01-27 | **Produkte-Sektion:** Neue Website-Sektion mit Kategorie-Tabs (Bart, Haare, Rasur, Pflege), Admin-Verwaltung für Produkte (CRUD), Navigation-Item im Header, i18n-Support | `components/sections/Products.tsx`, `app/(internal)/admin/produkte/page.tsx`, `components/shared/AppSidebar.tsx`, `lib/supabase.ts`, `messages/*.json` |
+| 2026-01-28 | **Kundenverwaltung im Admin:** Neue Admin-Seite unter Verwaltung/Kunden. Kundenliste mit Suche/Filter, Kundendetails mit Terminhistorie, Bearbeiten, Sperren/Entsperren. Neue Felder `preferred_barber_id` und `is_blocked` in customers-Tabelle | `app/(internal)/admin/kunden/page.tsx`, `components/shared/AppSidebar.tsx`, `lib/supabase.ts` |
+| 2026-01-28 | **100 Testkundendaten:** 100 Kundenkonten mit deutschen/ausländischen Namen, Geburtsdaten, ~217 Termine (67 Einzeltermine online, 150 Serientermine), 33 Serien (17 wöchentlich, 16 14-tägig), verteilt auf 5 Wochen | Supabase-Daten |
 
 ## Dateistruktur
 
@@ -116,6 +118,7 @@ my-website/
 │   │   ├── zeiten/       # Kombiniert: Zeitslots + Öffnungszeiten + Sondertage
 │   │   ├── medien/       # Kombiniert: Galerie + Content
 │   │   ├── produkte/     # Produkte-Verwaltung (CRUD)
+│   │   ├── kunden/       # Kundenverwaltung (Liste, Details, Sperren)
 │   │   ├── settings/     # Buchungseinstellungen
 │   │   ├── time-slots/   # (Redirect → /admin/zeiten?tab=slots)
 │   │   ├── opening-hours/# (Redirect → /admin/zeiten?tab=hours)
@@ -180,8 +183,9 @@ my-website/
 | `team` | Mitarbeiter | id, name, image, image_position, image_scale, sort_order, active, phone, birthday, vacation_days, start_date, free_day |
 | `services` | Leistungen | id, name, price (Cent), duration (Min), sort_order, active |
 | `time_slots` | Zeitslots | id, time, sort_order, active |
-| `appointments` | Einzeltermine | id, barber_id, date, time_slot, service_id, customer_name, customer_phone, source, series_id |
-| `series` | Serientermine | id, barber_id, day_of_week, time_slot, service_id, customer_name, customer_phone, start_date, end_date |
+| `customers` | Kunden | id, auth_id, first_name, last_name, name, email, phone, birth_date, preferred_barber_id, is_blocked, created_at |
+| `appointments` | Einzeltermine | id, barber_id, date, time_slot, service_id, customer_name, customer_phone, customer_id, customer_email, status, source, series_id |
+| `series` | Serientermine | id, barber_id, day_of_week, time_slot, service_id, customer_name, customer_phone, customer_email, start_date, end_date, interval_type |
 | `staff_time_off` | Urlaub/Abwesenheit | id, staff_id, start_date, end_date, reason, created_at |
 | `opening_hours` | Öffnungszeiten | id, day_of_week, open_time, close_time, is_closed |
 | `site_settings` | Einstellungen & Content | key, value (JSONB), updated_at |

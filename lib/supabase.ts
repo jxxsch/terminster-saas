@@ -84,13 +84,15 @@ export interface TimeSlot {
 
 export interface Customer {
   id: string;
-  auth_id: string;
-  first_name: string;
-  last_name: string;
+  auth_id: string | null;
+  first_name: string | null;
+  last_name: string | null;
   name: string; // Kombination aus first_name + last_name für Abwärtskompatibilität
   email: string;
   phone: string | null;
   birth_date: string | null;
+  preferred_barber_id: string | null;
+  is_blocked: boolean;
   created_at: string;
 }
 
@@ -597,7 +599,7 @@ export async function getCustomerByAuthId(authId: string): Promise<Customer | nu
 
 export async function updateCustomer(
   id: string,
-  updates: Partial<Pick<Customer, 'name' | 'phone' | 'email' | 'first_name' | 'last_name' | 'birth_date'>>
+  updates: Partial<Pick<Customer, 'name' | 'phone' | 'email' | 'first_name' | 'last_name' | 'birth_date' | 'preferred_barber_id' | 'is_blocked'>>
 ): Promise<Customer | null> {
   // Wenn first_name oder last_name aktualisiert werden, auch name aktualisieren
   const finalUpdates = { ...updates };
@@ -628,6 +630,184 @@ export async function updateCustomer(
   }
 
   return data;
+}
+
+// ============================================
+// ADMIN - Customer Management
+// ============================================
+
+export interface CustomerWithStats extends Customer {
+  appointment_count: number;
+  last_visit: string | null;
+}
+
+/**
+ * Holt alle Kunden mit Statistiken (Admin)
+ */
+export async function getAllCustomers(): Promise<CustomerWithStats[]> {
+  const { data: customers, error } = await supabase
+    .from('customers')
+    .select('*')
+    .order('name');
+
+  if (error) {
+    console.error('Error fetching all customers:', error);
+    return [];
+  }
+
+  if (!customers || customers.length === 0) return [];
+
+  // Hole Termin-Statistiken für alle Kunden
+  const customerIds = customers.map(c => c.id);
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data: appointments, error: aptError } = await supabase
+    .from('appointments')
+    .select('customer_id, date')
+    .in('customer_id', customerIds)
+    .eq('status', 'confirmed')
+    .lt('date', today);
+
+  if (aptError) {
+    console.error('Error fetching customer appointments:', aptError);
+  }
+
+  // Aggregiere Statistiken
+  const stats: Record<string, { count: number; lastVisit: string | null }> = {};
+  (appointments || []).forEach(apt => {
+    if (!apt.customer_id) return;
+    if (!stats[apt.customer_id]) {
+      stats[apt.customer_id] = { count: 0, lastVisit: null };
+    }
+    stats[apt.customer_id].count++;
+    if (!stats[apt.customer_id].lastVisit || apt.date > stats[apt.customer_id].lastVisit!) {
+      stats[apt.customer_id].lastVisit = apt.date;
+    }
+  });
+
+  return customers.map(c => ({
+    ...c,
+    is_blocked: c.is_blocked || false,
+    appointment_count: stats[c.id]?.count || 0,
+    last_visit: stats[c.id]?.lastVisit || null,
+  }));
+}
+
+/**
+ * Sucht Kunden nach Name, E-Mail oder Telefon
+ */
+export async function searchCustomersAdmin(query: string): Promise<CustomerWithStats[]> {
+  if (!query || query.length < 2) return getAllCustomers();
+
+  const { data: customers, error } = await supabase
+    .from('customers')
+    .select('*')
+    .or(`name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%`)
+    .order('name');
+
+  if (error) {
+    console.error('Error searching customers:', error);
+    return [];
+  }
+
+  if (!customers || customers.length === 0) return [];
+
+  // Hole Termin-Statistiken
+  const customerIds = customers.map(c => c.id);
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data: appointments } = await supabase
+    .from('appointments')
+    .select('customer_id, date')
+    .in('customer_id', customerIds)
+    .eq('status', 'confirmed')
+    .lt('date', today);
+
+  const stats: Record<string, { count: number; lastVisit: string | null }> = {};
+  (appointments || []).forEach(apt => {
+    if (!apt.customer_id) return;
+    if (!stats[apt.customer_id]) {
+      stats[apt.customer_id] = { count: 0, lastVisit: null };
+    }
+    stats[apt.customer_id].count++;
+    if (!stats[apt.customer_id].lastVisit || apt.date > stats[apt.customer_id].lastVisit!) {
+      stats[apt.customer_id].lastVisit = apt.date;
+    }
+  });
+
+  return customers.map(c => ({
+    ...c,
+    is_blocked: c.is_blocked || false,
+    appointment_count: stats[c.id]?.count || 0,
+    last_visit: stats[c.id]?.lastVisit || null,
+  }));
+}
+
+/**
+ * Sperrt oder entsperrt einen Kunden
+ */
+export async function toggleCustomerBlock(id: string, blocked: boolean): Promise<boolean> {
+  const { error } = await supabase
+    .from('customers')
+    .update({ is_blocked: blocked })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error toggling customer block:', error);
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Holt alle Termine eines Kunden (vergangene und zukünftige)
+ */
+export async function getCustomerAppointmentsAdmin(customerId: string): Promise<Appointment[]> {
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('*')
+    .eq('customer_id', customerId)
+    .order('date', { ascending: false })
+    .order('time_slot', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching customer appointments:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+/**
+ * Löscht einen Kunden (nur wenn keine Termine vorhanden)
+ */
+export async function deleteCustomer(id: string): Promise<{ success: boolean; error: string | null }> {
+  // Prüfe ob noch Termine existieren
+  const { count, error: countError } = await supabase
+    .from('appointments')
+    .select('id', { count: 'exact', head: true })
+    .eq('customer_id', id);
+
+  if (countError) {
+    return { success: false, error: 'Fehler beim Prüfen der Termine' };
+  }
+
+  if (count && count > 0) {
+    return { success: false, error: `Kunde hat noch ${count} Termine und kann nicht gelöscht werden` };
+  }
+
+  const { error } = await supabase
+    .from('customers')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting customer:', error);
+    return { success: false, error: 'Fehler beim Löschen des Kunden' };
+  }
+
+  return { success: true, error: null };
 }
 
 // ============================================

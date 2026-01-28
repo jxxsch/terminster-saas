@@ -44,7 +44,7 @@ export function CancellationConfirmHandler() {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
 
       {/* Modal - gleiches Design wie Stornierungsseite */}
-      <div className="relative bg-white w-full rounded-3xl shadow-xl p-8 max-w-md">
+      <div className="relative bg-white w-full rounded-3xl shadow-xl p-8" style={{ maxWidth: '448px' }}>
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

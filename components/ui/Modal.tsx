@@ -80,12 +80,13 @@ export function Modal({
 
   if (!isOpen) return null;
 
-  const sizes = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-    full: 'max-w-7xl',
+  // Inline max-width values (Tailwind classes may not apply correctly)
+  const sizeStyles: Record<string, string> = {
+    sm: '448px',   // max-w-md
+    md: '512px',   // max-w-lg
+    lg: '672px',   // max-w-2xl
+    xl: '896px',   // max-w-4xl
+    full: '1280px', // max-w-7xl
   };
 
   const modalContent = (
@@ -109,9 +110,9 @@ export function Modal({
         className={cn(
           'relative bg-gray-900 border border-gray-800 rounded-lg shadow-2xl',
           'w-full transform transition-all',
-          'max-h-[90vh] overflow-y-auto',
-          sizes[size]
+          'max-h-[90vh] overflow-y-auto'
         )}
+        style={{ maxWidth: sizeStyles[size] }}
       >
         {/* Header */}
         {(title || showClose) && (

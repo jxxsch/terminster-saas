@@ -107,7 +107,7 @@ export default function StornierungsSeite() {
   if (error && !appointment) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full text-center">
+        <div className="bg-white rounded-3xl shadow-xl p-8 w-full text-center" style={{ maxWidth: '448px' }}>
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -129,7 +129,7 @@ export default function StornierungsSeite() {
   if (!canCancel) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full text-center">
+        <div className="bg-white rounded-3xl shadow-xl p-8 w-full text-center" style={{ maxWidth: '448px' }}>
           <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -164,7 +164,7 @@ export default function StornierungsSeite() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full">
+      <div className="bg-white rounded-3xl shadow-xl p-8 w-full" style={{ maxWidth: '448px' }}>
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
