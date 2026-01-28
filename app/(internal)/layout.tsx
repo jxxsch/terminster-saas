@@ -22,7 +22,7 @@ export default function InternalLayout({
   };
 
   return (
-    <NextIntlClientProvider messages={messages} locale="de">
+    <NextIntlClientProvider messages={messages} locale="de" timeZone="Europe/Berlin">
       <div className="h-screen flex overflow-hidden bg-white">
         {/* Gemeinsame Sidebar - volle Höhe mit gleichmäßigen Rändern */}
         <div className="py-5 pl-5 pr-2 flex">

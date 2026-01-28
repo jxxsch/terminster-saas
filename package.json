@@ -13,6 +13,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.90.1",
+    "@types/three": "^0.182.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
@@ -25,6 +26,7 @@
     "react-hook-form": "^7.71.0",
     "resend": "^6.8.0",
     "stripe": "^20.1.2",
+    "three": "^0.182.0",
     "twilio": "^5.11.2",
     "zod": "^4.3.5"
   },

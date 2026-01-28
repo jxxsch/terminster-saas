@@ -20,7 +20,6 @@ export function Header() {
   const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
   const [showCustomerPortal, setShowCustomerPortal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [loginModalTab, setLoginModalTab] = useState<'login' | 'register'>('login');
 
   // Check if on legal pages (always light mode)
   const isLegalPage = pathname.includes('/impressum') || pathname.includes('/datenschutz');
@@ -57,11 +56,6 @@ export function Header() {
   // Determine if we should use light mode
   const isLightMode = isLegalPage || isScrolledPastHero;
 
-  const openLoginModal = (tab: 'login' | 'register') => {
-    setLoginModalTab(tab);
-    setShowLoginModal(true);
-  };
-
   // Navigation items
   const navItems = [
     { href: '#about', label: t('about') },
@@ -94,8 +88,8 @@ export function Header() {
       : 'bg-white/10 text-white border-white/30 hover:bg-gold hover:text-black hover:border-gold'
   );
 
-  const authButtonClass = cn(
-    'h-9 px-3 text-xs font-light tracking-[0.1em] uppercase transition-all duration-300 rounded-sm border flex items-center justify-center',
+  const userIconClass = cn(
+    'h-9 w-9 rounded-sm border transition-all duration-300 flex items-center justify-center',
     isLightMode
       ? 'text-gray-600 border-gray-300 hover:text-gold hover:border-gold'
       : 'text-gray-300 border-white/30 hover:text-gold hover:border-gold'
@@ -109,7 +103,7 @@ export function Header() {
   return (
     <>
       <header className={headerClass}>
-        <nav className="container mx-auto px-4 lg:px-6">
+        <nav className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
           <div className="flex items-center justify-between h-14 lg:h-16">
             {/* Left: Logo + Separator + Navigation */}
             <div className="flex items-center gap-3 lg:gap-4">
@@ -171,38 +165,24 @@ export function Header() {
               {/* Separator */}
               <div className={separatorClass} />
 
-              {/* Auth Section */}
-              {isAuthenticated ? (
-                <button
-                  onClick={() => setShowCustomerPortal(true)}
-                  className={cn(
-                    'h-9 w-9 rounded-sm border transition-all duration-300 flex items-center justify-center',
-                    isLightMode
-                      ? 'text-gold border-gold/50 hover:bg-gold/10'
-                      : 'text-gold border-gold/50 hover:bg-white/10'
-                  )}
-                  aria-label={t('myArea')}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => openLoginModal('login')}
-                    className={authButtonClass}
-                  >
-                    {t('login')}
-                  </button>
-                  <button
-                    onClick={() => openLoginModal('register')}
-                    className={authButtonClass}
-                  >
-                    {t('register')}
-                  </button>
-                </div>
-              )}
+              {/* User Icon */}
+              <button
+                onClick={() => isAuthenticated ? setShowCustomerPortal(true) : setShowLoginModal(true)}
+                className={isAuthenticated
+                  ? cn(
+                      'h-9 w-9 rounded-sm border transition-all duration-300 flex items-center justify-center',
+                      isLightMode
+                        ? 'text-gold border-gold/50 hover:bg-gold/10'
+                        : 'text-gold border-gold/50 hover:bg-white/10'
+                    )
+                  : userIconClass
+                }
+                aria-label={isAuthenticated ? t('myArea') : t('login')}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </button>
             </div>
 
             {/* Mobile Menu Button */}
@@ -280,54 +260,26 @@ export function Header() {
                 {t('bookNow')}
               </button>
 
-              {/* Auth Section */}
-              {isAuthenticated ? (
-                <button
-                  onClick={() => {
-                    setShowCustomerPortal(true);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={cn(
-                    'py-3 text-sm tracking-[0.15em] uppercase border rounded',
-                    isLightMode
-                      ? 'text-gold border-gold/50'
-                      : 'text-gold border-gold/50'
-                  )}
-                >
-                  {t('myArea')}
-                </button>
-              ) : (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      openLoginModal('login');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={cn(
-                      'flex-1 py-3 text-sm tracking-[0.15em] uppercase border rounded transition-colors',
-                      isLightMode
-                        ? 'text-gray-700 border-gray-300 hover:border-gold hover:text-gold'
-                        : 'text-gray-300 border-white/30 hover:border-gold hover:text-gold'
-                    )}
-                  >
-                    {t('login')}
-                  </button>
-                  <button
-                    onClick={() => {
-                      openLoginModal('register');
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={cn(
-                      'flex-1 py-3 text-sm tracking-[0.15em] uppercase border rounded transition-colors',
-                      isLightMode
-                        ? 'text-gray-700 border-gray-300 hover:border-gold hover:text-gold'
-                        : 'text-gray-300 border-white/30 hover:border-gold hover:text-gold'
-                    )}
-                  >
-                    {t('register')}
-                  </button>
-                </div>
-              )}
+              {/* User Button */}
+              <button
+                onClick={() => {
+                  isAuthenticated ? setShowCustomerPortal(true) : setShowLoginModal(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className={cn(
+                  'py-3 text-sm tracking-[0.15em] uppercase border rounded transition-colors flex items-center justify-center gap-2',
+                  isAuthenticated
+                    ? 'text-gold border-gold/50'
+                    : isLightMode
+                      ? 'text-gray-700 border-gray-300 hover:border-gold hover:text-gold'
+                      : 'text-gray-300 border-white/30 hover:border-gold hover:text-gold'
+                )}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                {isAuthenticated ? t('myArea') : t('login')}
+              </button>
 
               {/* Language Switcher */}
               <div className="flex justify-center pt-3">
@@ -349,7 +301,6 @@ export function Header() {
       {/* Login Modal */}
       {showLoginModal && (
         <LoginModal
-          initialTab={loginModalTab}
           onClose={() => setShowLoginModal(false)}
           onSuccess={() => {
             setShowLoginModal(false);
