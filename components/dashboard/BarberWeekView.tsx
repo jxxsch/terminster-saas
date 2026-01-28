@@ -461,7 +461,7 @@ export function BarberWeekView({
         const seriesItem = Array.from(seriesAppointments.values()).find(s => s.id === seriesId);
         if (seriesItem) {
           // Erstelle einen stornierten Termin für dieses spezifische Datum
-          const cancelledAppointment = await createAppointment({
+          const result = await createAppointment({
             barber_id: seriesItem.barber_id,
             date: date,
             time_slot: seriesItem.time_slot,
@@ -475,9 +475,9 @@ export function BarberWeekView({
             series_id: seriesItem.id,
           });
 
-          if (cancelledAppointment) {
-            handleNewAppointmentFromSeries(cancelledAppointment);
-            createdCancellations.push(cancelledAppointment.id);
+          if (result.success && result.appointment) {
+            handleNewAppointmentFromSeries(result.appointment);
+            createdCancellations.push(result.appointment.id);
           }
         }
       } else {
@@ -512,7 +512,7 @@ export function BarberWeekView({
 
     // Normale Termine wiederherstellen
     for (const apt of deletedItems.appointments) {
-      const restored = await createAppointment({
+      const result = await createAppointment({
         barber_id: apt.barber_id,
         date: apt.date,
         time_slot: apt.time_slot,
@@ -525,8 +525,8 @@ export function BarberWeekView({
         status: apt.status,
         series_id: apt.series_id || null,
       });
-      if (restored) {
-        setAppointments(prev => [...prev, restored]);
+      if (result.success && result.appointment) {
+        setAppointments(prev => [...prev, result.appointment!]);
       }
     }
 

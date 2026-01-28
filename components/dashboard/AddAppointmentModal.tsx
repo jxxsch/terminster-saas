@@ -130,7 +130,7 @@ export function AddAppointmentModal({
       setIsSubmitting(true);
       setError('');
 
-      const newAppointment = await createAppointment({
+      const result = await createAppointment({
         barber_id: barberId,
         date,
         time_slot: timeSlot,
@@ -144,10 +144,10 @@ export function AddAppointmentModal({
         series_id: null,
       });
 
-      if (newAppointment) {
-        onCreated(newAppointment);
+      if (result.success && result.appointment) {
+        onCreated(result.appointment);
       } else {
-        setError('Fehler beim Speichern');
+        setError(result.error === 'conflict' ? 'Zeitslot bereits belegt' : 'Fehler beim Speichern');
         setIsSubmitting(false);
       }
       return;
@@ -186,7 +186,7 @@ export function AddAppointmentModal({
       }
     } else {
       // Create single appointment
-      const newAppointment = await createAppointment({
+      const result = await createAppointment({
         barber_id: barberId,
         date,
         time_slot: timeSlot,
@@ -200,10 +200,10 @@ export function AddAppointmentModal({
         series_id: null,
       });
 
-      if (newAppointment) {
-        onCreated(newAppointment);
+      if (result.success && result.appointment) {
+        onCreated(result.appointment);
       } else {
-        setError('Fehler beim Speichern');
+        setError(result.error === 'conflict' ? 'Zeitslot bereits belegt' : 'Fehler beim Speichern');
         setIsSubmitting(false);
       }
     }

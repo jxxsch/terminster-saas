@@ -8,6 +8,7 @@ export interface SendEmailParams {
     customerPhone?: string;
     barberName: string;
     barberImage?: string;
+    imagePosition?: string;
     serviceName: string;
     date: string;
     time: string;
@@ -47,6 +48,7 @@ export async function sendBookingConfirmationEmail(data: {
   customerPhone?: string;
   barberName: string;
   barberImage?: string;
+  imagePosition?: string;
   serviceName: string;
   date: string;
   time: string;

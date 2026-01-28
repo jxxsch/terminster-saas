@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
           customerPhone: data.customerPhone,
           barberName: data.barberName,
           barberImage: data.barberImage,
+          imagePosition: data.imagePosition,
           serviceName: data.serviceName,
           date: data.date, // ISO Format: YYYY-MM-DD
           time: data.time,
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
           customerEmail: data.customerEmail,
           barberName: data.barberName,
           barberImage: data.barberImage,
+          imagePosition: data.imagePosition,
           serviceName: data.serviceName,
           date: data.date,
           time: data.time,

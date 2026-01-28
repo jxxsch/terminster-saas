@@ -322,7 +322,7 @@ export function AppointmentSlot({
     const handleCancelSingleAppointment = async () => {
       setIsCancellingSingle(true);
       // Erstelle einen stornierten Termin für dieses spezifische Datum
-      const cancelledAppointment = await createAppointment({
+      const result = await createAppointment({
         barber_id: barberId,
         date: date,
         time_slot: timeSlot,
@@ -336,13 +336,13 @@ export function AppointmentSlot({
         series_id: series.id,
       });
 
-      if (cancelledAppointment) {
+      if (result.success && result.appointment) {
         if (onAppointmentCreated) {
-          onAppointmentCreated(cancelledAppointment);
+          onAppointmentCreated(result.appointment);
         }
         // Für Undo: ID der Stornierung melden
         if (onSeriesSingleCancelled) {
-          onSeriesSingleCancelled(cancelledAppointment.id);
+          onSeriesSingleCancelled(result.appointment.id);
         }
       }
       setIsCancellingSingle(false);

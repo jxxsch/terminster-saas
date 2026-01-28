@@ -829,7 +829,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     setIsSubmitting(true);
     setBookingError('');
 
-    const appointment = await createAppointment({
+    const result = await createAppointment({
       barber_id: selectedBarber,
       date: selectedDay,
       time_slot: selectedSlot,
@@ -845,9 +845,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
 
     setIsSubmitting(false);
 
-    if (appointment) {
-      setBookedAppointments(prev => [...prev, appointment]);
-      setBookedAppointmentId(appointment.id);
+    if (result.success && result.appointment) {
+      setBookedAppointments(prev => [...prev, result.appointment!]);
+      setBookedAppointmentId(result.appointment.id);
       setBookingSuccess(true);
 
       const barber = team.find(b => b.id === selectedBarber);
@@ -859,17 +859,27 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
           customerEmail: customerEmail.trim(),
           customerPhone: customerPhone.trim(),
           barberName: barber.name,
-          barberImage: barber.image ? `https://terminster.com${barber.image}` : undefined,
+          barberImage: barber.image || undefined,
+          imagePosition: barber.image_position || undefined,
           serviceName: service.name,
           date: selectedDay,
           time: selectedSlot,
           duration: service.duration,
           price: formatPrice(service.price),
-          appointmentId: appointment.id,
+          appointmentId: result.appointment.id,
         }).catch(err => {
           console.error('Failed to send confirmation email:', err);
         });
       }
+    } else if (result.error === 'conflict') {
+      // Slot wurde inzwischen gebucht - Termine neu laden
+      const today = new Date();
+      const startDate = formatDateLocal(today);
+      const endDate = formatDateLocal(new Date(today.getTime() + 12 * 7 * 24 * 60 * 60 * 1000));
+      const freshAppointments = await getAppointments(startDate, endDate);
+      setBookedAppointments(freshAppointments);
+      setSelectedSlot(null);
+      setBookingError(t('errors.slotUnavailable'));
     } else {
       setBookingError(t('errors.bookingFailed'));
     }
@@ -1907,7 +1917,6 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                         <button
                           key={barber.id}
                           onClick={() => {
-                            // Alle Barber sind immer klickbar - Alternativen werden angezeigt
                             setSelectedBarber(barber.id);
                             setSelectedSlot(null);
                             scrollToBottom();
@@ -1944,7 +1953,14 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                     <span style={{ ...styles.sectionTitle, color: selectedBarber ? '#64748b' : '#cbd5e1' }}>{t('steps.time')}</span>
                   </div>
                   {selectedBarber ? (() => {
-                    const availableSlots = getAvailableSlots(
+                    // Prüfe ob Barber am ausgewählten Tag verfügbar ist (freier Tag / Urlaub)
+                    const selectedBarberData2 = team.find(b => b.id === selectedBarber);
+                    const barberUnavailable = selectedBarberData2 && selectedDay && (
+                      isBarberFreeDay(selectedBarberData2, selectedDay) ||
+                      staffTimeOff.some(off => off.staff_id === selectedBarber && off.start_date <= selectedDay && off.end_date >= selectedDay)
+                    );
+
+                    const availableSlots = barberUnavailable ? [] : getAvailableSlots(
                       selectedBarber,
                       selectedDay!,
                       timeSlots,

@@ -252,7 +252,11 @@ export async function getAppointments(startDate: string, endDate: string): Promi
   return data || [];
 }
 
-export async function createAppointment(appointment: Omit<Appointment, 'id' | 'created_at'>): Promise<Appointment | null> {
+export async function createAppointment(appointment: Omit<Appointment, 'id' | 'created_at'>): Promise<{
+  success: boolean;
+  appointment: Appointment | null;
+  error: 'conflict' | 'unknown' | null
+}> {
   const { data, error } = await supabase
     .from('appointments')
     .insert(appointment)
@@ -260,11 +264,18 @@ export async function createAppointment(appointment: Omit<Appointment, 'id' | 'c
     .single();
 
   if (error) {
-    console.error('Error creating appointment:', error);
-    return null;
+    console.error('Error creating appointment:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+    });
+    // Code 23505 = unique_violation (Slot bereits gebucht)
+    const errorType = error.code === '23505' ? 'conflict' : 'unknown';
+    return { success: false, appointment: null, error: errorType };
   }
 
-  return data;
+  return { success: true, appointment: data, error: null };
 }
 
 export async function deleteAppointment(id: string): Promise<boolean> {
@@ -2330,17 +2341,25 @@ export async function createProduct(product: Omit<Product, 'id' | 'created_at'>)
 
 // Produkt aktualisieren
 export async function updateProduct(id: string, updates: Partial<Product>): Promise<Product | null> {
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { id: _id, created_at: _ca, ...safeUpdates } = updates as Product;
+
+  const { error } = await supabase
     .from('products')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
+    .update(safeUpdates)
+    .eq('id', id);
 
   if (error) {
     console.error('Error updating product:', error);
     return null;
   }
+
+  // Fetch updated product separately (RLS may block chained .select())
+  const { data } = await supabase
+    .from('products')
+    .select('*')
+    .eq('id', id)
+    .single();
 
   return data;
 }
