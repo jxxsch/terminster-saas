@@ -639,11 +639,21 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     };
   }, [isOpen]);
 
+  // Ref to track if loading is in progress (prevents duplicate calls)
+  const isLoadingRef = useRef(false);
+
   // Load data from Supabase with auto-retry
   const loadData = async (retryCount = 0): Promise<boolean> => {
+    // Prevent duplicate calls
+    if (isLoadingRef.current && retryCount === 0) {
+      console.log('loadData already in progress, skipping...');
+      return false;
+    }
+
     const maxRetries = 3;
     const retryDelay = 1000; // 1 Sekunde zwischen Versuchen
 
+    isLoadingRef.current = true;
     setIsLoading(true);
     setLoadError(false);
 
@@ -675,6 +685,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       if (advanceWeeksData?.value) setMaxWeeks(advanceWeeksData.value);
       setStaffTimeOff(staffTimeOffData);
       setIsLoading(false);
+      isLoadingRef.current = false;
       return true;
     } catch (error) {
       console.error(`Fehler beim Laden (Versuch ${retryCount + 1}/${maxRetries}):`, error);
@@ -687,6 +698,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
         // Alle Versuche fehlgeschlagen
         setLoadError(true);
         setIsLoading(false);
+        isLoadingRef.current = false;
         return false;
       }
     }
@@ -694,6 +706,8 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
 
   useEffect(() => {
     if (isOpen) {
+      // Reset ref when modal opens to allow fresh load
+      isLoadingRef.current = false;
       loadData();
     }
   }, [isOpen]);
@@ -737,6 +751,10 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     setAuthBirthDate('');
     setAuthError('');
     setAuthSuccess('');
+    // Reset loading state for next open
+    setIsLoading(true);
+    setLoadError(false);
+    isLoadingRef.current = false;
     onClose();
   };
 
