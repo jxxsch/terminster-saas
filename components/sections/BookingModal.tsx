@@ -823,7 +823,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     }
   }, [selectedSlot, selectedBarber, selectedDay]);
 
-  useRealtimeAppointments(isOpen, refreshAppointments);
+  useRealtimeAppointments({ onUpdate: refreshAppointments, enabled: isOpen });
 
   useEffect(() => {
     if (selectedBarber) {
