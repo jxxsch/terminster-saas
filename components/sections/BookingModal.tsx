@@ -643,33 +643,38 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     async function loadData() {
       setIsLoading(true);
 
-      const today = new Date();
-      const startDate = formatDateLocal(today);
-      const endDate = formatDateLocal(new Date(today.getTime() + 12 * 7 * 24 * 60 * 60 * 1000));
+      try {
+        const today = new Date();
+        const startDate = formatDateLocal(today);
+        const endDate = formatDateLocal(new Date(today.getTime() + 12 * 7 * 24 * 60 * 60 * 1000));
 
-      const [teamData, servicesData, timeSlotsData, appointmentsData, closedDatesData, openSundaysData, openHolidaysData, bundeslandData, advanceWeeksData, staffTimeOffData] = await Promise.all([
-        getTeam(),
-        getServices(),
-        getTimeSlotsArray(),
-        getAppointments(startDate, endDate),
-        getClosedDates(),
-        getOpenSundays(),
-        getOpenHolidays(),
-        getSetting<Bundesland>('bundesland'),
-        getSetting<{ value: number }>('booking_advance_weeks'),
-        getStaffTimeOffForDateRange(startDate, endDate),
-      ]);
-      setTeam(teamData);
-      setServices(servicesData);
-      setTimeSlots(timeSlotsData);
-      setBookedAppointments(appointmentsData);
-      setClosedDates(closedDatesData);
-      setOpenSundays(openSundaysData);
-      setOpenHolidays(openHolidaysData);
-      if (bundeslandData) setBundesland(bundeslandData);
-      if (advanceWeeksData?.value) setMaxWeeks(advanceWeeksData.value);
-      setStaffTimeOff(staffTimeOffData);
-      setIsLoading(false);
+        const [teamData, servicesData, timeSlotsData, appointmentsData, closedDatesData, openSundaysData, openHolidaysData, bundeslandData, advanceWeeksData, staffTimeOffData] = await Promise.all([
+          getTeam(),
+          getServices(),
+          getTimeSlotsArray(),
+          getAppointments(startDate, endDate),
+          getClosedDates(),
+          getOpenSundays(),
+          getOpenHolidays(),
+          getSetting<Bundesland>('bundesland'),
+          getSetting<{ value: number }>('booking_advance_weeks'),
+          getStaffTimeOffForDateRange(startDate, endDate),
+        ]);
+        setTeam(teamData);
+        setServices(servicesData);
+        setTimeSlots(timeSlotsData);
+        setBookedAppointments(appointmentsData);
+        setClosedDates(closedDatesData);
+        setOpenSundays(openSundaysData);
+        setOpenHolidays(openHolidaysData);
+        if (bundeslandData) setBundesland(bundeslandData);
+        if (advanceWeeksData?.value) setMaxWeeks(advanceWeeksData.value);
+        setStaffTimeOff(staffTimeOffData);
+      } catch (error) {
+        console.error('Fehler beim Laden der Buchungsdaten:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
 
     if (isOpen) {
