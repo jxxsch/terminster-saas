@@ -872,7 +872,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
 
     try {
       const result = await signIn(authEmail, authPassword);
-      if (!result.success) {
+      if (result.error) {
         setAuthError(result.error || tAuth('loginFailed'));
       } else {
         resetAuthForm();
@@ -901,14 +901,16 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     setAuthSubmitting(true);
 
     try {
-      const result = await signUp(authEmail, authPassword, {
-        first_name: authFirstName,
-        last_name: authLastName,
+      const result = await signUp({
+        email: authEmail,
+        password: authPassword,
+        firstName: authFirstName,
+        lastName: authLastName,
         phone: authPhone,
-        birth_date: authBirthDate,
+        birthDate: authBirthDate,
       });
 
-      if (!result.success) {
+      if (result.error) {
         setAuthError(result.error || tAuth('registrationFailed'));
       } else {
         setAuthSuccess(tAuth('registrationSuccess'));
@@ -927,7 +929,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
 
     try {
       const result = await resetPassword(authEmail);
-      if (!result.success) {
+      if (result.error) {
         setAuthError(result.error || tAuth('resetFailed'));
       } else {
         setAuthSuccess(tAuth('resetEmailSent'));
@@ -953,28 +955,32 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     setBookingError('');
 
     try {
-      const appointment = await createAppointment({
+      const result = await createAppointment({
         barber_id: selectedBarber,
-        date: selectedDay,
-        time_slot: selectedSlot,
-        service_id: null,
+        date: selectedDay!,
+        time_slot: selectedSlot!,
+        service_id: '',
         customer_name: customerName.trim(),
-        customer_email: customerEmail.trim(),
-        customer_phone: customerPhone.trim(),
+        customer_email: customerEmail.trim() || null,
+        customer_phone: customerPhone.trim() || null,
         customer_id: customer?.id || null,
         status: 'confirmed',
         source: 'online',
+        series_id: null,
       });
 
-      if (appointment) {
+      if (result.success && result.appointment) {
         try {
           await sendBookingConfirmationEmail({
             customerName: customerName.trim(),
             customerEmail: customerEmail.trim(),
             barberName: selectedBarberData?.name || '',
             serviceName: '',
-            date: selectedDay,
-            timeSlot: selectedSlot,
+            date: selectedDay!,
+            time: selectedSlot!,
+            duration: 30,
+            price: '',
+            appointmentId: result.appointment.id.toString(),
           });
         } catch (emailError) {
           console.error('Email send error:', emailError);
@@ -983,7 +989,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
         setBookingSuccess(true);
         await refreshAppointments();
       } else {
-        setBookingError(t('bookingFailed'));
+        setBookingError(result.error === 'conflict' ? t('slotTaken') : t('bookingFailed'));
       }
     } catch (error) {
       console.error('Booking error:', error);
