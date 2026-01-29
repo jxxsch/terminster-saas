@@ -37,6 +37,7 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancellationHours, setCancellationHours] = useState<number>(24);
@@ -64,36 +65,50 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
     };
   }, []);
 
-  // Load data
-  useEffect(() => {
-    async function loadData() {
-      if (!customer?.id) {
-        setIsLoading(false);
-        return;
-      }
+  // Load data with auto-retry
+  const loadData = async (retryCount = 0): Promise<boolean> => {
+    const maxRetries = 3;
+    const retryDelay = 1000;
 
-      setIsLoading(true);
-      try {
-        const [appointmentsData, teamData, servicesData, cancellationSetting] = await Promise.all([
-          getCustomerAppointments(customer.id),
-          getTeam(),
-          getServices(),
-          getSetting<{ value: number }>('cancellation_hours'),
-        ]);
-
-        setAppointments(appointmentsData || []);
-        setTeam(teamData || []);
-        setServices(servicesData || []);
-        if (cancellationSetting?.value) {
-          setCancellationHours(cancellationSetting.value);
-        }
-      } catch (error) {
-        console.error('Error loading customer data:', error);
-      } finally {
-        setIsLoading(false);
-      }
+    if (!customer?.id) {
+      setIsLoading(false);
+      return true;
     }
 
+    setIsLoading(true);
+    setLoadError(false);
+
+    try {
+      const [appointmentsData, teamData, servicesData, cancellationSetting] = await Promise.all([
+        getCustomerAppointments(customer.id),
+        getTeam(),
+        getServices(),
+        getSetting<{ value: number }>('cancellation_hours'),
+      ]);
+
+      setAppointments(appointmentsData || []);
+      setTeam(teamData || []);
+      setServices(servicesData || []);
+      if (cancellationSetting?.value) {
+        setCancellationHours(cancellationSetting.value);
+      }
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      console.error(`Error loading customer data (attempt ${retryCount + 1}/${maxRetries}):`, error);
+
+      if (retryCount < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return loadData(retryCount + 1);
+      } else {
+        setLoadError(true);
+        setIsLoading(false);
+        return false;
+      }
+    }
+  };
+
+  useEffect(() => {
     loadData();
   }, [customer?.id]);
 
@@ -533,6 +548,40 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 <p style={{ fontSize: '0.875rem' }}>{tCommon('loading')}</p>
+              </div>
+            ) : loadError ? (
+              <div style={{ ...styles.emptyState, gap: '1rem' }}>
+                <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                  <svg width="24" height="24" fill="none" stroke="#ef4444" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1f2937', marginBottom: '0.25rem' }}>Verbindungsfehler</p>
+                  <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>Daten konnten nicht geladen werden</p>
+                </div>
+                <button
+                  onClick={() => loadData()}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.625rem 1.25rem',
+                    backgroundColor: '#d4a853',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    fontSize: '0.8125rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    margin: '0 auto',
+                  }}
+                >
+                  <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Erneut versuchen
+                </button>
               </div>
             ) : (
               <>

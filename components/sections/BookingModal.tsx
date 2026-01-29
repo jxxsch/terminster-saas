@@ -564,6 +564,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
   const [maxWeeks, setMaxWeeks] = useState(2);
   const [staffTimeOff, setStaffTimeOff] = useState<StaffTimeOff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -638,45 +639,60 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     };
   }, [isOpen]);
 
-  // Load data from Supabase
-  useEffect(() => {
-    async function loadData() {
-      setIsLoading(true);
+  // Load data from Supabase with auto-retry
+  const loadData = async (retryCount = 0): Promise<boolean> => {
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 Sekunde zwischen Versuchen
 
-      try {
-        const today = new Date();
-        const startDate = formatDateLocal(today);
-        const endDate = formatDateLocal(new Date(today.getTime() + 12 * 7 * 24 * 60 * 60 * 1000));
+    setIsLoading(true);
+    setLoadError(false);
 
-        const [teamData, servicesData, timeSlotsData, appointmentsData, closedDatesData, openSundaysData, openHolidaysData, bundeslandData, advanceWeeksData, staffTimeOffData] = await Promise.all([
-          getTeam(),
-          getServices(),
-          getTimeSlotsArray(),
-          getAppointments(startDate, endDate),
-          getClosedDates(),
-          getOpenSundays(),
-          getOpenHolidays(),
-          getSetting<Bundesland>('bundesland'),
-          getSetting<{ value: number }>('booking_advance_weeks'),
-          getStaffTimeOffForDateRange(startDate, endDate),
-        ]);
-        setTeam(teamData);
-        setServices(servicesData);
-        setTimeSlots(timeSlotsData);
-        setBookedAppointments(appointmentsData);
-        setClosedDates(closedDatesData);
-        setOpenSundays(openSundaysData);
-        setOpenHolidays(openHolidaysData);
-        if (bundeslandData) setBundesland(bundeslandData);
-        if (advanceWeeksData?.value) setMaxWeeks(advanceWeeksData.value);
-        setStaffTimeOff(staffTimeOffData);
-      } catch (error) {
-        console.error('Fehler beim Laden der Buchungsdaten:', error);
-      } finally {
+    try {
+      const today = new Date();
+      const startDate = formatDateLocal(today);
+      const endDate = formatDateLocal(new Date(today.getTime() + 12 * 7 * 24 * 60 * 60 * 1000));
+
+      const [teamData, servicesData, timeSlotsData, appointmentsData, closedDatesData, openSundaysData, openHolidaysData, bundeslandData, advanceWeeksData, staffTimeOffData] = await Promise.all([
+        getTeam(),
+        getServices(),
+        getTimeSlotsArray(),
+        getAppointments(startDate, endDate),
+        getClosedDates(),
+        getOpenSundays(),
+        getOpenHolidays(),
+        getSetting<Bundesland>('bundesland'),
+        getSetting<{ value: number }>('booking_advance_weeks'),
+        getStaffTimeOffForDateRange(startDate, endDate),
+      ]);
+      setTeam(teamData);
+      setServices(servicesData);
+      setTimeSlots(timeSlotsData);
+      setBookedAppointments(appointmentsData);
+      setClosedDates(closedDatesData);
+      setOpenSundays(openSundaysData);
+      setOpenHolidays(openHolidaysData);
+      if (bundeslandData) setBundesland(bundeslandData);
+      if (advanceWeeksData?.value) setMaxWeeks(advanceWeeksData.value);
+      setStaffTimeOff(staffTimeOffData);
+      setIsLoading(false);
+      return true;
+    } catch (error) {
+      console.error(`Fehler beim Laden (Versuch ${retryCount + 1}/${maxRetries}):`, error);
+
+      if (retryCount < maxRetries - 1) {
+        // Auto-Retry nach kurzer Verzögerung
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return loadData(retryCount + 1);
+      } else {
+        // Alle Versuche fehlgeschlagen
+        setLoadError(true);
         setIsLoading(false);
+        return false;
       }
     }
+  };
 
+  useEffect(() => {
     if (isOpen) {
       loadData();
     }
@@ -1576,6 +1592,40 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                 </svg>
                 <span style={{ fontSize: '0.8125rem' }}>{tCommon('loading')}</span>
               </div>
+            </div>
+          ) : loadError ? (
+            /* Error State - Verbindungsfehler */
+            <div style={{ ...styles.content, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '1rem', textAlign: 'center', padding: '2rem' }}>
+              <div style={{ width: '3rem', height: '3rem', borderRadius: '50%', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="24" height="24" fill="none" stroke="#ef4444" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1f2937', marginBottom: '0.25rem' }}>Verbindungsfehler</p>
+                <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>Daten konnten nicht geladen werden</p>
+              </div>
+              <button
+                onClick={() => loadData()}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.625rem 1.25rem',
+                  backgroundColor: '#d4a853',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.5rem',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Erneut versuchen
+              </button>
             </div>
           ) : bookingSuccess ? (
             /* Success State */
