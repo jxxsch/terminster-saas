@@ -12,7 +12,14 @@ export function Hero() {
   const { openBooking } = useBooking();
   const t = useTranslations('hero');
   const tDays = useTranslations('days');
-  const { settings: heroSettings, getLocalizedText } = useHeroSettings();
+  const { settings: heroSettings, getLocalizedText, isLoading } = useHeroSettings();
+
+  // Debug logging
+  console.log('Hero Settings:', {
+    isLoading,
+    title: heroSettings.title,
+    localizedTitle: getLocalizedText(heroSettings.title)
+  });
 
   // Get title and subtitle from settings, fallback to defaults
   const heroTitle = getLocalizedText(heroSettings.title) || 'BEBAN BARBER SHOP 2.0';
