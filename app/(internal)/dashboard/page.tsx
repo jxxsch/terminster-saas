@@ -4,9 +4,9 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { WeekView } from '@/components/dashboard/WeekView';
 import { BarberWeekView } from '@/components/dashboard/BarberWeekView';
-import Image from 'next/image';
 import { getClosedDates, getOpenSundays, ClosedDate, OpenSunday } from '@/lib/supabase';
 import { useTranslations } from 'next-intl';
+import { useLogoUrl } from '@/hooks/useLogoUrl';
 
 type ViewMode = 'day' | 'barber';
 type NameDisplayMode = 'firstName' | 'lastName' | 'fullName';
@@ -62,6 +62,7 @@ function getMondayOfWeek(weekOffset: number): Date {
 }
 
 export default function DashboardPage() {
+  const logoUrl = useLogoUrl();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -290,13 +291,13 @@ export default function DashboardPage() {
           {/* Logo */}
           <div className="flex justify-center mb-6">
             <div className="w-12 h-12 bg-gold rounded-xl flex items-center justify-center">
-              <Image
-                src="/logo.png"
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={logoUrl}
                 alt="Beban"
                 width={28}
                 height={28}
                 className="object-contain"
-                priority
               />
             </div>
           </div>
@@ -316,6 +317,7 @@ export default function DashboardPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={t('password')}
+              autoComplete="current-password"
               className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder-slate-400 focus:border-gold focus:ring-1 focus:ring-gold focus:outline-none"
             />
             {error && (

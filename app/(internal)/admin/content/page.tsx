@@ -924,47 +924,157 @@ export default function MedienPage() {
 
           {/* Branding */}
           {activeSection === 'branding' && (
-            <div>
-              <SectionHeader title="Branding" subtitle="Logo und visuelle Identität" />
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                <div className="flex items-start gap-6">
-                  <div className="w-20 h-20 bg-slate-900 rounded-xl flex items-center justify-center overflow-hidden flex-shrink-0">
-                    {settings.logo_url.value ? (
-                      <img
-                        src={settings.logo_url.value}
-                        alt="Logo"
-                        className="w-full h-full object-contain p-2"
-                      />
-                    ) : (
-                      <svg className="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="grid grid-cols-[1fr_80px] gap-4 items-center">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-900 mb-1">Logo URL</label>
-                        <input
-                          type="text"
-                          value={settings.logo_url.value}
-                          onChange={(e) => setSettings(s => ({ ...s, logo_url: { value: e.target.value } }))}
-                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
-                          placeholder="/logo.png"
-                        />
-                        <p className="text-[11px] text-slate-400 mt-1">Unterstützte Formate: PNG, SVG</p>
-                      </div>
-                      <div className="flex justify-end pt-5">
-                        <SaveButton onSave={() => saveField('logo_url')} saving={saving === 'logo_url'} saved={savedFields.has('logo_url')} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <BrandingSection
+              logoUrl={settings.logo_url.value}
+              onLogoChange={(url) => {
+                setSettings(s => ({ ...s, logo_url: { value: url } }));
+                // Auto-save nach Upload
+                setTimeout(async () => {
+                  setSaving('logo_url');
+                  await updateSetting('logo_url', { value: url });
+                  setSaving(null);
+                  setSavedFields(prev => new Set([...prev, 'logo_url']));
+                  setTimeout(() => setSavedFields(prev => { const next = new Set(prev); next.delete('logo_url'); return next; }), 2000);
+                }, 100);
+              }}
+              saving={saving === 'logo_url'}
+              saved={savedFields.has('logo_url')}
+            />
           )}
         </div>
         )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Branding Section Component
+function BrandingSection({ logoUrl, onLogoChange, saving, saved }: {
+  logoUrl: string;
+  onLogoChange: (url: string) => void;
+  saving: boolean;
+  saved: boolean;
+}) {
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ['image/png', 'image/svg+xml', 'image/jpeg', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Nur PNG, SVG, JPG und WebP erlaubt');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Maximale Dateigröße: 5MB');
+      return;
+    }
+
+    setIsUploading(true);
+    const url = await uploadImage(file, 'branding');
+    setIsUploading(false);
+
+    if (url) {
+      onLogoChange(url);
+    } else {
+      alert('Fehler beim Hochladen');
+    }
+
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
+  return (
+    <div>
+      <SectionHeader title="Branding" subtitle="Logo und visuelle Identität" />
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
+        <div className="flex items-center gap-6">
+          {/* Logo Preview */}
+          <div className="relative group">
+            <div className="w-24 h-24 bg-slate-900 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0">
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={logoUrl}
+                  alt="Logo"
+                  className="w-full h-full object-contain p-2"
+                />
+              ) : (
+                <svg className="w-10 h-10 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              )}
+            </div>
+            {/* Hover Overlay */}
+            <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/svg+xml,image/jpeg,image/webp"
+                onChange={handleLogoUpload}
+                className="sr-only"
+                disabled={isUploading}
+              />
+              {isUploading ? (
+                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              )}
+            </label>
+          </div>
+
+          {/* Info */}
+          <div className="flex-1">
+            <h4 className="text-sm font-semibold text-slate-900 mb-1">Logo</h4>
+            <p className="text-xs text-slate-500 mb-3">Wird im Header, Menü, Footer und in E-Mails angezeigt.</p>
+            <div className="flex items-center gap-2">
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/png,image/svg+xml,image/jpeg,image/webp"
+                  onChange={handleLogoUpload}
+                  className="sr-only"
+                  disabled={isUploading}
+                />
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  isUploading
+                    ? 'bg-slate-100 text-slate-400'
+                    : 'bg-gold/10 text-gold border border-gold/30 hover:bg-gold/20'
+                }`}>
+                  {isUploading ? (
+                    <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                  ) : (
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                  )}
+                  {isUploading ? 'Wird hochgeladen...' : 'Bild hochladen'}
+                </span>
+              </label>
+              {saved && (
+                <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Gespeichert
+                </span>
+              )}
+              {saving && (
+                <span className="inline-flex items-center gap-1 text-xs text-slate-400">
+                  <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                  Speichert...
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-slate-400 mt-2">PNG oder SVG empfohlen · JPG, WebP · Max. 5MB</p>
+          </div>
         </div>
       </div>
     </div>

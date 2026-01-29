@@ -434,6 +434,7 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login' }: LoginMo
                   placeholder="••••••••"
                   className="login-input"
                   style={styles.input}
+                  autoComplete="current-password"
                   required
                 />
               </div>
@@ -542,6 +543,7 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login' }: LoginMo
                     placeholder="Min. 6 Zeichen"
                     className="login-input"
                     style={styles.input}
+                    autoComplete="new-password"
                     required
                     minLength={6}
                   />
@@ -555,6 +557,7 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login' }: LoginMo
                     placeholder="Passwort wiederholen"
                     className="login-input"
                     style={styles.input}
+                    autoComplete="new-password"
                     required
                     minLength={6}
                   />

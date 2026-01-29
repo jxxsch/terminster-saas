@@ -4,7 +4,7 @@ import { ReactNode } from 'react';
 import { Header } from './Header';
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import Image from 'next/image';
+import { useLogoUrl } from '@/hooks/useLogoUrl';
 
 interface LegalLayoutProps {
   children: ReactNode;
@@ -14,6 +14,7 @@ interface LegalLayoutProps {
 
 export function LegalLayout({ children, title, lastUpdated }: LegalLayoutProps) {
   const t = useTranslations('legal');
+  const logoUrl = useLogoUrl();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -50,7 +51,8 @@ export function LegalLayout({ children, title, lastUpdated }: LegalLayoutProps) 
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="relative w-6 h-6">
-                <Image src="/logo.png" alt="Beban" fill className="object-contain" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={logoUrl} alt="Beban" className="w-full h-full object-contain" />
               </div>
               <span className="text-xs font-light text-gray-500 tracking-[0.1em]">
                 BEBAN Barber Shop 2.0

@@ -1320,7 +1320,7 @@ export async function getSetting<T>(key: string): Promise<T | null> {
     .from('site_settings')
     .select('value')
     .eq('key', key)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error(`Error fetching setting ${key}:`, error);

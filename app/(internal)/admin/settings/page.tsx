@@ -4,11 +4,14 @@ import { useState, useEffect } from 'react';
 import { getAllSettings, updateSetting } from '@/lib/supabase';
 import { BUNDESLAENDER, Bundesland } from '@/lib/holidays';
 
+type BookingSystemType = 'standard' | 'custom';
+
 interface BookingSettings {
   booking_advance_weeks: { value: number };
   cancellation_hours: { value: number };
   max_bookings_per_day: { value: number; enabled: boolean };
   bundesland: Bundesland;
+  booking_system_type: BookingSystemType;
 }
 
 const defaultSettings: BookingSettings = {
@@ -16,6 +19,7 @@ const defaultSettings: BookingSettings = {
   cancellation_hours: { value: 24 },
   max_bookings_per_day: { value: 2, enabled: true },
   bundesland: 'NW',
+  booking_system_type: 'standard',
 };
 
 export default function SettingsPage() {
@@ -56,6 +60,7 @@ export default function SettingsPage() {
           cancellation_hours: (settingsData.cancellation_hours as BookingSettings['cancellation_hours']) || defaultSettings.cancellation_hours,
           max_bookings_per_day: maxBookings,
           bundesland: (settingsData.bundesland as Bundesland) || defaultSettings.bundesland,
+          booking_system_type: (settingsData.booking_system_type as BookingSystemType) || defaultSettings.booking_system_type,
         });
         setIsLoading(false);
       }
@@ -116,6 +121,43 @@ export default function SettingsPage() {
         <div className="flex-1 overflow-y-auto p-6">
           {/* Settings List */}
           <div className="space-y-2">
+            {/* Buchungssystem-Typ */}
+            <div className="flex items-center justify-between bg-slate-50 rounded-xl px-5 py-4">
+              <div>
+                <div className="text-sm font-medium text-slate-900">Buchungssystem</div>
+                <div className="text-xs text-slate-400">Standard oder kundenspezifische Variante</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex bg-white border border-slate-200 rounded-lg p-1">
+                  <button
+                    onClick={() => setSettings(s => ({ ...s, booking_system_type: 'standard' }))}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                      settings.booking_system_type === 'standard'
+                        ? 'bg-gold text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Standard
+                  </button>
+                  <button
+                    onClick={() => setSettings(s => ({ ...s, booking_system_type: 'custom' }))}
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                      settings.booking_system_type === 'custom'
+                        ? 'bg-gold text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Kundenspezifisch
+                  </button>
+                </div>
+                <SaveButton
+                  onClick={() => saveField('booking_system_type', settings.booking_system_type)}
+                  saving={saving === 'booking_system_type'}
+                  saved={savedFields.has('booking_system_type')}
+                />
+              </div>
+            </div>
+
             {/* Buchungszeitraum */}
             <div className="flex items-center justify-between bg-slate-50 rounded-xl px-5 py-4">
               <div>

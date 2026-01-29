@@ -63,28 +63,28 @@ export function Gallery() {
         <div className={`space-y-4 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           {/* Große Zeile */}
           <div className="aspect-[21/9] relative bg-gray-100 overflow-hidden group">
-            <Image src={IMAGES[0]} alt="Gallery 1" fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+            <Image src={IMAGES[0]} alt="Gallery 1" fill sizes="100vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
           </div>
 
           {/* 3er Zeile */}
           <div className="grid grid-cols-3 gap-4">
             {IMAGES.slice(1, 4).map((src, i) => (
               <div key={`row1-${i}`} className="aspect-square relative bg-gray-100 overflow-hidden group">
-                <Image src={src} alt={`Gallery ${i + 2}`} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                <Image src={src} alt={`Gallery ${i + 2}`} fill sizes="33vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
             ))}
           </div>
 
           {/* Große Zeile */}
           <div className="aspect-[21/9] relative bg-gray-100 overflow-hidden group">
-            <Image src={IMAGES[4]} alt="Gallery 5" fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+            <Image src={IMAGES[4]} alt="Gallery 5" fill sizes="100vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
           </div>
 
           {/* 3er Zeile */}
           <div className="grid grid-cols-3 gap-4">
             {IMAGES.slice(5, 8).map((src, i) => (
               <div key={`row2-${i}`} className="aspect-square relative bg-gray-100 overflow-hidden group">
-                <Image src={src} alt={`Gallery ${i + 6}`} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                <Image src={src} alt={`Gallery ${i + 6}`} fill sizes="33vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
             ))}
           </div>

@@ -1,10 +1,11 @@
 'use client';
 
-import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
 import { useTranslations, useLocale } from 'next-intl';
+import { useLogoUrl } from '@/hooks/useLogoUrl';
 
 export function LegalHeader() {
+  const logoUrl = useLogoUrl();
   const t = useTranslations('legal');
   const locale = useLocale();
   const otherLocale = locale === 'de' ? 'en' : 'de';
@@ -16,7 +17,8 @@ export function LegalHeader() {
           {/* Logo & Back Link */}
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="relative w-8 h-8">
-              <Image src="/logo.png" alt="Beban" fill className="object-contain" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={logoUrl} alt="Beban" className="w-full h-full object-contain" />
             </div>
             <span className="text-sm font-light text-black tracking-[0.1em]">BEBAN</span>
           </Link>

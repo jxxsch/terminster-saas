@@ -77,7 +77,7 @@ export function Services() {
             <div key={service.id} className="group text-center">
               <div className="p-1.5 border-2 border-gold rounded-full max-w-[200px] mx-auto">
                 <div className="aspect-square bg-gray-100 overflow-hidden relative rounded-full border-2 border-gold">
-                  <Image src={service.image} alt={t(`items.${service.key}.name`)} fill className="object-cover" style={{ objectPosition: service.position || '50% 50%', transform: `scale(${service.scale || '1'})`, filter: `grayscale(100%) sepia(30%) contrast(110%) brightness(${service.brightness || '90%'})` }} />
+                  <Image src={service.image} alt={t(`items.${service.key}.name`)} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover" style={{ objectPosition: service.position || '50% 50%', transform: `scale(${service.scale || '1'})`, filter: `grayscale(100%) sepia(30%) contrast(110%) brightness(${service.brightness || '90%'})` }} />
                 </div>
               </div>
               <h3 className="text-xs font-light text-black tracking-[0.15em] uppercase mb-0 mt-3">{t(`items.${service.key}.name`)}</h3>

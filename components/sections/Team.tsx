@@ -68,7 +68,7 @@ export function Team() {
             <div key={member.id} className="group">
               <div className="rounded-3xl overflow-hidden shadow-lg">
                 <div className="aspect-[3/4] bg-gray-100 overflow-hidden relative">
-                  <Image src={member.image || '/team/placeholder.jpg'} alt={member.name} fill className="object-cover group-hover:brightness-75 transition-all duration-300" style={{ objectPosition: member.image_position, transform: `scale(${member.image_scale})` }} />
+                  <Image src={member.image || '/team/placeholder.jpg'} alt={member.name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover group-hover:brightness-75 transition-all duration-300" style={{ objectPosition: member.image_position, transform: `scale(${member.image_scale})` }} />
                 </div>
                 <div className="bg-white p-4 text-center">
                   <h3 className="text-sm font-extralight text-black tracking-[0.2em] uppercase mb-0 group-hover:mb-3 transition-all duration-300 border-b border-gold/50 pb-1 inline-block">{member.name}</h3>

@@ -60,8 +60,8 @@ export async function GET(
       .from('appointments')
       .select(`
         *,
-        team:barber_id (name),
-        services:service_id (name, duration)
+        team!appointments_barber_id_fkey (name),
+        services!appointments_service_id_fkey (name, duration)
       `)
       .eq('id', id)
       .single();

@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
+import { useLogoUrl } from '@/hooks/useLogoUrl';
 
 interface NavItem {
   href: string;
@@ -118,6 +118,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ onLogout }: AppSidebarProps) {
   const pathname = usePathname();
+  const logoUrl = useLogoUrl();
 
   // States initial auf false setzen (SSR-kompatibel)
   const [isExpanded, setIsExpanded] = useState(false);
@@ -314,8 +315,9 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
         {/* Logo */}
         <div className="flex justify-center mb-4">
           <Link href="/dashboard" className="w-9 h-9 flex items-center justify-center flex-shrink-0">
-            <Image
-              src="/logo.png"
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={logoUrl}
               alt="Beban"
               width={28}
               height={28}

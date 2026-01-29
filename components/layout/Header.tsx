@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthContext';
 import { CustomerPortal } from '@/components/sections/CustomerPortal';
 import { LoginModal } from '@/components/sections/LoginModal';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { useLogoUrl } from '@/hooks/useLogoUrl';
 
 export function Header() {
   const t = useTranslations('nav');
@@ -20,6 +21,7 @@ export function Header() {
   const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
   const [showCustomerPortal, setShowCustomerPortal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const logoUrl = useLogoUrl();
 
   // Check if on legal pages (always light mode)
   const isLegalPage = pathname.includes('/impressum') || pathname.includes('/datenschutz');
@@ -122,12 +124,11 @@ export function Header() {
                     ? "group-hover:[filter:drop-shadow(0_0_8px_rgba(212,175,55,0.5))]"
                     : "[filter:drop-shadow(0_0_8px_rgba(212,175,55,0.5))]"
                 )}>
-                  <Image
-                    src="/logo.png"
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={logoUrl}
                     alt="Beban Barber Shop Logo"
-                    fill
-                    className="object-contain"
-                    priority
+                    className="w-full h-full object-contain"
                   />
                 </div>
               </a>
