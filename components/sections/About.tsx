@@ -3,11 +3,18 @@
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useSectionSettings } from '@/hooks/useSiteSettings';
 
 export function About() {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const t = useTranslations('about');
+  const { title, subtitle, aboutText, getLocalizedText } = useSectionSettings('about');
+
+  // Use settings if available, fallback to i18n
+  const sectionTitle = title || t('headline');
+  const sectionBadge = subtitle || t('badge');
+  const aboutContent = getLocalizedText(aboutText);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -33,27 +40,35 @@ export function About() {
         {/* Timeline Badge - Zentriert */}
         <div className={`flex items-center justify-center gap-4 mb-8 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="h-px w-12 bg-gold/30" />
-          <span className="text-sm font-light tracking-[0.3em] text-gold uppercase">{t('badge')}</span>
+          <span className="text-sm font-light tracking-[0.3em] text-gold uppercase">{sectionBadge}</span>
           <div className="h-px w-12 bg-gold/30" />
         </div>
 
         {/* Header - Zentriert */}
         <h2 className={`text-3xl md:text-4xl lg:text-5xl font-light text-black tracking-wide mb-12 text-center transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          {t('headline')}
+          {sectionTitle}
         </h2>
 
-        {/* Intro Text - 3 Spalten, Blocksatz */}
-        <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 mb-20 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          <p className="text-gray-700 text-sm leading-relaxed font-light text-justify">
-            {t('intro.paragraph1')}
-          </p>
-          <p className="text-gray-700 text-sm leading-relaxed font-light text-justify">
-            {t('intro.paragraph2')}
-          </p>
-          <p className="text-gray-700 text-sm leading-relaxed font-light text-justify">
-            {t('intro.paragraph3')}
-          </p>
-        </div>
+        {/* Intro Text - 3 Spalten oder 1 Spalte wenn custom Text */}
+        {aboutContent ? (
+          <div className={`mb-20 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <p className="text-gray-700 text-sm leading-relaxed font-light text-justify whitespace-pre-line">
+              {aboutContent}
+            </p>
+          </div>
+        ) : (
+          <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 mb-20 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <p className="text-gray-700 text-sm leading-relaxed font-light text-justify">
+              {t('intro.paragraph1')}
+            </p>
+            <p className="text-gray-700 text-sm leading-relaxed font-light text-justify">
+              {t('intro.paragraph2')}
+            </p>
+            <p className="text-gray-700 text-sm leading-relaxed font-light text-justify">
+              {t('intro.paragraph3')}
+            </p>
+          </div>
+        )}
 
         {/* Goldene Trennlinie */}
         <div className={`flex items-center gap-6 mb-20 transition-all duration-700 delay-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>

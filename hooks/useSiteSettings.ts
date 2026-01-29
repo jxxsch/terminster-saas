@@ -1,12 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getSetting } from '@/lib/supabase';
+import { getSetting, getAllSettings } from '@/lib/supabase';
+import { useLocale } from 'next-intl';
 
 // Types for site settings
 interface LocalizedText {
   de: string;
   en: string;
+}
+
+interface SectionSettings {
+  title: LocalizedText;
+  subtitle: LocalizedText;
 }
 
 export interface SiteSettings {
@@ -28,16 +34,25 @@ export interface SiteSettings {
   hero_title: LocalizedText;
   hero_subtitle: LocalizedText;
   hero_cta: { text: LocalizedText; enabled: boolean };
+  hero_background: { type: string; url: string; video_url: string };
 
   // Section titles
-  section_about: { title: LocalizedText; subtitle: LocalizedText };
-  section_services: { title: LocalizedText; subtitle: LocalizedText };
-  section_team: { title: LocalizedText; subtitle: LocalizedText };
-  section_gallery: { title: LocalizedText; subtitle: LocalizedText };
-  section_contact: { title: LocalizedText; subtitle: LocalizedText };
+  section_about: SectionSettings;
+  section_services: SectionSettings;
+  section_team: SectionSettings;
+  section_gallery: SectionSettings;
+  section_contact: SectionSettings;
 
   // About
   about_text: LocalizedText;
+
+  // SEO
+  seo_meta: {
+    title: LocalizedText;
+    description: LocalizedText;
+    og_image: string;
+    keywords: string
+  };
 }
 
 // Default values (fallback if settings not found)
@@ -50,40 +65,42 @@ const defaultSettings: SiteSettings = {
   social_youtube: { value: '' },
   social_tiktok: { value: '' },
   footer: { copyright: '', show_social: true },
-  hero_title: { de: 'BEBAN BARBERSHOP', en: 'BEBAN BARBERSHOP' },
+  hero_title: { de: '', en: '' },
   hero_subtitle: { de: '', en: '' },
   hero_cta: { text: { de: 'Jetzt buchen', en: 'Book now' }, enabled: true },
-  section_about: { title: { de: 'Über uns', en: 'About us' }, subtitle: { de: '', en: '' } },
-  section_services: { title: { de: 'Unsere Leistungen', en: 'Our Services' }, subtitle: { de: '', en: '' } },
-  section_team: { title: { de: 'Unser Team', en: 'Our Team' }, subtitle: { de: '', en: '' } },
-  section_gallery: { title: { de: 'Galerie', en: 'Gallery' }, subtitle: { de: '', en: '' } },
-  section_contact: { title: { de: 'Kontakt', en: 'Contact' }, subtitle: { de: '', en: '' } },
+  hero_background: { type: 'video', url: '', video_url: '' },
+  section_about: { title: { de: '', en: '' }, subtitle: { de: '', en: '' } },
+  section_services: { title: { de: '', en: '' }, subtitle: { de: '', en: '' } },
+  section_team: { title: { de: '', en: '' }, subtitle: { de: '', en: '' } },
+  section_gallery: { title: { de: '', en: '' }, subtitle: { de: '', en: '' } },
+  section_contact: { title: { de: '', en: '' }, subtitle: { de: '', en: '' } },
   about_text: { de: '', en: '' },
+  seo_meta: {
+    title: { de: '', en: '' },
+    description: { de: '', en: '' },
+    og_image: '',
+    keywords: ''
+  },
 };
 
 /**
- * Hook to load site settings from Supabase
+ * Hook to load all site settings from Supabase
  * Returns settings with fallback defaults
  */
 export function useSiteSettings() {
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
+  const locale = useLocale() as 'de' | 'en';
 
   useEffect(() => {
     async function loadSettings() {
       try {
-        const keys = Object.keys(defaultSettings) as (keyof SiteSettings)[];
-        const results = await Promise.all(
-          keys.map(async (key) => {
-            const value = await getSetting<SiteSettings[typeof key]>(key);
-            return { key, value };
-          })
-        );
+        const allSettings = await getAllSettings();
 
         const newSettings = { ...defaultSettings };
-        results.forEach(({ key, value }) => {
-          if (value !== null) {
-            (newSettings as Record<string, unknown>)[key] = value;
+        Object.keys(defaultSettings).forEach(key => {
+          if (allSettings[key] !== undefined) {
+            (newSettings as Record<string, unknown>)[key] = allSettings[key];
           }
         });
 
@@ -98,7 +115,13 @@ export function useSiteSettings() {
     loadSettings();
   }, []);
 
-  return { settings, isLoading };
+  // Helper to get localized text
+  const getLocalizedText = (text: LocalizedText | undefined, fallback: string = ''): string => {
+    if (!text) return fallback;
+    return text[locale] || text.de || fallback;
+  };
+
+  return { settings, isLoading, locale, getLocalizedText };
 }
 
 /**
@@ -149,4 +172,107 @@ export function useContactSettings() {
   }, []);
 
   return { settings, isLoading };
+}
+
+/**
+ * Hook to load hero settings
+ */
+export function useHeroSettings() {
+  const [settings, setSettings] = useState({
+    title: { de: '', en: '' } as LocalizedText,
+    subtitle: { de: '', en: '' } as LocalizedText,
+    cta: { text: { de: 'Jetzt buchen', en: 'Book now' }, enabled: true },
+    background: { type: 'video', url: '', video_url: '' },
+    phone: '',
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const locale = useLocale() as 'de' | 'en';
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const [title, subtitle, cta, background, phone] = await Promise.all([
+          getSetting<LocalizedText>('hero_title'),
+          getSetting<LocalizedText>('hero_subtitle'),
+          getSetting<{ text: LocalizedText; enabled: boolean }>('hero_cta'),
+          getSetting<{ type: string; url: string; video_url: string }>('hero_background'),
+          getSetting<{ value: string }>('contact_phone'),
+        ]);
+
+        setSettings({
+          title: title || { de: '', en: '' },
+          subtitle: subtitle || { de: '', en: '' },
+          cta: cta || { text: { de: 'Jetzt buchen', en: 'Book now' }, enabled: true },
+          background: background || { type: 'video', url: '', video_url: '' },
+          phone: phone?.value || '',
+        });
+      } catch (error) {
+        console.error('Error loading hero settings:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadSettings();
+  }, []);
+
+  const getLocalizedText = (text: LocalizedText): string => {
+    return text[locale] || text.de || '';
+  };
+
+  return { settings, isLoading, locale, getLocalizedText };
+}
+
+/**
+ * Hook to load section-specific settings
+ */
+export function useSectionSettings(section: 'about' | 'services' | 'team' | 'gallery' | 'contact') {
+  const [settings, setSettings] = useState<SectionSettings>({
+    title: { de: '', en: '' },
+    subtitle: { de: '', en: '' },
+  });
+  const [aboutText, setAboutText] = useState<LocalizedText>({ de: '', en: '' });
+  const [isLoading, setIsLoading] = useState(true);
+  const locale = useLocale() as 'de' | 'en';
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const sectionSettings = await getSetting<SectionSettings>(`section_${section}`);
+        if (sectionSettings) {
+          setSettings(sectionSettings);
+        }
+
+        // Load about_text only for about section
+        if (section === 'about') {
+          const aboutTextData = await getSetting<LocalizedText>('about_text');
+          if (aboutTextData) {
+            setAboutText(aboutTextData);
+          }
+        }
+      } catch (error) {
+        console.error(`Error loading ${section} settings:`, error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadSettings();
+  }, [section]);
+
+  const getLocalizedText = (text: LocalizedText, fallback: string = ''): string => {
+    const result = text[locale] || text.de;
+    return result || fallback;
+  };
+
+  return {
+    settings,
+    aboutText,
+    isLoading,
+    locale,
+    getLocalizedText,
+    // Convenience getters
+    title: getLocalizedText(settings.title),
+    subtitle: getLocalizedText(settings.subtitle),
+  };
 }

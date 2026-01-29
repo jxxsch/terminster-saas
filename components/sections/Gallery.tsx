@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { useSectionSettings } from '@/hooks/useSiteSettings';
 
 const IMAGES = [
   '/gallery/1.jpg',
@@ -19,6 +20,11 @@ export function Gallery() {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const t = useTranslations('gallery');
+  const { title, subtitle } = useSectionSettings('gallery');
+
+  // Use settings if available, fallback to i18n
+  const sectionTitle = title || t('headline');
+  const sectionBadge = subtitle || t('badge');
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -44,13 +50,13 @@ export function Gallery() {
         {/* Badge */}
         <div className={`flex items-center justify-center gap-4 mb-8 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           <div className="h-px w-12 bg-gold/30" />
-          <span className="text-sm font-light tracking-[0.3em] text-gold uppercase">{t('badge')}</span>
+          <span className="text-sm font-light tracking-[0.3em] text-gold uppercase">{sectionBadge}</span>
           <div className="h-px w-12 bg-gold/30" />
         </div>
 
         {/* Header */}
         <h2 className={`text-3xl md:text-4xl lg:text-5xl font-light text-black tracking-wide mb-16 text-center transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          {t('headline')}
+          {sectionTitle}
         </h2>
 
         {/* Fullwidth Abwechselnd */}

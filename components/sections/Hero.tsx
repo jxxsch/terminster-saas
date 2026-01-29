@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBooking } from '@/context/BookingContext';
 import { useTranslations } from 'next-intl';
+import { useHeroSettings } from '@/hooks/useSiteSettings';
 
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
@@ -11,6 +12,11 @@ export function Hero() {
   const { openBooking } = useBooking();
   const t = useTranslations('hero');
   const tDays = useTranslations('days');
+  const { settings: heroSettings, getLocalizedText } = useHeroSettings();
+
+  // Get title and subtitle from settings, fallback to defaults
+  const heroTitle = getLocalizedText(heroSettings.title) || 'BEBAN BARBER SHOP 2.0';
+  const heroSubtitle = getLocalizedText(heroSettings.subtitle) || t('slogan');
 
   const getShopStatus = useCallback((): { isOpen: boolean; message: string } => {
     const now = new Date();
@@ -74,12 +80,18 @@ export function Hero() {
       <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">
         {/* Titel */}
         <h1 className="text-4xl md:text-6xl font-light text-white/85 tracking-[0.6em] mb-4">
-          BEBAN BARBER SHOP <span className="text-gold/85">2.0</span>
+          {heroTitle.includes('2.0') ? (
+            <>
+              {heroTitle.replace('2.0', '').trim()} <span className="text-gold/85">2.0</span>
+            </>
+          ) : (
+            heroTitle
+          )}
         </h1>
 
         {/* Slogan */}
         <p className="text-lg md:text-xl text-gray-300 font-light tracking-wide mb-12 whitespace-nowrap">
-          {t('slogan')}
+          {heroSubtitle}
         </p>
 
         {/* Action Buttons - Footer Style */}
@@ -98,7 +110,7 @@ export function Hero() {
             {/* Tooltip */}
             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-4 py-2 bg-black/50 border border-white/20 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
               <span className="text-xs font-light tracking-wide text-white/80">
-                +49 214 123 4567
+                {heroSettings.phone || '+49 214 123 4567'}
               </span>
             </div>
           </div>
