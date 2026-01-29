@@ -28,6 +28,7 @@ import {
   ClosedDate,
   OpenSunday,
 } from '@/lib/supabase';
+import { useRealtimeAppointments } from '@/hooks/useRealtimeAppointments';
 import { SelectionToolbar, SelectionFilter } from './SelectionToolbar';
 import { UndoToast } from './UndoToast';
 
@@ -211,6 +212,26 @@ export function BarberWeekView({
 
     loadData();
   }, [monday, selectedBarberId]);
+
+  // Realtime-Callback: Termine neu laden ohne Loading-State
+  const refreshAppointments = useCallback(async () => {
+    const startDate = formatDateLocal(monday);
+    const endDate = formatDateLocal(new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000));
+    try {
+      const appointmentsData = await getAppointments(startDate, endDate);
+      setAppointments(appointmentsData);
+    } catch (error) {
+      console.error('Error refreshing appointments:', error);
+    }
+  }, [monday]);
+
+  // Realtime-Subscription für Termine
+  useRealtimeAppointments({
+    startDate: formatDateLocal(monday),
+    endDate: formatDateLocal(new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000)),
+    onUpdate: refreshAppointments,
+    enabled: !isLoading,
+  });
 
   // Get currently selected barber
   const selectedBarber = useMemo(() => {

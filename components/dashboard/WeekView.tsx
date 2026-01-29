@@ -25,6 +25,7 @@ import {
 } from '@/lib/supabase';
 import { SelectionToolbar, SelectionFilter } from './SelectionToolbar';
 import { UndoToast } from './UndoToast';
+import { useRealtimeAppointments } from '@/hooks/useRealtimeAppointments';
 
 // Generiere Zeitslots nur für reguläre Öffnungszeiten (10:00 bis 18:30)
 function generateAllTimeSlots(): string[] {
@@ -161,6 +162,27 @@ export function WeekView({
 
     return () => clearInterval(interval);
   }, []);
+
+  // Nur Termine neu laden (für Realtime-Updates, ohne Loading-State)
+  const refreshAppointments = useCallback(async () => {
+    if (weekDays.length === 0) return;
+    const startDate = weekDays[0].dateStr;
+    const endDate = weekDays[weekDays.length - 1].dateStr;
+    try {
+      const appointmentsData = await getAppointments(startDate, endDate);
+      setAppointments(appointmentsData);
+    } catch (error) {
+      console.error('Error refreshing appointments:', error);
+    }
+  }, [weekDays]);
+
+  // Realtime-Subscription für Termine
+  useRealtimeAppointments({
+    startDate: weekDays[0]?.dateStr,
+    endDate: weekDays[weekDays.length - 1]?.dateStr,
+    onUpdate: refreshAppointments,
+    enabled: weekDays.length > 0,
+  });
 
   // Load all data
   useEffect(() => {

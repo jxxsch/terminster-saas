@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslations } from 'next-intl';
@@ -17,6 +17,7 @@ import {
   formatPrice,
 } from '@/lib/supabase';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { useRealtimeAppointments } from '@/hooks/useRealtimeAppointments';
 
 interface CustomerPortalProps {
   onClose: () => void;
@@ -64,6 +65,24 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
       document.body.style.overflow = 'unset';
     };
   }, []);
+
+  // Nur Termine neu laden (für Realtime-Updates, ohne Loading-State)
+  const refreshAppointments = useCallback(async () => {
+    if (!customer?.id) return;
+    try {
+      const appointmentsData = await getCustomerAppointments(customer.id);
+      setAppointments(appointmentsData || []);
+    } catch (error) {
+      console.error('Error refreshing appointments:', error);
+    }
+  }, [customer?.id]);
+
+  // Realtime-Subscription für Termine
+  useRealtimeAppointments({
+    customerId: customer?.id,
+    onUpdate: refreshAppointments,
+    enabled: !!customer?.id,
+  });
 
   // Load data with auto-retry
   const loadData = async (retryCount = 0): Promise<boolean> => {
