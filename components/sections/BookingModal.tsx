@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -31,6 +31,7 @@ import { useAuth } from '@/context/AuthContext';
 import { CustomerPortal } from '@/components/sections/CustomerPortal';
 import { Bundesland, isHoliday, getHolidayName } from '@/lib/holidays';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { useRealtimeAppointments } from '@/hooks/useRealtimeAppointments';
 
 // Constants for getWeekDays function (outside component, can't use hooks)
 const DAY_NAMES_SHORT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
@@ -711,6 +712,38 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       loadData();
     }
   }, [isOpen]);
+
+  // Realtime-Callback: Termine neu laden wenn sich etwas ändert
+  const refreshAppointments = useCallback(async () => {
+    const today = new Date();
+    const startDate = formatDateLocal(today);
+    const endDate = formatDateLocal(new Date(today.getTime() + 12 * 7 * 24 * 60 * 60 * 1000));
+    try {
+      const appointmentsData = await getAppointments(startDate, endDate);
+      setBookedAppointments(appointmentsData);
+
+      // Wenn aktuell ausgewählter Slot jetzt gebucht ist, Auswahl aufheben
+      if (selectedSlot && selectedBarber && selectedDay) {
+        const isNowBooked = appointmentsData.some(
+          apt => apt.barber_id === selectedBarber &&
+                 apt.date === selectedDay &&
+                 apt.time_slot === selectedSlot &&
+                 apt.status === 'confirmed'
+        );
+        if (isNowBooked) {
+          setSelectedSlot(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing appointments:', error);
+    }
+  }, [selectedSlot, selectedBarber, selectedDay]);
+
+  // Realtime-Subscription für Termine im BookingModal
+  useRealtimeAppointments({
+    onUpdate: refreshAppointments,
+    enabled: isOpen && !isLoading,
+  });
 
   // Wochen-Range für Header berechnen
   const weekRange = useMemo(() => {
