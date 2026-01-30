@@ -1048,8 +1048,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
         <div
           style={{
             ...styles.modal,
+            maxWidth: bookingSuccess ? '500px' : '1100px',
             transform: isOpen ? 'scale(1)' : 'scale(0.95)',
-            transition: 'transform 0.2s ease',
+            transition: 'all 0.3s ease',
           }}
           onClick={(e) => e.stopPropagation()}
         >
