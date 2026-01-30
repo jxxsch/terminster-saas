@@ -136,7 +136,8 @@ export default function KundenPage() {
     return team.find(t => t.id === barberId)?.name || 'Unbekannt';
   };
 
-  const getServiceName = (serviceId: string) => {
+  const getServiceName = (serviceId: string | null) => {
+    if (!serviceId) return '-';
     return services.find(s => s.id === serviceId)?.name || 'Unbekannt';
   };
 

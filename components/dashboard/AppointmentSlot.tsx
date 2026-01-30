@@ -238,7 +238,8 @@ export function AppointmentSlot({
   };
 
   // Get service name from map
-  const getServiceName = (serviceId: string): string => {
+  const getServiceName = (serviceId: string | null): string => {
+    if (!serviceId) return 'Kein Service';
     return servicesMap[serviceId]?.name || 'Unbekannt';
   };
 

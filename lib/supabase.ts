@@ -101,7 +101,7 @@ export interface Appointment {
   barber_id: string;
   date: string;
   time_slot: string;
-  service_id: string;
+  service_id: string | null;
   customer_name: string;
   customer_phone: string | null;
   customer_id: string | null;

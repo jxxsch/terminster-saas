@@ -959,7 +959,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
         barber_id: selectedBarber,
         date: selectedDay!,
         time_slot: selectedSlot!,
-        service_id: '',
+        service_id: null,
         customer_name: customerName.trim(),
         customer_email: customerEmail.trim() || null,
         customer_phone: customerPhone.trim() || null,

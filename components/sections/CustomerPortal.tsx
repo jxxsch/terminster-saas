@@ -170,8 +170,12 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
   const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as const;
 
   const getBarberName = (barberId: string) => team.find(t => t.id === barberId)?.name || tCommon('unknown');
-  const getServiceName = (serviceId: string) => services.find(s => s.id === serviceId)?.name || tCommon('unknown');
-  const getServicePrice = (serviceId: string) => {
+  const getServiceName = (serviceId: string | null) => {
+    if (!serviceId) return '-';
+    return services.find(s => s.id === serviceId)?.name || tCommon('unknown');
+  };
+  const getServicePrice = (serviceId: string | null) => {
+    if (!serviceId) return '-';
     const service = services.find(s => s.id === serviceId);
     return service ? formatPrice(service.price) : '';
   };
