@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const activationUrl = linkData.properties?.action_link;
+    let activationUrl = linkData.properties?.action_link;
 
     if (!activationUrl) {
       console.error('No action_link in response');
@@ -108,6 +108,23 @@ export async function POST(request: NextRequest) {
         { error: 'Aktivierungslink konnte nicht erstellt werden' },
         { status: 500 }
       );
+    }
+
+    // Link-Domain korrigieren (Supabase verwendet seine eigene Site URL)
+    // Wir ersetzen die Redirect-Domain mit unserer eigenen
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://terminster.com';
+    try {
+      const url = new URL(activationUrl);
+      const redirectTo = url.searchParams.get('redirect_to');
+      if (redirectTo) {
+        // Ersetze die Domain im redirect_to Parameter
+        const newRedirectTo = `${baseUrl}/de`;
+        url.searchParams.set('redirect_to', newRedirectTo);
+        activationUrl = url.toString();
+      }
+    } catch {
+      // Falls URL-Parsing fehlschlägt, Original verwenden
+      console.warn('Could not modify activation URL');
     }
 
     // Eigene Beban-E-Mail über Resend senden
