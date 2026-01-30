@@ -1371,20 +1371,20 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
 
                         if (day.isOpenSunday && barberSundayAssignment) {
                           // Verkaufsoffener Sonntag - individuelle Barber-Zeiten verwenden
-                          effectiveOpenTime = barberSundayAssignment.start_time;
-                          effectiveCloseTime = barberSundayAssignment.end_time;
+                          effectiveOpenTime = barberSundayAssignment.start_time?.slice(0, 5);
+                          effectiveCloseTime = barberSundayAssignment.end_time?.slice(0, 5);
                         } else if (hasException && freeDayException) {
                           // Freier-Tag-Ausnahme
-                          effectiveOpenTime = freeDayException.start_time;
-                          effectiveCloseTime = freeDayException.end_time;
+                          effectiveOpenTime = freeDayException.start_time?.slice(0, 5);
+                          effectiveCloseTime = freeDayException.end_time?.slice(0, 5);
                         } else {
                           // Individuelle Arbeitszeiten für diesen Tag
                           const individualHours = staffWorkingHours.find(
                             wh => wh.staff_id === selectedBarber && wh.day_of_week === dayOfWeek
                           );
                           if (individualHours) {
-                            effectiveOpenTime = individualHours.start_time;
-                            effectiveCloseTime = individualHours.end_time;
+                            effectiveOpenTime = individualHours.start_time?.slice(0, 5);
+                            effectiveCloseTime = individualHours.end_time?.slice(0, 5);
                           } else {
                             // Fallback auf globale Öffnungszeiten
                             const globalHours = openingHours.find(h => h.day_of_week === dayOfWeek);
