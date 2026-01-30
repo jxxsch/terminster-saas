@@ -127,6 +127,25 @@ export interface Series {
   created_at: string;
 }
 
+export interface StaffWorkingHours {
+  id: string;
+  staff_id: string;
+  day_of_week: number; // 0=So, 1=Mo, ..., 6=Sa
+  start_time: string;  // Format: "HH:MM"
+  end_time: string;    // Format: "HH:MM"
+  created_at: string;
+}
+
+export interface FreeDayException {
+  id: string;
+  staff_id: string;
+  date: string;              // YYYY-MM-DD - Datum an dem gearbeitet wird
+  start_time: string;        // Format: "HH:MM"
+  end_time: string;          // Format: "HH:MM"
+  replacement_date: string | null;  // YYYY-MM-DD - Ersatztag (optional)
+  created_at: string;
+}
+
 // ============================================
 // TEAM - Mitarbeiter
 // ============================================
@@ -2412,3 +2431,221 @@ export const productCategories = {
   rasur: 'Rasur',
   pflege: 'Pflege',
 } as const;
+
+// ============================================
+// STAFF WORKING HOURS - Individuelle Arbeitszeiten
+// ============================================
+
+// Alle Arbeitszeiten laden (optional gefiltert nach Mitarbeiter)
+export async function getStaffWorkingHours(staffId?: string): Promise<StaffWorkingHours[]> {
+  let query = supabase
+    .from('staff_working_hours')
+    .select('*')
+    .order('day_of_week');
+
+  if (staffId) {
+    query = query.eq('staff_id', staffId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching staff working hours:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// Arbeitszeit für einen bestimmten Tag setzen (Upsert)
+export async function setStaffWorkingHours(
+  staffId: string,
+  dayOfWeek: number,
+  startTime: string,
+  endTime: string
+): Promise<StaffWorkingHours | null> {
+  const { data, error } = await supabase
+    .from('staff_working_hours')
+    .upsert(
+      { staff_id: staffId, day_of_week: dayOfWeek, start_time: startTime, end_time: endTime },
+      { onConflict: 'staff_id,day_of_week' }
+    )
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error setting staff working hours:', error);
+    return null;
+  }
+
+  return data;
+}
+
+// Arbeitszeit für einen Tag löschen (zurück zu globalen Zeiten)
+export async function deleteStaffWorkingHours(staffId: string, dayOfWeek: number): Promise<boolean> {
+  const { error } = await supabase
+    .from('staff_working_hours')
+    .delete()
+    .eq('staff_id', staffId)
+    .eq('day_of_week', dayOfWeek);
+
+  if (error) {
+    console.error('Error deleting staff working hours:', error);
+    return false;
+  }
+
+  return true;
+}
+
+// Alle Arbeitszeiten für einen Mitarbeiter löschen
+export async function clearStaffWorkingHours(staffId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('staff_working_hours')
+    .delete()
+    .eq('staff_id', staffId);
+
+  if (error) {
+    console.error('Error clearing staff working hours:', error);
+    return false;
+  }
+
+  return true;
+}
+
+// ============================================
+// FREE DAY EXCEPTIONS - Ausnahmen am freien Tag
+// ============================================
+
+// Alle Ausnahmen laden (optional gefiltert nach Mitarbeiter)
+export async function getFreeDayExceptions(staffId?: string): Promise<FreeDayException[]> {
+  let query = supabase
+    .from('free_day_exceptions')
+    .select('*')
+    .order('date');
+
+  if (staffId) {
+    query = query.eq('staff_id', staffId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching free day exceptions:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// Ausnahmen für einen Zeitraum laden
+export async function getFreeDayExceptionsForDateRange(
+  startDate: string,
+  endDate: string
+): Promise<FreeDayException[]> {
+  const { data, error } = await supabase
+    .from('free_day_exceptions')
+    .select('*')
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date');
+
+  if (error) {
+    console.error('Error fetching free day exceptions for range:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// Ausnahme erstellen
+export async function createFreeDayException(
+  staffId: string,
+  date: string,
+  startTime: string = '10:00',
+  endTime: string = '19:00',
+  replacementDate?: string
+): Promise<FreeDayException | null> {
+  const { data, error } = await supabase
+    .from('free_day_exceptions')
+    .insert({
+      staff_id: staffId,
+      date,
+      start_time: startTime,
+      end_time: endTime,
+      replacement_date: replacementDate || null,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating free day exception:', error);
+    return null;
+  }
+
+  return data;
+}
+
+// Ausnahme löschen
+export async function deleteFreeDayException(id: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('free_day_exceptions')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting free day exception:', error);
+    return false;
+  }
+
+  return true;
+}
+
+// Helper: Prüft ob ein Barber an seinem freien Tag ausnahmsweise arbeitet
+export function hasFreeDayException(
+  staffId: string,
+  dateStr: string,
+  exceptions: FreeDayException[]
+): FreeDayException | null {
+  return exceptions.find(ex => ex.staff_id === staffId && ex.date === dateStr) || null;
+}
+
+// Helper: Effektive Arbeitszeiten für einen Barber an einem Datum ermitteln
+export function getEffectiveWorkingHours(
+  staffId: string,
+  dateStr: string,
+  barber: TeamMember,
+  staffWorkingHours: StaffWorkingHours[],
+  freeDayExceptions: FreeDayException[],
+  globalOpeningHours: { open_time: string | null; close_time: string | null; is_closed: boolean } | null
+): { startTime: string; endTime: string } | null {
+  const dayOfWeek = new Date(dateStr).getDay();
+
+  // 1. Prüfe ob regulärer freier Tag
+  const isFreeDay = isBarberFreeDay(barber, dateStr);
+
+  if (isFreeDay) {
+    // Prüfe auf Ausnahme
+    const exception = hasFreeDayException(staffId, dateStr, freeDayExceptions);
+    if (exception) {
+      return { startTime: exception.start_time, endTime: exception.end_time };
+    }
+    // Keine Ausnahme = nicht verfügbar
+    return null;
+  }
+
+  // 2. Prüfe individuelle Arbeitszeiten
+  const individualHours = staffWorkingHours.find(
+    wh => wh.staff_id === staffId && wh.day_of_week === dayOfWeek
+  );
+
+  if (individualHours) {
+    return { startTime: individualHours.start_time, endTime: individualHours.end_time };
+  }
+
+  // 3. Fallback auf globale Öffnungszeiten
+  if (globalOpeningHours && !globalOpeningHours.is_closed && globalOpeningHours.open_time && globalOpeningHours.close_time) {
+    return { startTime: globalOpeningHours.open_time, endTime: globalOpeningHours.close_time };
+  }
+
+  return null;
+}

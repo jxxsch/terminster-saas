@@ -17,11 +17,13 @@ import {
   deleteAppointment,
   createAppointment,
   isBarberFreeDay,
+  getFreeDayExceptions,
   Appointment,
   Series,
   TeamMember,
   Service,
-  StaffTimeOff
+  StaffTimeOff,
+  FreeDayException
 } from '@/lib/supabase';
 import { SelectionToolbar, SelectionFilter } from './SelectionToolbar';
 import { UndoToast } from './UndoToast';
@@ -101,6 +103,7 @@ export function WeekView({
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [staffTimeOff, setStaffTimeOff] = useState<StaffTimeOff[]>([]);
+  const [freeDayExceptions, setFreeDayExceptions] = useState<FreeDayException[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSlot, setSelectedSlot] = useState<SlotInfo | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -191,12 +194,13 @@ export function WeekView({
       const startDate = weekDays[0].dateStr;
       const endDate = weekDays[weekDays.length - 1].dateStr;
 
-      const [appointmentsData, seriesData, teamData, servicesData, staffTimeOffData] = await Promise.all([
+      const [appointmentsData, seriesData, teamData, servicesData, staffTimeOffData, freeDayExceptionsData] = await Promise.all([
         getAppointments(startDate, endDate),
         getSeries(),
         getTeam(),
         getServices(),
         getStaffTimeOffForDateRange(startDate, endDate),
+        getFreeDayExceptions(),
       ]);
 
       setAppointments(appointmentsData);
@@ -204,6 +208,7 @@ export function WeekView({
       setTeam(teamData);
       setServices(servicesData);
       setStaffTimeOff(staffTimeOffData);
+      setFreeDayExceptions(freeDayExceptionsData);
       setIsLoading(false);
     }
 
@@ -367,17 +372,38 @@ export function WeekView({
     );
     if (timeOff) return timeOff;
 
-    // Prüfe freien Tag
-    const barber = team.find(b => b.id === barberId);
-    if (barber && isBarberFreeDay(barber, dateStr)) {
+    // Prüfe ob dieses Datum ein Ersatztag ist (Tauschtag-System)
+    const isReplacementDay = freeDayExceptions.some(
+      ex => ex.staff_id === barberId && ex.replacement_date === dateStr
+    );
+    if (isReplacementDay) {
       return {
-        id: 'free-day',
+        id: 'replacement-day',
         staff_id: barberId,
         start_date: dateStr,
         end_date: dateStr,
-        reason: 'Frei',
+        reason: 'Ersatztag',
         created_at: '',
       };
+    }
+
+    // Prüfe freien Tag
+    const barber = team.find(b => b.id === barberId);
+    if (barber && isBarberFreeDay(barber, dateStr)) {
+      // Prüfe ob es eine Ausnahme gibt (dann arbeitet er doch)
+      const hasException = freeDayExceptions.some(
+        ex => ex.staff_id === barberId && ex.date === dateStr
+      );
+      if (!hasException) {
+        return {
+          id: 'free-day',
+          staff_id: barberId,
+          start_date: dateStr,
+          end_date: dateStr,
+          reason: 'Frei',
+          created_at: '',
+        };
+      }
     }
 
     return undefined;
@@ -982,6 +1008,7 @@ export function WeekView({
             timeSlot={selectedSlot.timeSlot}
             team={team}
             services={services}
+            existingAppointments={appointments}
             onClose={handleCloseModal}
             onCreated={handleAppointmentCreated}
             onSeriesCreated={handleSeriesCreated}

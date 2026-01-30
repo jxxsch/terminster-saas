@@ -28,18 +28,28 @@ import {
   getAllTeam,
   updateTeamMember,
   TeamMember,
+  // Arbeitszeiten
+  StaffWorkingHours,
+  FreeDayException,
+  getStaffWorkingHours,
+  setStaffWorkingHours as upsertStaffWorkingHours,
+  deleteStaffWorkingHours,
+  getFreeDayExceptions,
+  createFreeDayException,
+  deleteFreeDayException,
 } from '@/lib/supabase';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
 import { SundayPicker } from '@/components/admin/SundayPicker';
 import { DatePicker } from '@/components/admin/DatePicker';
 import { BUNDESLAENDER, Bundesland, getHolidaysList } from '@/lib/holidays';
 
-type TabId = 'slots' | 'hours' | 'special';
+type TabId = 'slots' | 'hours' | 'special' | 'working';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'slots', label: 'Zeitslots' },
   { id: 'hours', label: 'Öffnungszeiten' },
   { id: 'special', label: 'Sondertage' },
+  { id: 'working', label: 'Arbeitszeiten' },
 ];
 
 const DAY_NAMES = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
@@ -87,11 +97,28 @@ export default function ZeitenPage() {
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [savingFreeDay, setSavingFreeDay] = useState<string | null>(null);
 
+  // Arbeitszeiten State
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [staffWorkingHours, setStaffWorkingHours] = useState<StaffWorkingHours[]>([]);
+  const [freeDayExceptions, setFreeDayExceptions] = useState<FreeDayException[]>([]);
+  const [editingWorkDay, setEditingWorkDay] = useState<number | null>(null);
+  const [workStartTime, setWorkStartTime] = useState('10:00');
+  const [workEndTime, setWorkEndTime] = useState('19:00');
+  const [savingWorkHours, setSavingWorkHours] = useState<number | null>(null);
+  const [newExceptionDate, setNewExceptionDate] = useState('');
+  const [newExceptionStartTime, setNewExceptionStartTime] = useState('10:00');
+  const [newExceptionEndTime, setNewExceptionEndTime] = useState('19:00');
+  const [newExceptionReplacementDate, setNewExceptionReplacementDate] = useState('');
+  const [addingException, setAddingException] = useState(false);
+  const [exceptionBarber, setExceptionBarber] = useState<string | null>(null);
+  const [showExceptionDatePicker, setShowExceptionDatePicker] = useState(false);
+  const [showReplacementDatePicker, setShowReplacementDatePicker] = useState(false);
+
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
-      const [slotsData, hoursData, sundaysData, closedData, openHolidaysData, bundeslandData, teamData] = await Promise.all([
+      const [slotsData, hoursData, sundaysData, closedData, openHolidaysData, bundeslandData, teamData, workHoursData, exceptionsData] = await Promise.all([
         getAllTimeSlots(),
         getOpeningHours(),
         getOpenSundays(),
@@ -99,6 +126,8 @@ export default function ZeitenPage() {
         getOpenHolidays(),
         getSetting<Bundesland>('bundesland'),
         getAllTeam(),
+        getStaffWorkingHours(),
+        getFreeDayExceptions(),
       ]);
       setTimeSlots(slotsData);
       setHours(hoursData);
@@ -106,7 +135,14 @@ export default function ZeitenPage() {
       setClosedDates(closedData);
       setOpenHolidays(openHolidaysData);
       if (bundeslandData) setBundesland(bundeslandData);
-      setTeam(teamData.filter(m => m.active));
+      const activeTeam = teamData.filter(m => m.active);
+      setTeam(activeTeam);
+      setStaffWorkingHours(workHoursData);
+      setFreeDayExceptions(exceptionsData);
+      // Ersten Mitarbeiter auswählen falls vorhanden
+      if (activeTeam.length > 0 && !selectedStaffId) {
+        setSelectedStaffId(activeTeam[0].id);
+      }
       setIsLoading(false);
     }
     loadData();
@@ -248,6 +284,95 @@ export default function ZeitenPage() {
       setTeam(team.map(m => m.id === memberId ? updated : m));
     }
     setSavingFreeDay(null);
+  }
+
+  // === Arbeitszeiten Handlers ===
+  const selectedStaff = team.find(m => m.id === selectedStaffId);
+  const selectedStaffWorkHours = staffWorkingHours.filter(wh => wh.staff_id === selectedStaffId);
+  const selectedStaffExceptions = freeDayExceptions.filter(ex => ex.staff_id === selectedStaffId);
+
+  function getWorkHoursForDay(dayOfWeek: number): StaffWorkingHours | undefined {
+    return selectedStaffWorkHours.find(wh => wh.day_of_week === dayOfWeek);
+  }
+
+  function getGlobalHoursForDay(dayOfWeek: number): OpeningHours | undefined {
+    return hours.find(h => h.day_of_week === dayOfWeek);
+  }
+
+  async function handleSaveWorkHours(dayOfWeek: number) {
+    if (!selectedStaffId) return;
+    setSavingWorkHours(dayOfWeek);
+    const result = await upsertStaffWorkingHours(selectedStaffId, dayOfWeek, workStartTime, workEndTime);
+    if (result) {
+      // Update oder hinzufügen
+      const exists = staffWorkingHours.find(wh => wh.staff_id === selectedStaffId && wh.day_of_week === dayOfWeek);
+      if (exists) {
+        setStaffWorkingHours(staffWorkingHours.map(wh =>
+          wh.staff_id === selectedStaffId && wh.day_of_week === dayOfWeek ? result : wh
+        ));
+      } else {
+        setStaffWorkingHours([...staffWorkingHours, result]);
+      }
+    }
+    setEditingWorkDay(null);
+    setSavingWorkHours(null);
+  }
+
+  async function handleResetWorkHours(dayOfWeek: number) {
+    if (!selectedStaffId) return;
+    setSavingWorkHours(dayOfWeek);
+    const success = await deleteStaffWorkingHours(selectedStaffId, dayOfWeek);
+    if (success) {
+      setStaffWorkingHours(staffWorkingHours.filter(wh =>
+        !(wh.staff_id === selectedStaffId && wh.day_of_week === dayOfWeek)
+      ));
+    }
+    setSavingWorkHours(null);
+  }
+
+  function handleStartEditWorkHours(dayOfWeek: number) {
+    const existing = getWorkHoursForDay(dayOfWeek);
+    const global = getGlobalHoursForDay(dayOfWeek);
+    if (existing) {
+      setWorkStartTime(existing.start_time);
+      setWorkEndTime(existing.end_time);
+    } else if (global && !global.is_closed) {
+      setWorkStartTime(global.open_time || '10:00');
+      setWorkEndTime(global.close_time || '19:00');
+    } else {
+      setWorkStartTime('10:00');
+      setWorkEndTime('19:00');
+    }
+    setEditingWorkDay(dayOfWeek);
+  }
+
+  async function handleAddFreeDayException(e: React.FormEvent) {
+    e.preventDefault();
+    const staffId = exceptionBarber || selectedStaffId;
+    if (!staffId || !newExceptionDate) return;
+    setAddingException(true);
+    const result = await createFreeDayException(
+      staffId,
+      newExceptionDate,
+      newExceptionStartTime,
+      newExceptionEndTime,
+      newExceptionReplacementDate || undefined
+    );
+    if (result) {
+      setFreeDayExceptions([...freeDayExceptions, result].sort((a, b) => a.date.localeCompare(b.date)));
+      setNewExceptionDate('');
+      setNewExceptionReplacementDate('');
+      setNewExceptionStartTime('10:00');
+      setNewExceptionEndTime('19:00');
+    }
+    setAddingException(false);
+  }
+
+  async function handleDeleteFreeDayException(id: string) {
+    const success = await deleteFreeDayException(id);
+    if (success) {
+      setFreeDayExceptions(freeDayExceptions.filter(ex => ex.id !== id));
+    }
   }
 
   function formatDate(dateStr: string): string {
@@ -883,6 +1008,410 @@ export default function ZeitenPage() {
               );
             })()}
           </div>
+            </div>
+          )}
+
+          {activeTab === 'working' && (
+            <div className="px-8 py-6 space-y-8">
+              {/* Mitarbeiter-Auswahl */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-900">Individuelle Arbeitszeiten</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Abweichende Arbeitszeiten pro Mitarbeiter festlegen</p>
+                </div>
+                <select
+                  value={selectedStaffId || ''}
+                  onChange={(e) => setSelectedStaffId(e.target.value || null)}
+                  className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-9 min-w-[180px]"
+                >
+                  {team.map(member => (
+                    <option key={member.id} value={member.id}>{member.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedStaff && (
+                <>
+                  {/* Wochentags-Grid */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
+                    {/* Header-Zeile */}
+                    <div className="grid grid-cols-[1fr_120px_120px_120px_100px] gap-4 px-4 py-2 text-[11px] font-medium text-slate-400 border-b border-slate-200">
+                      <div>Tag</div>
+                      <div>Status</div>
+                      <div>Von</div>
+                      <div>Bis</div>
+                      <div></div>
+                    </div>
+
+                    {/* Tage-Liste (Mo-Sa) */}
+                    <div className="divide-y divide-slate-200">
+                      {[1, 2, 3, 4, 5, 6].map((dayOfWeek) => {
+                        const workHours = getWorkHoursForDay(dayOfWeek);
+                        const globalHours = getGlobalHoursForDay(dayOfWeek);
+                        const isFreeDay = selectedStaff.free_day === dayOfWeek;
+                        const isEditing = editingWorkDay === dayOfWeek;
+                        const isSaving = savingWorkHours === dayOfWeek;
+
+                        // Status bestimmen
+                        let status: 'free' | 'individual' | 'global';
+                        if (isFreeDay) {
+                          status = 'free';
+                        } else if (workHours) {
+                          status = 'individual';
+                        } else {
+                          status = 'global';
+                        }
+
+                        // Angezeigte Zeiten
+                        const displayStart = workHours?.start_time || globalHours?.open_time?.slice(0, 5) || '10:00';
+                        const displayEnd = workHours?.end_time || globalHours?.close_time?.slice(0, 5) || '19:00';
+
+                        return (
+                          <div
+                            key={dayOfWeek}
+                            className={`grid grid-cols-[1fr_120px_120px_120px_100px] gap-4 items-center px-4 py-3 transition-colors ${
+                              isFreeDay ? 'bg-red-50/50' : status === 'individual' ? 'bg-gold/5' : 'bg-white/50 hover:bg-white'
+                            } ${isSaving ? 'opacity-50' : ''}`}
+                          >
+                            <div>
+                              <span className={`text-sm font-medium ${isFreeDay ? 'text-red-400' : 'text-slate-900'}`}>
+                                {DAY_NAMES[dayOfWeek]}
+                              </span>
+                            </div>
+                            <div>
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                                status === 'free'
+                                  ? 'bg-red-100 text-red-600'
+                                  : status === 'individual'
+                                  ? 'bg-gold/20 text-amber-700'
+                                  : 'bg-slate-100 text-slate-500'
+                              }`}>
+                                {status === 'free' ? 'Frei' : status === 'individual' ? 'Individuell' : 'Global'}
+                              </span>
+                            </div>
+                            <div>
+                              {!isFreeDay && (
+                                isEditing ? (
+                                  <select
+                                    value={workStartTime}
+                                    onChange={(e) => setWorkStartTime(e.target.value)}
+                                    className="w-full px-2 py-1.5 bg-white border border-gold rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.4rem_center] bg-no-repeat pr-7"
+                                  >
+                                    {Array.from({ length: 29 }, (_, i) => {
+                                      const h = Math.floor(i / 2) + 6;
+                                      const minute = i % 2 === 0 ? '00' : '30';
+                                      const time = `${h.toString().padStart(2, '0')}:${minute}`;
+                                      return <option key={time} value={time}>{time}</option>;
+                                    })}
+                                  </select>
+                                ) : (
+                                  <span className={`text-sm ${status === 'individual' ? 'text-slate-900 font-medium' : 'text-slate-500'}`}>
+                                    {displayStart}
+                                  </span>
+                                )
+                              )}
+                            </div>
+                            <div>
+                              {!isFreeDay && (
+                                isEditing ? (
+                                  <select
+                                    value={workEndTime}
+                                    onChange={(e) => setWorkEndTime(e.target.value)}
+                                    className="w-full px-2 py-1.5 bg-white border border-gold rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.4rem_center] bg-no-repeat pr-7"
+                                  >
+                                    {Array.from({ length: 29 }, (_, i) => {
+                                      const h = Math.floor(i / 2) + 6;
+                                      const minute = i % 2 === 0 ? '00' : '30';
+                                      const time = `${h.toString().padStart(2, '0')}:${minute}`;
+                                      return <option key={time} value={time}>{time}</option>;
+                                    })}
+                                  </select>
+                                ) : (
+                                  <span className={`text-sm ${status === 'individual' ? 'text-slate-900 font-medium' : 'text-slate-500'}`}>
+                                    {displayEnd}
+                                  </span>
+                                )
+                              )}
+                            </div>
+                            <div className="flex justify-end gap-1">
+                              {!isFreeDay && (
+                                isEditing ? (
+                                  <>
+                                    <button
+                                      onClick={() => handleSaveWorkHours(dayOfWeek)}
+                                      disabled={isSaving}
+                                      className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                      title="Speichern"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    </button>
+                                    <button
+                                      onClick={() => setEditingWorkDay(null)}
+                                      className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                      title="Abbrechen"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                      </svg>
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={() => handleStartEditWorkHours(dayOfWeek)}
+                                      className="p-1.5 text-slate-400 hover:text-gold hover:bg-gold/10 rounded-lg transition-colors"
+                                      title="Bearbeiten"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                      </svg>
+                                    </button>
+                                    {status === 'individual' && (
+                                      <button
+                                        onClick={() => handleResetWorkHours(dayOfWeek)}
+                                        disabled={isSaving}
+                                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="Auf Global zurücksetzen"
+                                      >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                        </svg>
+                                      </button>
+                                    )}
+                                  </>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Info Box */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <div className="flex gap-3">
+                      <svg className="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <h3 className="text-xs font-medium text-slate-700">Hinweis</h3>
+                        <p className="text-xs text-slate-500 mt-1">
+                          <strong>Global:</strong> Nutzt die allgemeinen Öffnungszeiten. <strong>Individuell:</strong> Abweichende Zeiten für diesen Mitarbeiter.
+                          <strong> Frei:</strong> Wöchentlicher freier Tag (unter Sondertage einstellbar).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Trennlinie */}
+                  <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+
+                  {/* Freier-Tag-Ausnahmen - unabhängiger Block */}
+                  <div>
+                    <div className="mb-4">
+                      <h3 className="text-sm font-semibold text-slate-900">Ausnahmen für freie Tage (Tauschtage)</h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Mitarbeiter kann an seinem freien Tag ausnahmsweise arbeiten und optional einen Ersatztag erhalten.
+                      </p>
+                    </div>
+
+                    {/* Formular für neue Ausnahme */}
+                    <form onSubmit={handleAddFreeDayException} className="grid grid-cols-[180px_1fr_90px_90px_1fr_auto] gap-3 items-end mb-6">
+                      {/* Barber-Auswahl */}
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1">Mitarbeiter</label>
+                        <select
+                          value={exceptionBarber || ''}
+                          onChange={(e) => setExceptionBarber(e.target.value || null)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
+                          required
+                        >
+                          <option value="">Auswählen...</option>
+                          {team.filter(m => m.free_day !== null).map(member => (
+                            <option key={member.id} value={member.id}>
+                              {member.name} ({DAY_NAMES[member.free_day!]} frei)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Datum - Arbeitet am */}
+                      <div className="relative">
+                        <label className="block text-xs font-medium text-slate-600 mb-1">Arbeitet am</label>
+                        <button
+                          type="button"
+                          onClick={() => setShowExceptionDatePicker(!showExceptionDatePicker)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-left focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none hover:border-slate-300 transition-colors flex items-center justify-between"
+                        >
+                          <span className={newExceptionDate ? 'text-slate-900' : 'text-slate-400'}>
+                            {newExceptionDate ? formatDate(newExceptionDate) : 'Datum wählen...'}
+                          </span>
+                          <svg className={`w-4 h-4 text-slate-400 transition-transform ${showExceptionDatePicker ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {showExceptionDatePicker && (
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setShowExceptionDatePicker(false)} />
+                            <div className="absolute top-full left-0 mt-1 z-20 shadow-lg">
+                              <DatePicker
+                                value={newExceptionDate}
+                                onChange={(date) => {
+                                  setNewExceptionDate(date);
+                                  setShowExceptionDatePicker(false);
+                                }}
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Von */}
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1">Von</label>
+                        <select
+                          id="exception-start-time"
+                          value={newExceptionStartTime}
+                          onChange={(e) => {
+                            setNewExceptionStartTime(e.target.value);
+                            // Auto-Jump zu Bis
+                            setTimeout(() => {
+                              document.getElementById('exception-end-time')?.focus();
+                            }, 0);
+                          }}
+                          className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.4rem_center] bg-no-repeat pr-7"
+                        >
+                          {Array.from({ length: 29 }, (_, i) => {
+                            const h = Math.floor(i / 2) + 6;
+                            const minute = i % 2 === 0 ? '00' : '30';
+                            const time = `${h.toString().padStart(2, '0')}:${minute}`;
+                            return <option key={time} value={time}>{time}</option>;
+                          })}
+                        </select>
+                      </div>
+
+                      {/* Bis */}
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 mb-1">Bis</label>
+                        <select
+                          id="exception-end-time"
+                          value={newExceptionEndTime}
+                          onChange={(e) => setNewExceptionEndTime(e.target.value)}
+                          className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.4rem_center] bg-no-repeat pr-7"
+                        >
+                          {Array.from({ length: 29 }, (_, i) => {
+                            const h = Math.floor(i / 2) + 6;
+                            const minute = i % 2 === 0 ? '00' : '30';
+                            const time = `${h.toString().padStart(2, '0')}:${minute}`;
+                            return <option key={time} value={time}>{time}</option>;
+                          })}
+                        </select>
+                      </div>
+
+                      {/* Ersatztag */}
+                      <div className="relative">
+                        <label className="block text-xs font-medium text-slate-600 mb-1">Ersatztag frei (optional)</label>
+                        <button
+                          type="button"
+                          onClick={() => setShowReplacementDatePicker(!showReplacementDatePicker)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-left focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none hover:border-slate-300 transition-colors flex items-center justify-between"
+                        >
+                          <span className={newExceptionReplacementDate ? 'text-slate-900' : 'text-slate-400'}>
+                            {newExceptionReplacementDate ? formatDate(newExceptionReplacementDate) : 'Optional...'}
+                          </span>
+                          <svg className={`w-4 h-4 text-slate-400 transition-transform ${showReplacementDatePicker ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {showReplacementDatePicker && (
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setShowReplacementDatePicker(false)} />
+                            <div className="absolute top-full left-0 mt-1 z-20 shadow-lg">
+                              <DatePicker
+                                value={newExceptionReplacementDate}
+                                onChange={(date) => {
+                                  setNewExceptionReplacementDate(date);
+                                  setShowReplacementDatePicker(false);
+                                }}
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={addingException || !newExceptionDate || !exceptionBarber}
+                        className="px-5 py-2.5 bg-gold text-black text-xs font-semibold rounded-xl hover:bg-gold/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {addingException ? '...' : 'Hinzufügen'}
+                      </button>
+                    </form>
+
+                    {/* Liste aller Ausnahmen */}
+                    {(() => {
+                      const allExceptions = freeDayExceptions
+                        .filter(ex => ex.date >= new Date().toISOString().split('T')[0])
+                        .sort((a, b) => a.date.localeCompare(b.date));
+
+                      return allExceptions.length > 0 ? (
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
+                          <div className="grid grid-cols-[120px_1fr_70px_70px_1fr_60px] gap-4 px-4 py-2 text-[11px] font-medium text-slate-400 border-b border-slate-200">
+                            <div>Mitarbeiter</div>
+                            <div>Arbeitet am</div>
+                            <div>Von</div>
+                            <div>Bis</div>
+                            <div>Ersatztag frei</div>
+                            <div></div>
+                          </div>
+                          <div className="divide-y divide-slate-200">
+                            {allExceptions.map(exception => {
+                              const barber = team.find(m => m.id === exception.staff_id);
+                              return (
+                                <div key={exception.id} className="grid grid-cols-[120px_1fr_70px_70px_1fr_60px] gap-4 items-center px-4 py-3 bg-emerald-50/50 hover:bg-emerald-50 transition-colors">
+                                  <div className="text-sm font-medium text-slate-900">{barber?.name || 'Unbekannt'}</div>
+                                  <div className="text-sm text-slate-700">{formatDate(exception.date)}</div>
+                                  <div className="text-sm text-slate-600">{exception.start_time}</div>
+                                  <div className="text-sm text-slate-600">{exception.end_time}</div>
+                                  <div className="text-sm text-slate-500">
+                                    {exception.replacement_date ? formatDate(exception.replacement_date) : '-'}
+                                  </div>
+                                  <div className="flex justify-end">
+                                    <button
+                                      onClick={() => handleDeleteFreeDayException(exception.id)}
+                                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="py-8 text-center text-slate-400 bg-slate-50 border border-slate-200 rounded-xl">
+                          <svg className="w-10 h-10 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <p className="text-sm">Keine Ausnahmen eingetragen</p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </>
+              )}
+
+              {!selectedStaff && (
+                <div className="py-12 text-center text-slate-400">
+                  <p>Bitte wählen Sie einen Mitarbeiter aus.</p>
+                </div>
+              )}
             </div>
           )}
         </div>

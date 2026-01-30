@@ -16,12 +16,18 @@ import {
   getOpenHolidays,
   getSetting,
   isBarberFreeDay,
+  getStaffWorkingHours,
+  getFreeDayExceptions,
+  getOpeningHours,
   TeamMember,
   Appointment,
   ClosedDate,
   OpenSunday,
   OpenHoliday,
-  StaffTimeOff
+  StaffTimeOff,
+  StaffWorkingHours,
+  FreeDayException,
+  OpeningHours
 } from '@/lib/supabase';
 import { sendBookingConfirmationEmail } from '@/lib/email-client';
 import { useAuth } from '@/context/AuthContext';
@@ -668,6 +674,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
   const [bundesland, setBundesland] = useState<Bundesland>('NW');
   const [maxWeeks, setMaxWeeks] = useState(4);
   const [staffTimeOff, setStaffTimeOff] = useState<StaffTimeOff[]>([]);
+  const [staffWorkingHours, setStaffWorkingHours] = useState<StaffWorkingHours[]>([]);
+  const [freeDayExceptions, setFreeDayExceptions] = useState<FreeDayException[]>([]);
+  const [openingHours, setOpeningHours] = useState<OpeningHours[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -751,7 +760,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       const startDate = formatDateLocal(today);
       const endDate = formatDateLocal(new Date(today.getTime() + 12 * 7 * 24 * 60 * 60 * 1000));
 
-      const [teamData, timeSlotsData, appointmentsData, closedDatesData, openSundaysData, openHolidaysData, bundeslandData, advanceWeeksData, staffTimeOffData] = await Promise.all([
+      const [teamData, timeSlotsData, appointmentsData, closedDatesData, openSundaysData, openHolidaysData, bundeslandData, advanceWeeksData, staffTimeOffData, workingHoursData, exceptionsData, openingHoursData] = await Promise.all([
         getTeam(),
         getTimeSlotsArray(),
         getAppointments(startDate, endDate),
@@ -761,6 +770,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
         getSetting<Bundesland>('bundesland'),
         getSetting<{ value: number }>('booking_advance_weeks'),
         getStaffTimeOffForDateRange(startDate, endDate),
+        getStaffWorkingHours(),
+        getFreeDayExceptions(),
+        getOpeningHours(),
       ]);
 
       setTeam(teamData);
@@ -772,6 +784,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       if (bundeslandData) setBundesland(bundeslandData);
       if (advanceWeeksData?.value) setMaxWeeks(advanceWeeksData.value);
       setStaffTimeOff(staffTimeOffData);
+      setStaffWorkingHours(workingHoursData);
+      setFreeDayExceptions(exceptionsData);
+      setOpeningHours(openingHoursData);
       setIsLoading(false);
       isLoadingRef.current = false;
 
@@ -1197,10 +1212,58 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                     <div style={styles.weekDaysContainer}>
                       {days.map((day) => {
                         const barberData = team.find(b => b.id === selectedBarber);
+                        const dayOfWeek = new Date(day.dateStr).getDay();
+
+                        // Prüfe ob freier Tag und ob es eine Ausnahme gibt
+                        const isFreeDay = barberData ? isBarberFreeDay(barberData, day.dateStr) : false;
+                        const hasException = freeDayExceptions.some(
+                          ex => ex.staff_id === selectedBarber && ex.date === day.dateStr
+                        );
+                        const freeDayException = freeDayExceptions.find(
+                          ex => ex.staff_id === selectedBarber && ex.date === day.dateStr
+                        );
+
+                        // Prüfe ob dieses Datum ein Ersatztag ist (dann ist Barber frei)
+                        const isReplacementDay = freeDayExceptions.some(
+                          ex => ex.staff_id === selectedBarber && ex.replacement_date === day.dateStr
+                        );
+
+                        // Barber ist nicht verfügbar, wenn: freier Tag ohne Ausnahme ODER Urlaub ODER Ersatztag
                         const isBarberUnavailable = barberData && (
-                          isBarberFreeDay(barberData, day.dateStr) ||
+                          (isFreeDay && !hasException) ||
+                          isReplacementDay ||
                           staffTimeOff.some(off => off.staff_id === selectedBarber && off.start_date <= day.dateStr && off.end_date >= day.dateStr)
                         );
+
+                        // Effektive Arbeitszeiten ermitteln (Priorität: Ausnahme > individuell > global)
+                        let effectiveOpenTime: string | undefined;
+                        let effectiveCloseTime: string | undefined;
+
+                        if (day.isOpenSunday) {
+                          // Verkaufsoffener Sonntag
+                          effectiveOpenTime = day.openSundayOpenTime;
+                          effectiveCloseTime = day.openSundayCloseTime;
+                        } else if (hasException && freeDayException) {
+                          // Freier-Tag-Ausnahme
+                          effectiveOpenTime = freeDayException.start_time;
+                          effectiveCloseTime = freeDayException.end_time;
+                        } else {
+                          // Individuelle Arbeitszeiten für diesen Tag
+                          const individualHours = staffWorkingHours.find(
+                            wh => wh.staff_id === selectedBarber && wh.day_of_week === dayOfWeek
+                          );
+                          if (individualHours) {
+                            effectiveOpenTime = individualHours.start_time;
+                            effectiveCloseTime = individualHours.end_time;
+                          } else {
+                            // Fallback auf globale Öffnungszeiten
+                            const globalHours = openingHours.find(h => h.day_of_week === dayOfWeek);
+                            if (globalHours && !globalHours.is_closed) {
+                              effectiveOpenTime = globalHours.open_time?.slice(0, 5);
+                              effectiveCloseTime = globalHours.close_time?.slice(0, 5);
+                            }
+                          }
+                        }
 
                         const availableSlots = day.isDisabled || isBarberUnavailable
                           ? []
@@ -1209,8 +1272,8 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                               day.dateStr,
                               timeSlots,
                               bookedAppointments,
-                              day.openSundayOpenTime,
-                              day.openSundayCloseTime
+                              effectiveOpenTime,
+                              effectiveCloseTime
                             );
 
                         const isExpanded = expandedDays.has(day.dateStr);

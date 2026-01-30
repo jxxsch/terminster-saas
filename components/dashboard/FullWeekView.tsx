@@ -466,6 +466,7 @@ export function FullWeekView({ monday }: FullWeekViewProps) {
             timeSlot={selectedSlot.timeSlot}
             team={team}
             services={services}
+            existingAppointments={appointments}
             onClose={handleCloseModal}
             onCreated={handleAppointmentCreated}
             onSeriesCreated={handleSeriesCreated}

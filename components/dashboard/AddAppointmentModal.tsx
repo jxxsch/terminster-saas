@@ -17,12 +17,19 @@ import {
 const DAY_NAMES = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 const MONTH_NAMES = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 
+interface SeriesConflict {
+  date: string;
+  formattedDate: string;
+  customerName: string;
+}
+
 interface AddAppointmentModalProps {
   barberId: string;
   date: string;
   timeSlot: string;
   team: TeamMember[];
   services: Service[];
+  existingAppointments: Appointment[];
   onClose: () => void;
   onCreated: (appointment: Appointment) => void;
   onSeriesCreated?: (series: Series) => void;
@@ -34,10 +41,16 @@ export function AddAppointmentModal({
   timeSlot,
   team,
   services,
+  existingAppointments,
   onClose,
   onCreated,
   onSeriesCreated,
 }: AddAppointmentModalProps) {
+  // Berechnungen vor States
+  const dateObj = new Date(date);
+  const formattedDate = `${DAY_NAMES[dateObj.getDay()]}, ${dateObj.getDate()}. ${MONTH_NAMES[dateObj.getMonth()]}`;
+  const dayOfWeek = dateObj.getDay() === 0 ? 7 : dateObj.getDay(); // 1=Mo, ..., 6=Sa, 7=So
+
   const [mode, setMode] = useState<'appointment' | 'pause'>('appointment');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -49,19 +62,73 @@ export function AddAppointmentModal({
   const [serviceId, setServiceId] = useState(services[0]?.id || '1');
   const [isSeries, setIsSeries] = useState(false);
   const [intervalType, setIntervalType] = useState<'weekly' | 'biweekly' | 'monthly'>('weekly');
+  const [isPauseSeries, setIsPauseSeries] = useState(false);
+  const [pauseDays, setPauseDays] = useState<number[]>([dayOfWeek]); // Standardmäßig aktueller Tag ausgewählt
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [activeSearchField, setActiveSearchField] = useState<'name' | 'phone' | null>(null);
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [conflicts, setConflicts] = useState<SeriesConflict[]>([]);
+  const [pendingSeriesData, setPendingSeriesData] = useState<{
+    type: 'series' | 'pause';
+    days: number[];
+  } | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  const dateObj = new Date(date);
-  const formattedDate = `${DAY_NAMES[dateObj.getDay()]}, ${dateObj.getDate()}. ${MONTH_NAMES[dateObj.getMonth()]}`;
-  const dayOfWeek = dateObj.getDay() === 0 ? 7 : dateObj.getDay(); // 1=Mo, ..., 6=Sa, 7=So
-
   // Get barber name from team
   const barberName = team.find(t => t.id === barberId)?.name || 'Unbekannt';
+
+  // Hilfsfunktion: Prüft Konflikte für eine Serie
+  const checkSeriesConflicts = (daysToCheck: number[], intervalType: 'weekly' | 'biweekly' | 'monthly'): SeriesConflict[] => {
+    const foundConflicts: SeriesConflict[] = [];
+    const startDate = new Date(date);
+
+    // Prüfe alle existierenden Termine für diesen Barber und Zeitslot
+    existingAppointments
+      .filter(apt => apt.barber_id === barberId && apt.time_slot === timeSlot)
+      .forEach(apt => {
+        const aptDate = new Date(apt.date);
+        const aptDayOfWeek = aptDate.getDay() === 0 ? 7 : aptDate.getDay();
+
+        // Prüfe ob der Tag in der Serie enthalten ist
+        if (daysToCheck.includes(aptDayOfWeek)) {
+          // Prüfe ob das Datum nach dem Startdatum liegt
+          if (aptDate >= startDate) {
+            // Bei wöchentlich: jede Woche
+            // Bei 14-tägig: alle 2 Wochen
+            // Bei monatlich: gleicher Wochentag pro Monat
+            const weeksDiff = Math.floor((aptDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+
+            let isInSeries = false;
+            if (intervalType === 'weekly') {
+              isInSeries = true;
+            } else if (intervalType === 'biweekly') {
+              isInSeries = weeksDiff % 2 === 0;
+            } else if (intervalType === 'monthly') {
+              // Vereinfacht: Gleicher Wochentag
+              isInSeries = true;
+            }
+
+            if (isInSeries) {
+              foundConflicts.push({
+                date: apt.date,
+                formattedDate: aptDate.toLocaleDateString('de-DE', {
+                  weekday: 'short',
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric'
+                }),
+                customerName: apt.customer_name || 'Unbekannt',
+              });
+            }
+          }
+        }
+      });
+
+    return foundConflicts.sort((a, b) => a.date.localeCompare(b.date));
+  };
 
   // Debounced Kundensuche (Name oder Telefon)
   useEffect(() => {
@@ -122,6 +189,83 @@ export function AddAppointmentModal({
     nameInputRef.current?.focus();
   };
 
+  // Funktion zum tatsächlichen Erstellen der Serie (nach Konflikt-Bestätigung)
+  const executeSeriesCreation = async (type: 'series' | 'pause', days: number[]) => {
+    setIsSubmitting(true);
+    setError('');
+    setShowConflictModal(false);
+
+    if (type === 'pause') {
+      // Pausen-Serien erstellen
+      let lastSeries: Series | null = null;
+      let hasError = false;
+
+      for (const day of days) {
+        const newSeries = await createSeries({
+          barber_id: barberId,
+          day_of_week: day,
+          time_slot: timeSlot,
+          service_id: services[0]?.id || '1',
+          customer_name: '⏸ Pause',
+          customer_phone: null,
+          customer_email: null,
+          start_date: date,
+          end_date: null,
+          interval_type: 'weekly',
+        });
+
+        if (newSeries) {
+          lastSeries = newSeries;
+        } else {
+          hasError = true;
+        }
+      }
+
+      if (lastSeries && onSeriesCreated) {
+        onSeriesCreated(lastSeries);
+      } else if (hasError) {
+        setError('Fehler beim Erstellen der Pause-Serie');
+        setIsSubmitting(false);
+      }
+    } else {
+      // Normale Serie erstellen
+      const newSeries = await createSeries({
+        barber_id: barberId,
+        day_of_week: days[0], // Bei normaler Serie nur ein Tag
+        time_slot: timeSlot,
+        service_id: serviceId,
+        customer_name: customerName.trim(),
+        customer_phone: customerPhone.trim() || null,
+        customer_email: selectedCustomer?.email || customerEmail.trim() || null,
+        start_date: date,
+        end_date: null,
+        interval_type: intervalType,
+      });
+
+      if (newSeries && onSeriesCreated) {
+        onSeriesCreated(newSeries);
+      } else {
+        setError('Fehler beim Erstellen der Serie');
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  // Handler für "Verstanden" im Konflikt-Modal
+  const handleConfirmWithConflicts = () => {
+    if (pendingSeriesData) {
+      executeSeriesCreation(pendingSeriesData.type, pendingSeriesData.days);
+    }
+  };
+
+  // Handler für "Abbrechen" im Konflikt-Modal
+  const handleCancelConflicts = () => {
+    setShowConflictModal(false);
+    setConflicts([]);
+    setPendingSeriesData(null);
+    setIsSubmitting(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -130,6 +274,25 @@ export function AddAppointmentModal({
       setIsSubmitting(true);
       setError('');
 
+      if (isPauseSeries && pauseDays.length > 0) {
+        // Prüfe auf Konflikte
+        const foundConflicts = checkSeriesConflicts(pauseDays, 'weekly');
+
+        if (foundConflicts.length > 0) {
+          // Zeige Konflikt-Modal
+          setConflicts(foundConflicts);
+          setPendingSeriesData({ type: 'pause', days: pauseDays });
+          setShowConflictModal(true);
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Keine Konflikte - direkt erstellen
+        await executeSeriesCreation('pause', pauseDays);
+        return;
+      }
+
+      // Einzelne Pause
       const result = await createAppointment({
         barber_id: barberId,
         date,
@@ -163,27 +326,21 @@ export function AddAppointmentModal({
     setError('');
 
     if (isSeries) {
-      // Create series
-      const newSeries = await createSeries({
-        barber_id: barberId,
-        day_of_week: dayOfWeek,
-        time_slot: timeSlot,
-        service_id: serviceId,
-        customer_name: customerName.trim(),
-        customer_phone: customerPhone.trim() || null,
-        customer_email: selectedCustomer?.email || customerEmail.trim() || null,
-        start_date: date,
-        end_date: null,
-        interval_type: intervalType,
-      });
+      // Prüfe auf Konflikte
+      const foundConflicts = checkSeriesConflicts([dayOfWeek], intervalType);
 
-      if (newSeries) {
-        onSeriesCreated?.(newSeries);
-        onClose();
-      } else {
-        setError('Fehler beim Speichern der Serie');
+      if (foundConflicts.length > 0) {
+        // Zeige Konflikt-Modal
+        setConflicts(foundConflicts);
+        setPendingSeriesData({ type: 'series', days: [dayOfWeek] });
+        setShowConflictModal(true);
         setIsSubmitting(false);
+        return;
       }
+
+      // Keine Konflikte - direkt erstellen
+      await executeSeriesCreation('series', [dayOfWeek]);
+      return;
     } else {
       // Create single appointment
       const result = await createAppointment({
@@ -278,16 +435,72 @@ export function AddAppointmentModal({
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Pause Mode - Simplified View */}
             {mode === 'pause' ? (
-              <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 text-center">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-orange-100 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+              <div className="space-y-4">
+                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-orange-100 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-900 mb-1">30 Minuten Pause</h3>
+                  <p className="text-xs text-gray-500">
+                    Slot wird blockiert
+                  </p>
                 </div>
-                <h3 className="text-sm font-medium text-gray-900 mb-1">30 Minuten Pause</h3>
-                <p className="text-xs text-gray-500">
-                  Slot wird blockiert
-                </p>
+
+                {/* Regelmäßige Pause Option */}
+                <div className="border border-gray-200 rounded-xl p-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isPauseSeries}
+                      onChange={(e) => setIsPauseSeries(e.target.checked)}
+                      className="w-4 h-4 text-gold border-gray-300 rounded focus:ring-gold"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-900">Regelmäßige Pause</span>
+                      <p className="text-xs text-gray-500">Als Serientermin anlegen</p>
+                    </div>
+                  </label>
+
+                  {isPauseSeries && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <label className="block text-xs text-gray-500 mb-2">An welchen Tagen? (wöchentlich)</label>
+                      <div className="grid grid-cols-6 gap-2">
+                        {[
+                          { value: 1, label: 'Mo' },
+                          { value: 2, label: 'Di' },
+                          { value: 3, label: 'Mi' },
+                          { value: 4, label: 'Do' },
+                          { value: 5, label: 'Fr' },
+                          { value: 6, label: 'Sa' },
+                        ].map(day => (
+                          <button
+                            key={day.value}
+                            type="button"
+                            onClick={() => {
+                              if (pauseDays.includes(day.value)) {
+                                setPauseDays(pauseDays.filter(d => d !== day.value));
+                              } else {
+                                setPauseDays([...pauseDays, day.value].sort());
+                              }
+                            }}
+                            className={`px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+                              pauseDays.includes(day.value)
+                                ? 'bg-gold/10 border-gold text-gold'
+                                : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                            }`}
+                          >
+                            {day.label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="mt-3 text-xs text-gray-400">
+                        Jeden {pauseDays.map(d => ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][d]).join(', ')} um {timeSlot} Uhr
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <>
@@ -609,7 +822,9 @@ export function AddAppointmentModal({
                   </>
                 ) : (
                   <span>
-                    {mode === 'pause' ? 'Pause eintragen' : isSeries ? 'Serie speichern' : 'Speichern'}
+                    {mode === 'pause'
+                      ? (isPauseSeries ? 'Pause-Serie speichern' : 'Pause eintragen')
+                      : isSeries ? 'Serie speichern' : 'Speichern'}
                   </span>
                 )}
               </button>
@@ -617,6 +832,65 @@ export function AddAppointmentModal({
           </form>
         </div>
       </div>
+
+      {/* Konflikt-Modal */}
+      {showConflictModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60" onClick={handleCancelConflicts} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                  <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">Termine bereits belegt</h3>
+                  <p className="text-xs text-gray-500">
+                    {conflicts.length} {conflicts.length === 1 ? 'Termin wird' : 'Termine werden'} übersprungen
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="px-5 py-4 max-h-64 overflow-y-auto">
+              <p className="text-sm text-gray-600 mb-3">
+                Die folgenden Termine sind bereits belegt und werden bei der Serie ausgelassen:
+              </p>
+              <div className="space-y-2">
+                {conflicts.map((conflict, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg"
+                  >
+                    <span className="text-sm font-medium text-gray-900">{conflict.formattedDate}</span>
+                    <span className="text-xs text-gray-500">{conflict.customerName}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-4 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={handleCancelConflicts}
+                className="flex-1 px-4 py-2.5 border border-gray-200 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleConfirmWithConflicts}
+                className="flex-1 px-4 py-2.5 bg-gold text-sm font-medium text-white rounded-xl hover:bg-gold/90 transition-colors"
+              >
+                Verstanden
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

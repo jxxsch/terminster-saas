@@ -888,6 +888,7 @@ export function BarberWeekView({
             timeSlot={selectedSlot.timeSlot}
             team={team}
             services={services}
+            existingAppointments={appointments}
             onClose={handleCloseModal}
             onCreated={handleAppointmentCreated}
             onSeriesCreated={handleSeriesCreated}
