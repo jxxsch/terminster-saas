@@ -18,12 +18,16 @@ import {
   createAppointment,
   isBarberFreeDay,
   getFreeDayExceptions,
+  getOpenSundays,
+  getOpenSundayStaff,
   Appointment,
   Series,
   TeamMember,
   Service,
   StaffTimeOff,
-  FreeDayException
+  FreeDayException,
+  OpenSunday,
+  OpenSundayStaff
 } from '@/lib/supabase';
 import { SelectionToolbar, SelectionFilter } from './SelectionToolbar';
 import { UndoToast } from './UndoToast';
@@ -104,6 +108,8 @@ export function WeekView({
   const [services, setServices] = useState<Service[]>([]);
   const [staffTimeOff, setStaffTimeOff] = useState<StaffTimeOff[]>([]);
   const [freeDayExceptions, setFreeDayExceptions] = useState<FreeDayException[]>([]);
+  const [openSundays, setOpenSundays] = useState<OpenSunday[]>([]);
+  const [openSundayStaff, setOpenSundayStaff] = useState<OpenSundayStaff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSlot, setSelectedSlot] = useState<SlotInfo | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -194,13 +200,15 @@ export function WeekView({
       const startDate = weekDays[0].dateStr;
       const endDate = weekDays[weekDays.length - 1].dateStr;
 
-      const [appointmentsData, seriesData, teamData, servicesData, staffTimeOffData, freeDayExceptionsData] = await Promise.all([
+      const [appointmentsData, seriesData, teamData, servicesData, staffTimeOffData, freeDayExceptionsData, openSundaysData, openSundayStaffData] = await Promise.all([
         getAppointments(startDate, endDate),
         getSeries(),
         getTeam(),
         getServices(),
         getStaffTimeOffForDateRange(startDate, endDate),
         getFreeDayExceptions(),
+        getOpenSundays(),
+        getOpenSundayStaff(),
       ]);
 
       setAppointments(appointmentsData);
@@ -209,6 +217,8 @@ export function WeekView({
       setServices(servicesData);
       setStaffTimeOff(staffTimeOffData);
       setFreeDayExceptions(freeDayExceptionsData);
+      setOpenSundays(openSundaysData);
+      setOpenSundayStaff(openSundayStaffData);
       setIsLoading(false);
     }
 
@@ -362,7 +372,7 @@ export function WeekView({
     return map;
   }, [services]);
 
-  // Helper: Prüfe ob Barber an einem Tag abwesend ist (Urlaub oder freier Tag)
+  // Helper: Prüfe ob Barber an einem Tag abwesend ist (Urlaub, freier Tag oder nicht für Sonntag eingeteilt)
   const isBarberOffOnDate = (barberId: string, dateStr: string): StaffTimeOff | undefined => {
     // Prüfe erst Urlaub
     const timeOff = staffTimeOff.find(
@@ -371,6 +381,40 @@ export function WeekView({
              off.end_date >= dateStr
     );
     if (timeOff) return timeOff;
+
+    // Prüfe ob es ein Sonntag ist
+    const date = new Date(dateStr);
+    const isSunday = date.getDay() === 0;
+
+    if (isSunday) {
+      // Prüfe ob es ein verkaufsoffener Sonntag ist
+      const openSunday = openSundays.find(os => os.date === dateStr);
+      if (!openSunday) {
+        // Kein verkaufsoffener Sonntag → Barber nicht verfügbar
+        return {
+          id: 'sunday-closed',
+          staff_id: barberId,
+          start_date: dateStr,
+          end_date: dateStr,
+          reason: 'Sonntag',
+          created_at: '',
+        };
+      }
+      // Verkaufsoffener Sonntag: Prüfe ob Barber eingeteilt ist
+      const isBarberAssigned = openSundayStaff.some(
+        s => s.open_sunday_id === openSunday.id && s.staff_id === barberId
+      );
+      if (!isBarberAssigned) {
+        return {
+          id: 'not-assigned-sunday',
+          staff_id: barberId,
+          start_date: dateStr,
+          end_date: dateStr,
+          reason: 'Nicht eingeteilt',
+          created_at: '',
+        };
+      }
+    }
 
     // Prüfe ob dieses Datum ein Ersatztag ist (Tauschtag-System)
     const isReplacementDay = freeDayExceptions.some(

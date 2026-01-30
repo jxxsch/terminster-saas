@@ -585,6 +585,17 @@ export async function resetPassword(email: string): Promise<{ error: string | nu
   return { error: null };
 }
 
+// Passwort setzen (für Einladungslinks)
+export async function setNewPassword(password: string): Promise<{ error: string | null }> {
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { error: null };
+}
+
 export async function resendConfirmationEmail(email: string): Promise<{ error: string | null }> {
   const { error } = await supabase.auth.resend({
     type: 'signup',
@@ -1529,6 +1540,108 @@ export async function isOpenSunday(date: string): Promise<boolean> {
   }
 
   return (data?.length || 0) > 0;
+}
+
+// ============================================
+// ADMIN - Open Sunday Staff (Mitarbeiter-Zuweisungen)
+// ============================================
+
+export interface OpenSundayStaff {
+  id: string;
+  open_sunday_id: number;
+  staff_id: string;
+  start_time: string;
+  end_time: string;
+  created_at: string;
+}
+
+export async function getOpenSundayStaff(openSundayId?: number): Promise<OpenSundayStaff[]> {
+  let query = supabase.from('open_sunday_staff').select('*');
+
+  if (openSundayId !== undefined) {
+    query = query.eq('open_sunday_id', openSundayId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching open sunday staff:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function createOpenSundayStaff(
+  openSundayId: number,
+  staffId: string,
+  startTime: string,
+  endTime: string
+): Promise<OpenSundayStaff | null> {
+  const { data, error } = await supabase
+    .from('open_sunday_staff')
+    .insert({
+      open_sunday_id: openSundayId,
+      staff_id: staffId,
+      start_time: startTime,
+      end_time: endTime,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating open sunday staff:', error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function updateOpenSundayStaff(
+  id: string,
+  updates: { start_time?: string; end_time?: string }
+): Promise<OpenSundayStaff | null> {
+  const { data, error } = await supabase
+    .from('open_sunday_staff')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating open sunday staff:', error);
+    return null;
+  }
+
+  return data;
+}
+
+export async function deleteOpenSundayStaff(id: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('open_sunday_staff')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting open sunday staff:', error);
+    return false;
+  }
+
+  return true;
+}
+
+export async function deleteOpenSundayStaffByOpenSunday(openSundayId: number): Promise<boolean> {
+  const { error } = await supabase
+    .from('open_sunday_staff')
+    .delete()
+    .eq('open_sunday_id', openSundayId);
+
+  if (error) {
+    console.error('Error deleting open sunday staff:', error);
+    return false;
+  }
+
+  return true;
 }
 
 // ============================================
