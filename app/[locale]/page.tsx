@@ -10,6 +10,7 @@ import { Contact } from '@/components/sections/Contact';
 import { ScrollToTop } from '@/components/ui/ScrollToTop';
 import { AuthErrorHandler } from '@/components/sections/AuthErrorHandler';
 import { CancellationConfirmHandler } from '@/components/sections/CancellationConfirmHandler';
+import { PasswordSetupHandler } from '@/components/sections/PasswordSetupHandler';
 
 export default function HomePage() {
   return (
@@ -28,6 +29,7 @@ export default function HomePage() {
       <Suspense fallback={null}>
         <AuthErrorHandler />
         <CancellationConfirmHandler />
+        <PasswordSetupHandler />
       </Suspense>
     </>
   );

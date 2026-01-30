@@ -15,12 +15,19 @@ import { useLogoUrl } from '@/hooks/useLogoUrl';
 export function Header() {
   const t = useTranslations('nav');
   const pathname = usePathname();
-  const { openBooking } = useBooking();
+  const {
+    openBooking,
+    showLoginModal,
+    openLogin,
+    closeLogin,
+    loginPasswordSetupData,
+    showCustomerPortal,
+    openCustomerPortal,
+    closeCustomerPortal
+  } = useBooking();
   const { isAuthenticated } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
-  const [showCustomerPortal, setShowCustomerPortal] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
   const logoUrl = useLogoUrl();
 
   // Check if on legal pages (always light mode)
@@ -168,7 +175,7 @@ export function Header() {
 
               {/* User Icon */}
               <button
-                onClick={() => isAuthenticated ? setShowCustomerPortal(true) : setShowLoginModal(true)}
+                onClick={() => isAuthenticated ? openCustomerPortal() : openLogin()}
                 className={isAuthenticated
                   ? cn(
                       'h-9 w-9 rounded-sm border transition-all duration-300 flex items-center justify-center',
@@ -264,7 +271,7 @@ export function Header() {
               {/* User Button */}
               <button
                 onClick={() => {
-                  isAuthenticated ? setShowCustomerPortal(true) : setShowLoginModal(true);
+                  isAuthenticated ? openCustomerPortal() : openLogin();
                   setIsMobileMenuOpen(false);
                 }}
                 className={cn(
@@ -294,7 +301,7 @@ export function Header() {
       {/* Customer Portal Modal */}
       {showCustomerPortal && (
         <CustomerPortal
-          onClose={() => setShowCustomerPortal(false)}
+          onClose={closeCustomerPortal}
           onBookNow={() => openBooking()}
         />
       )}
@@ -302,11 +309,12 @@ export function Header() {
       {/* Login Modal */}
       {showLoginModal && (
         <LoginModal
-          onClose={() => setShowLoginModal(false)}
+          onClose={closeLogin}
           onSuccess={() => {
-            setShowLoginModal(false);
-            setShowCustomerPortal(true);
+            closeLogin();
+            openCustomerPortal();
           }}
+          passwordSetupData={loginPasswordSetupData}
         />
       )}
     </>

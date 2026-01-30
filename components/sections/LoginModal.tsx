@@ -3,27 +3,39 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
-import { resetPassword } from '@/lib/supabase';
+import { resetPassword, setNewPassword, supabase } from '@/lib/supabase';
 import { useTranslations } from 'next-intl';
 import { DatePicker } from '@/components/ui/DatePicker';
+
+export interface PasswordSetupData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+}
 
 interface LoginModalProps {
   onClose: () => void;
   onSuccess?: () => void;
   initialTab?: 'login' | 'register';
+  passwordSetupData?: PasswordSetupData | null;
 }
 
 type Tab = 'login' | 'register' | 'forgot';
 
-export function LoginModal({ onClose, onSuccess, initialTab = 'login' }: LoginModalProps) {
+export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordSetupData }: LoginModalProps) {
   const t = useTranslations('auth');
   const { signIn, signUp } = useAuth();
-  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
-  const [email, setEmail] = useState('');
+
+  // Password Setup Mode
+  const isPasswordSetupMode = !!passwordSetupData;
+
+  const [activeTab, setActiveTab] = useState<Tab>(isPasswordSetupMode ? 'register' : initialTab);
+  const [email, setEmail] = useState(passwordSetupData?.email || '');
   const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [firstName, setFirstName] = useState(passwordSetupData?.firstName || '');
+  const [lastName, setLastName] = useState(passwordSetupData?.lastName || '');
+  const [phone, setPhone] = useState(passwordSetupData?.phone || '');
   const [birthDate, setBirthDate] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,6 +48,16 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login' }: LoginMo
     setMounted(true);
     return () => setMounted(false);
   }, []);
+
+  // Update fields if passwordSetupData changes
+  useEffect(() => {
+    if (passwordSetupData) {
+      setEmail(passwordSetupData.email);
+      setFirstName(passwordSetupData.firstName);
+      setLastName(passwordSetupData.lastName);
+      setPhone(passwordSetupData.phone || '');
+    }
+  }, [passwordSetupData]);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -127,6 +149,66 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login' }: LoginMo
       setSuccessMessage(t('resetLinkSent'));
     }
     setIsSubmitting(false);
+  };
+
+  // Password Setup für Einladungs-Link
+  const handlePasswordSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    // Validierung
+    if (!firstName.trim()) {
+      setError(t('errors.enterFirstName'));
+      return;
+    }
+    if (!lastName.trim()) {
+      setError(t('errors.enterLastName'));
+      return;
+    }
+    if (!phone.trim()) {
+      setError(t('errors.enterPhone'));
+      return;
+    }
+    if (!birthDate) {
+      setError(t('errors.enterBirthDate'));
+      return;
+    }
+    if (password.length < 6) {
+      setError(t('errors.passwordTooShort'));
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Die Passwörter stimmen nicht überein.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Passwort setzen und User-Metadata aktualisieren
+      const { error: updateError } = await supabase.auth.updateUser({
+        password,
+        data: {
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          phone: phone.trim(),
+          birth_date: birthDate,
+        },
+      });
+
+      if (updateError) {
+        setError(translateError(updateError.message));
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Erfolg - CustomerPortal öffnen
+      onSuccess?.();
+    } catch (err) {
+      console.error('Password setup error:', err);
+      setError('Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
+      setIsSubmitting(false);
+    }
   };
 
   const translateError = (error: string): string => {
@@ -340,7 +422,7 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login' }: LoginMo
       <div style={styles.modal}>
         {/* Header */}
         <div style={styles.header}>
-          <span style={styles.title}>Kundenbereich</span>
+          <span style={styles.title}>{isPasswordSetupMode ? 'Passwort festlegen' : 'Kundenbereich'}</span>
           <button
             onClick={onClose}
             onMouseEnter={() => setCloseHover(true)}
@@ -355,8 +437,8 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login' }: LoginMo
 
         {/* Content */}
         <div style={styles.content}>
-          {/* Tabs */}
-          {activeTab !== 'forgot' && (
+          {/* Tabs - versteckt im Password-Setup-Modus */}
+          {activeTab !== 'forgot' && !isPasswordSetupMode && (
             <div style={styles.tabs}>
               <button
                 onClick={() => { setActiveTab('login'); resetForm(); }}
@@ -460,9 +542,9 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login' }: LoginMo
             </form>
           )}
 
-          {/* Register Form */}
+          {/* Register Form / Password Setup Form */}
           {activeTab === 'register' && !successMessage && (
-            <form onSubmit={handleRegister}>
+            <form onSubmit={isPasswordSetupMode ? handlePasswordSetup : handleRegister}>
               {/* Zeile 1: Vorname, Nachname */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
                 <div>
@@ -497,10 +579,18 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login' }: LoginMo
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => !isPasswordSetupMode && setEmail(e.target.value)}
                   placeholder="deine@email.de"
                   className="login-input"
-                  style={styles.input}
+                  style={{
+                    ...styles.input,
+                    ...(isPasswordSetupMode ? {
+                      backgroundColor: '#f1f5f9',
+                      color: '#64748b',
+                      cursor: 'not-allowed',
+                    } : {}),
+                  }}
+                  readOnly={isPasswordSetupMode}
                   required
                 />
               </div>
@@ -571,7 +661,7 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login' }: LoginMo
                   className="primary-btn"
                   style={styles.primaryButton}
                 >
-                  {isSubmitting ? 'Wird geladen...' : 'Registrieren'}
+                  {isSubmitting ? 'Wird geladen...' : (isPasswordSetupMode ? 'Passwort festlegen' : 'Registrieren')}
                 </button>
               </div>
             </form>

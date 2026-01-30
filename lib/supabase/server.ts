@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 /**
@@ -36,19 +37,16 @@ export async function createClient() {
  * Supabase Admin Client with Service Role Key
  * Use this ONLY in server-side code for admin operations
  * Never expose this client to the browser
+ * Uses direct supabase-js client to bypass RLS
  */
 export function createAdminClient() {
-  return createServerClient(
+  return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
-      cookies: {
-        getAll() {
-          return [];
-        },
-        setAll() {
-          // Admin client doesn't need cookies
-        },
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
       },
     }
   );

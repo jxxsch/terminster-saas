@@ -67,6 +67,7 @@ export function AddAppointmentModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [createAccount, setCreateAccount] = useState(false);
+  const [emailAccountStatus, setEmailAccountStatus] = useState<'checking' | 'has_account' | 'available' | null>(null);
   const [activeSearchField, setActiveSearchField] = useState<'name' | 'phone' | null>(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [conflicts, setConflicts] = useState<SeriesConflict[]>([]);
@@ -170,6 +171,40 @@ export function AddAppointmentModal({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // E-Mail-Prüfung wenn Konto erstellen aktiviert ist
+  useEffect(() => {
+    if (!createAccount || !customerEmail.trim()) {
+      setEmailAccountStatus(null);
+      return;
+    }
+
+    // E-Mail-Format prüfen
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(customerEmail.trim())) {
+      setEmailAccountStatus(null);
+      return;
+    }
+
+    // Debounce die Prüfung
+    setEmailAccountStatus('checking');
+    const timeoutId = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/customer/check-email?email=${encodeURIComponent(customerEmail.trim())}`);
+        const data = await response.json();
+
+        if (data.hasAccount) {
+          setEmailAccountStatus('has_account');
+        } else {
+          setEmailAccountStatus('available');
+        }
+      } catch {
+        setEmailAccountStatus(null);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [customerEmail, createAccount]);
 
   // Kunde auswählen
   const handleSelectCustomer = (customer: Customer) => {
@@ -374,8 +409,8 @@ export function AddAppointmentModal({
       });
 
       if (result.success && result.appointment) {
-        // Kundenkonto erstellen wenn aktiviert
-        if (createAccount && customerEmail.trim() && !selectedCustomer) {
+        // Kundenkonto erstellen wenn aktiviert UND Kunde hat noch kein Konto
+        if (createAccount && customerEmail.trim() && !selectedCustomer && emailAccountStatus !== 'has_account') {
           try {
             // Name in Vor- und Nachname aufteilen
             const nameParts = customerName.trim().split(' ');
@@ -766,7 +801,32 @@ export function AddAppointmentModal({
                         Konto erstellen
                       </button>
                     </div>
-                    {createAccount && (
+                    {createAccount && emailAccountStatus === 'checking' && (
+                      <p className="mt-1.5 text-[10px] text-gray-500 flex items-center gap-1">
+                        <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Prüfe E-Mail...
+                      </p>
+                    )}
+                    {createAccount && emailAccountStatus === 'has_account' && (
+                      <p className="mt-1.5 text-[10px] text-amber-600 flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Kunde hat bereits ein Konto – keine Einladung nötig
+                      </p>
+                    )}
+                    {createAccount && emailAccountStatus === 'available' && (
+                      <p className="mt-1.5 text-[10px] text-green-600 flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Einladungs-E-Mail wird an den Kunden gesendet
+                      </p>
+                    )}
+                    {createAccount && !emailAccountStatus && customerEmail.trim() && (
                       <p className="mt-1.5 text-[10px] text-green-600">
                         Einladungs-E-Mail wird an den Kunden gesendet
                       </p>
