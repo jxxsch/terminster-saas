@@ -10,8 +10,10 @@ import {
   getAppointments,
   createAppointment,
   resetPassword,
+  setNewPassword,
   getClosedDates,
   getOpenSundays,
+  getOpenSundayStaff,
   getStaffTimeOffForDateRange,
   getOpenHolidays,
   getSetting,
@@ -23,6 +25,7 @@ import {
   Appointment,
   ClosedDate,
   OpenSunday,
+  OpenSundayStaff,
   OpenHoliday,
   StaffTimeOff,
   StaffWorkingHours,
@@ -47,10 +50,18 @@ function formatDateLocal(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+interface PasswordSetupData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+}
+
 interface BookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   preselectedBarber?: string;
+  passwordSetupData?: PasswordSetupData | null;
 }
 
 function getWeekNumber(date: Date): number {
@@ -108,7 +119,8 @@ function getWeekDays(
 
   const days: DayInfo[] = [];
 
-  for (let i = 0; i < 6; i++) {
+  // 7 Tage durchgehen (Mo-So), aber Sonntag nur anzeigen wenn verkaufsoffen
+  for (let i = 0; i < 7; i++) {
     const date = new Date(monday);
     date.setDate(monday.getDate() + i);
 
@@ -117,7 +129,12 @@ function getWeekDays(
     const isActuallySunday = date.getDay() === 0;
     const openSundayData = isActuallySunday ? openSundaysList.find(os => os.date === dateStr) : undefined;
     const isOpenSunday = !!openSundayData;
-    const isSundayDisabled = isActuallySunday && !isOpenSunday;
+
+    // Sonntag nur anzeigen, wenn er verkaufsoffen ist
+    if (isActuallySunday && !isOpenSunday) {
+      continue; // Normalen Sonntag überspringen
+    }
+
     const isTooFarInFuture = date > maxBookingDate;
     const isToday = date.toDateString() === new Date().toDateString();
     const day = date.getDate();
@@ -142,14 +159,14 @@ function getWeekDays(
       dayNumFullDate: `${day.toString().padStart(2, '0')}.${(month + 1).toString().padStart(2, '0')}.${year}`,
       isToday,
       isPast,
-      isSunday: isSundayDisabled,
+      isSunday: false, // Wird nur noch angezeigt wenn verkaufsoffen
       isOpenSunday,
-      openSundayOpenTime: openSundayData?.open_time,
-      openSundayCloseTime: openSundayData?.close_time,
+      openSundayOpenTime: openSundayData?.open_time?.slice(0, 5),
+      openSundayCloseTime: openSundayData?.close_time?.slice(0, 5),
       isTooFarInFuture,
       isClosed,
       closedReason,
-      isDisabled: isPast || isSundayDisabled || isTooFarInFuture || isClosed,
+      isDisabled: isPast || isTooFarInFuture || isClosed,
     });
   }
 
@@ -659,7 +676,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
 };
 
-export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModalProps) {
+export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetupData }: BookingModalProps) {
   const t = useTranslations('booking');
   const tAuth = useTranslations('auth');
   const tCommon = useTranslations('common');
@@ -670,6 +687,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
   const [bookedAppointments, setBookedAppointments] = useState<Appointment[]>([]);
   const [closedDates, setClosedDates] = useState<ClosedDate[]>([]);
   const [openSundays, setOpenSundays] = useState<OpenSunday[]>([]);
+  const [openSundayStaff, setOpenSundayStaff] = useState<OpenSundayStaff[]>([]);
   const [openHolidays, setOpenHolidays] = useState<OpenHoliday[]>([]);
   const [bundesland, setBundesland] = useState<Bundesland>('NW');
   const [maxWeeks, setMaxWeeks] = useState(4);
@@ -695,8 +713,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
   const [bookingError, setBookingError] = useState('');
 
   const [contactMode, setContactMode] = useState<'choice' | 'guest' | 'auth'>('choice');
-  const [authTab, setAuthTab] = useState<'login' | 'register' | 'forgot'>('login');
+  const [authTab, setAuthTab] = useState<'login' | 'register' | 'forgot' | 'password-setup'>('login');
   const [showCustomerPortal, setShowCustomerPortal] = useState(false);
+  const [isPasswordSetupMode, setIsPasswordSetupMode] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const [authEmail, setAuthEmail] = useState('');
@@ -721,6 +740,19 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       setCustomerPhone(customer.phone || '');
     }
   }, [isAuthenticated, customer]);
+
+  // Password Setup Mode: Vorausfüllen der Daten wenn von Einladungslink kommend
+  useEffect(() => {
+    if (passwordSetupData && isOpen) {
+      setIsPasswordSetupMode(true);
+      setContactMode('auth');
+      setAuthTab('password-setup');
+      setAuthFirstName(passwordSetupData.firstName);
+      setAuthLastName(passwordSetupData.lastName);
+      setAuthEmail(passwordSetupData.email);
+      setAuthPhone(passwordSetupData.phone || '');
+    }
+  }, [passwordSetupData, isOpen]);
 
   const { days, weekNumber } = useMemo(
     () => getWeekDays(currentWeekOffset, closedDates, openSundays, bundesland, openHolidays, maxWeeks),
@@ -760,12 +792,13 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       const startDate = formatDateLocal(today);
       const endDate = formatDateLocal(new Date(today.getTime() + 12 * 7 * 24 * 60 * 60 * 1000));
 
-      const [teamData, timeSlotsData, appointmentsData, closedDatesData, openSundaysData, openHolidaysData, bundeslandData, advanceWeeksData, staffTimeOffData, workingHoursData, exceptionsData, openingHoursData] = await Promise.all([
+      const [teamData, timeSlotsData, appointmentsData, closedDatesData, openSundaysData, openSundayStaffData, openHolidaysData, bundeslandData, advanceWeeksData, staffTimeOffData, workingHoursData, exceptionsData, openingHoursData] = await Promise.all([
         getTeam(),
         getTimeSlotsArray(),
         getAppointments(startDate, endDate),
         getClosedDates(),
         getOpenSundays(),
+        getOpenSundayStaff(),
         getOpenHolidays(),
         getSetting<Bundesland>('bundesland'),
         getSetting<{ value: number }>('booking_advance_weeks'),
@@ -780,6 +813,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
       setBookedAppointments(appointmentsData);
       setClosedDates(closedDatesData);
       setOpenSundays(openSundaysData);
+      setOpenSundayStaff(openSundayStaffData);
       setOpenHolidays(openHolidaysData);
       if (bundeslandData) setBundesland(bundeslandData);
       if (advanceWeeksData?.value) setMaxWeeks(advanceWeeksData.value);
@@ -956,6 +990,38 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
     }
   };
 
+  // Passwort setzen (für Einladungslinks vom Barber)
+  const handlePasswordSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+
+    if (authPassword !== authConfirmPassword) {
+      setAuthError(tAuth('passwordsNotMatch'));
+      return;
+    }
+    if (authPassword.length < 6) {
+      setAuthError(tAuth('passwordTooShort'));
+      return;
+    }
+
+    setAuthSubmitting(true);
+
+    try {
+      const result = await setNewPassword(authPassword);
+      if (result.error) {
+        setAuthError(result.error || 'Passwort konnte nicht gesetzt werden');
+      } else {
+        // Erfolg: Customer Portal öffnen
+        setIsPasswordSetupMode(false);
+        setShowCustomerPortal(true);
+      }
+    } catch {
+      setAuthError('Passwort konnte nicht gesetzt werden');
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
   const selectedBarberData = team.find(b => b.id === selectedBarber);
   const selectedDayData = days.find(d => d.dateStr === selectedDay);
 
@@ -1108,6 +1174,62 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                 {tCommon('close')}
               </button>
             </div>
+          ) : isPasswordSetupMode ? (
+            /* Password Setup Mode - Nur Auth-Formular */
+            <div style={{ ...styles.content, padding: '1.5rem' }}>
+              <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                <div style={{ width: '4rem', height: '4rem', margin: '0 auto 1rem', backgroundColor: '#f0fdf4', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="28" height="28" fill="none" stroke="#22c55e" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                </div>
+                <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.125rem', fontWeight: 600, color: '#1a1a1a' }}>Konto aktivieren</h3>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Lege dein Passwort fest, um dein Konto zu aktivieren.</p>
+              </div>
+
+              {authError && (
+                <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#fef2f2', borderRadius: '0.5rem', border: '1px solid #fecaca' }}>
+                  <p style={{ fontSize: '0.75rem', color: '#dc2626', margin: 0 }}>{authError}</p>
+                </div>
+              )}
+
+              <form onSubmit={handlePasswordSetup}>
+                <div style={{ ...styles.inputGridTwo, marginBottom: '0.75rem' }}>
+                  <input type="text" value={authFirstName} onChange={(e) => setAuthFirstName(e.target.value)} placeholder={tAuth('firstName')} style={styles.input} required />
+                  <input type="text" value={authLastName} onChange={(e) => setAuthLastName(e.target.value)} placeholder={tAuth('lastName')} style={styles.input} required />
+                </div>
+                <div style={{ ...styles.inputGridTwo, marginBottom: '0.75rem' }}>
+                  <DatePicker value={authBirthDate} onChange={setAuthBirthDate} placeholder={tAuth('birthDate')} style={styles.input} max={new Date().toISOString().split('T')[0]} min="1920-01-01" />
+                  <input
+                    type="tel"
+                    value={authPhone}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^\d+\-\s]/g, '');
+                      if (value.length <= 20) setAuthPhone(value);
+                    }}
+                    placeholder={tAuth('phone')}
+                    style={styles.input}
+                    maxLength={20}
+                  />
+                </div>
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <input
+                    type="email"
+                    value={authEmail}
+                    placeholder={tAuth('email')}
+                    style={{ ...styles.input, width: '100%', backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' }}
+                    disabled
+                  />
+                </div>
+                <div style={{ ...styles.inputGridTwo, marginBottom: '1rem' }}>
+                  <input type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="Passwort (min. 6 Zeichen)" autoComplete="new-password" style={styles.input} required minLength={6} />
+                  <input type="password" value={authConfirmPassword} onChange={(e) => setAuthConfirmPassword(e.target.value)} placeholder="Passwort bestätigen" autoComplete="new-password" style={styles.input} required minLength={6} />
+                </div>
+                <button type="submit" disabled={authSubmitting} style={{ ...styles.submitBtn, width: '100%', justifyContent: 'center', opacity: authSubmitting ? 0.5 : 1, backgroundColor: '#d4a853' }}>
+                  {authSubmitting ? 'Wird aktiviert...' : 'Konto aktivieren'}
+                </button>
+              </form>
+            </div>
           ) : (
             <>
               {/* Progress Bar - 3 Steps */}
@@ -1228,10 +1350,18 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                           ex => ex.staff_id === selectedBarber && ex.replacement_date === day.dateStr
                         );
 
-                        // Barber ist nicht verfügbar, wenn: freier Tag ohne Ausnahme ODER Urlaub ODER Ersatztag
+                        // Bei verkaufsoffenem Sonntag: Prüfe ob Barber eingetragen ist
+                        const openSundayData = day.isOpenSunday ? openSundays.find(os => os.date === day.dateStr) : undefined;
+                        const barberSundayAssignment = openSundayData
+                          ? openSundayStaff.find(s => s.open_sunday_id === openSundayData.id && s.staff_id === selectedBarber)
+                          : undefined;
+                        const isBarberNotAssignedToSunday = day.isOpenSunday && !barberSundayAssignment;
+
+                        // Barber ist nicht verfügbar, wenn: freier Tag ohne Ausnahme ODER Urlaub ODER Ersatztag ODER nicht für Sonntag eingeteilt
                         const isBarberUnavailable = barberData && (
                           (isFreeDay && !hasException) ||
                           isReplacementDay ||
+                          isBarberNotAssignedToSunday ||
                           staffTimeOff.some(off => off.staff_id === selectedBarber && off.start_date <= day.dateStr && off.end_date >= day.dateStr)
                         );
 
@@ -1239,10 +1369,10 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                         let effectiveOpenTime: string | undefined;
                         let effectiveCloseTime: string | undefined;
 
-                        if (day.isOpenSunday) {
-                          // Verkaufsoffener Sonntag
-                          effectiveOpenTime = day.openSundayOpenTime;
-                          effectiveCloseTime = day.openSundayCloseTime;
+                        if (day.isOpenSunday && barberSundayAssignment) {
+                          // Verkaufsoffener Sonntag - individuelle Barber-Zeiten verwenden
+                          effectiveOpenTime = barberSundayAssignment.start_time;
+                          effectiveCloseTime = barberSundayAssignment.end_time;
                         } else if (hasException && freeDayException) {
                           // Freier-Tag-Ausnahme
                           effectiveOpenTime = freeDayException.start_time;
@@ -1527,7 +1657,52 @@ export function BookingModal({ isOpen, onClose, preselectedBarber }: BookingModa
                             </form>
                           )}
 
-                          {authSuccess && authTab !== 'login' && (
+                          {/* Passwort festlegen (für Einladungslinks) */}
+                          {authTab === 'password-setup' && (
+                            <form onSubmit={handlePasswordSetup}>
+                              <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f0fdf4', borderRadius: '0.5rem', border: '1px solid #bbf7d0' }}>
+                                <p style={{ fontSize: '0.75rem', color: '#166534', margin: 0, fontWeight: 500 }}>
+                                  Willkommen! Bitte lege ein Passwort für dein Konto fest.
+                                </p>
+                              </div>
+                              <div style={{ ...styles.inputGridTwo, marginBottom: '0.5rem' }}>
+                                <input type="text" value={authFirstName} onChange={(e) => setAuthFirstName(e.target.value)} placeholder={tAuth('firstName')} style={styles.input} required />
+                                <input type="text" value={authLastName} onChange={(e) => setAuthLastName(e.target.value)} placeholder={tAuth('lastName')} style={styles.input} required />
+                              </div>
+                              <div style={{ ...styles.inputGridTwo, marginBottom: '0.5rem' }}>
+                                <DatePicker value={authBirthDate} onChange={setAuthBirthDate} placeholder={tAuth('birthDate')} style={styles.input} max={new Date().toISOString().split('T')[0]} min="1920-01-01" />
+                                <input
+                                  type="tel"
+                                  value={authPhone}
+                                  onChange={(e) => {
+                                    const value = e.target.value.replace(/[^\d+\-\s]/g, '');
+                                    if (value.length <= 20) setAuthPhone(value);
+                                  }}
+                                  placeholder={tAuth('phone')}
+                                  style={styles.input}
+                                  maxLength={20}
+                                />
+                              </div>
+                              <div style={{ marginBottom: '0.5rem' }}>
+                                <input
+                                  type="email"
+                                  value={authEmail}
+                                  placeholder={tAuth('email')}
+                                  style={{ ...styles.input, width: '100%', backgroundColor: '#f1f5f9', cursor: 'not-allowed' }}
+                                  disabled
+                                />
+                              </div>
+                              <div style={{ ...styles.inputGridTwo, marginBottom: '0.5rem' }}>
+                                <input type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder={tAuth('passwordMinLength')} autoComplete="new-password" style={styles.input} required minLength={6} />
+                                <input type="password" value={authConfirmPassword} onChange={(e) => setAuthConfirmPassword(e.target.value)} placeholder={tAuth('confirmPassword')} autoComplete="new-password" style={styles.input} required minLength={6} />
+                              </div>
+                              <button type="submit" disabled={authSubmitting} style={{ ...styles.submitBtn, width: '100%', justifyContent: 'center', opacity: authSubmitting ? 0.5 : 1 }}>
+                                {authSubmitting ? 'Wird gespeichert...' : 'Passwort festlegen'}
+                              </button>
+                            </form>
+                          )}
+
+                          {authSuccess && authTab !== 'login' && authTab !== 'password-setup' && (
                             <button type="button" onClick={() => { setAuthTab('login'); resetAuthForm(); }} style={{ ...styles.submitBtn, width: '100%', justifyContent: 'center' }}>
                               {tAuth('goToLogin')}
                             </button>
