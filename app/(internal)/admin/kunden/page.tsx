@@ -29,6 +29,8 @@ export default function KundenPage() {
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState<Partial<CustomerWithStats>>({});
   const [filter, setFilter] = useState<'all' | 'blocked' | 'active' | 'registered' | 'guest'>('all');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -129,6 +131,36 @@ export default function KundenPage() {
       );
       setSelectedCustomer({ ...selectedCustomer, ...updated });
       setEditMode(false);
+    }
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!selectedCustomer) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch('/api/customer/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId: selectedCustomer.id }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Kunde aus der Liste entfernen
+        setCustomers(prev => prev.filter(c => c.id !== selectedCustomer.id));
+        setShowDeleteConfirm(false);
+        setShowModal(false);
+        setSelectedCustomer(null);
+      } else {
+        alert(result.error || 'Fehler beim Löschen');
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert('Fehler beim Löschen des Kunden');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -649,21 +681,86 @@ export default function KundenPage() {
             {/* Modal Footer */}
             <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent flex-shrink-0" />
             <div className="px-6 py-4 flex justify-between flex-shrink-0">
-              <button
-                onClick={() => handleToggleBlock(selectedCustomer)}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors ${
-                  selectedCustomer.is_blocked
-                    ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                    : 'bg-red-100 text-red-700 hover:bg-red-200'
-                }`}
-              >
-                {selectedCustomer.is_blocked ? 'Kunde entsperren' : 'Kunde sperren'}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleToggleBlock(selectedCustomer)}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors ${
+                    selectedCustomer.is_blocked
+                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                      : 'bg-red-100 text-red-700 hover:bg-red-200'
+                  }`}
+                >
+                  {selectedCustomer.is_blocked ? 'Entsperren' : 'Sperren'}
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold transition-colors bg-red-600 text-white hover:bg-red-700"
+                >
+                  Löschen
+                </button>
+              </div>
               <button
                 onClick={() => setShowModal(false)}
                 className="px-4 py-2 bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-200 transition-colors"
               >
                 Schließen
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Lösch-Bestätigung Modal */}
+      {showDeleteConfirm && selectedCustomer && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowDeleteConfirm(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative bg-white rounded-2xl shadow-xl w-[400px] max-w-[calc(100vw-2rem)] p-5">
+            <div className="flex items-start gap-4">
+              {/* Icon */}
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-red-100 text-red-500">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-semibold text-slate-900">Kunde endgültig löschen</h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  <strong>{selectedCustomer.name}</strong> wird unwiderruflich gelöscht
+                  {selectedCustomer.auth_id && ' (inkl. Login-Konto)'}.
+                </p>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={handleDeleteCustomer}
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 flex items-center gap-2"
+              >
+                {isDeleting && (
+                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                )}
+                Endgültig löschen
               </button>
             </div>
           </div>

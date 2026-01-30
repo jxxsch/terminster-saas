@@ -66,6 +66,7 @@ export function AddAppointmentModal({
   const [pauseDays, setPauseDays] = useState<number[]>([dayOfWeek]); // Standardmäßig aktueller Tag ausgewählt
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [createAccount, setCreateAccount] = useState(false);
   const [activeSearchField, setActiveSearchField] = useState<'name' | 'phone' | null>(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [conflicts, setConflicts] = useState<SeriesConflict[]>([]);
@@ -322,6 +323,21 @@ export function AddAppointmentModal({
       return;
     }
 
+    // Validierung: E-Mail erforderlich wenn Konto erstellt werden soll
+    if (createAccount && !customerEmail.trim()) {
+      setError('E-Mail ist erforderlich für die Kontoerstellung');
+      return;
+    }
+
+    // E-Mail-Format prüfen
+    if (createAccount && customerEmail.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(customerEmail.trim())) {
+        setError('Bitte gültige E-Mail-Adresse eingeben');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     setError('');
 
@@ -358,6 +374,40 @@ export function AddAppointmentModal({
       });
 
       if (result.success && result.appointment) {
+        // Kundenkonto erstellen wenn aktiviert
+        if (createAccount && customerEmail.trim() && !selectedCustomer) {
+          try {
+            // Name in Vor- und Nachname aufteilen
+            const nameParts = customerName.trim().split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || nameParts[0] || '';
+
+            const inviteResponse = await fetch('/api/customer/invite', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: customerEmail.trim(),
+                firstName,
+                lastName,
+                phone: customerPhone.trim() || undefined,
+              }),
+            });
+
+            const inviteResult = await inviteResponse.json();
+
+            if (!inviteResponse.ok) {
+              // 409 = Kunde hat bereits ein Konto - das ist kein Fehler, nur Info
+              if (inviteResponse.status === 409) {
+                console.info('Einladung nicht nötig:', inviteResult.error);
+              } else {
+                console.error('Invite error:', inviteResult.error);
+              }
+              // Termin wurde erstellt, aber Einladung nicht gesendet - trotzdem schließen
+            }
+          } catch (err) {
+            console.error('Invite fetch error:', err);
+          }
+        }
         onCreated(result.appointment);
       } else {
         setError(result.error === 'conflict' ? 'Zeitslot bereits belegt' : 'Fehler beim Speichern');
@@ -686,6 +736,43 @@ export function AddAppointmentModal({
                     )}
                   </div>
                 </div>
+
+                {/* E-Mail & Kundenkonto erstellen */}
+                {!selectedCustomer && (
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1.5">
+                      E-Mail {createAccount && <span className="text-red-500">*</span>}
+                    </label>
+                    <div className="flex gap-3">
+                      <input
+                        type="email"
+                        value={customerEmail}
+                        onChange={(e) => setCustomerEmail(e.target.value)}
+                        placeholder="kunde@example.com"
+                        className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCreateAccount(!createAccount)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border whitespace-nowrap ${
+                          createAccount
+                            ? 'border-green-500 bg-green-50 text-green-700'
+                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        <svg className={`w-4 h-4 ${createAccount ? 'text-green-600' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                        Konto erstellen
+                      </button>
+                    </div>
+                    {createAccount && (
+                      <p className="mt-1.5 text-[10px] text-green-600">
+                        Einladungs-E-Mail wird an den Kunden gesendet
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Service Selection */}
                 <div>
