@@ -29,6 +29,26 @@ const CATEGORIES = [
   { value: 'shop', label: 'Shop' },
 ];
 
+// Filter-CSS-Mappings für Hero-Hintergrund
+const FILTER_CSS: Record<string, (intensity: number) => string> = {
+  darken: (i) => `brightness(${1 - i * 0.006})`,
+  blur: (i) => `blur(${i * 0.1}px)`,
+  glass: (i) => `saturate(${1 + i * 0.01}) contrast(${1 + i * 0.005})`,
+  grayscale: (i) => `grayscale(${i}%)`,
+  sepia: (i) => `sepia(${i * 0.5}%)`,
+  contrast: (i) => `contrast(${100 + i * 0.5}%)`,
+  desaturate: (i) => `saturate(${100 - i * 0.7}%)`,
+  warm: (i) => `sepia(${i * 0.2}%) saturate(${100 + i * 0.3}%)`,
+};
+
+function buildFilterStyle(filters: string[] | undefined, intensity: number): string {
+  if (!filters || filters.length === 0) return '';
+  return filters
+    .filter(f => FILTER_CSS[f])
+    .map(f => FILTER_CSS[f](intensity))
+    .join(' ');
+}
+
 // Content Settings Types
 interface LocalizedText {
   de: string;
@@ -619,17 +639,40 @@ export default function MedienPage() {
                             placeholder="https://www.youtube.com/watch?v=..."
                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
                           />
-                          {/* YouTube-Vorschau */}
+                          {/* YouTube-Vorschau mit Live-Filter */}
                           {settings.hero_background.youtube_id && settings.hero_background.youtube_id.length === 11 && (
-                            <div className="w-full mt-3 rounded-lg overflow-hidden bg-black border border-slate-200 aspect-video">
+                            <div className="w-full mt-3 rounded-lg overflow-hidden bg-black border border-slate-200 aspect-video relative">
+                              {/* Video mit CSS-Filtern */}
                               <iframe
                                 key={settings.hero_background.youtube_id}
                                 src={`https://www.youtube.com/embed/${settings.hero_background.youtube_id}?start=${settings.hero_background.video_start ?? 0}&autoplay=0&controls=1`}
                                 allow="encrypted-media"
                                 allowFullScreen
                                 className="w-full h-full"
-                                style={{ border: 'none', display: 'block' }}
+                                style={{
+                                  border: 'none',
+                                  display: 'block',
+                                  filter: buildFilterStyle(settings.hero_background.filters, settings.hero_background.filter_intensity ?? 50),
+                                }}
                               />
+                              {/* Vignette Overlay */}
+                              {settings.hero_background.filters?.includes('vignette') && (
+                                <div
+                                  className="absolute inset-0 pointer-events-none"
+                                  style={{
+                                    background: `radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,${(settings.hero_background.filter_intensity ?? 50) / 100 * 0.8}) 100%)`
+                                  }}
+                                />
+                              )}
+                              {/* Gradient Overlay */}
+                              {settings.hero_background.filters?.includes('gradient') && (
+                                <div
+                                  className="absolute inset-0 pointer-events-none"
+                                  style={{
+                                    background: `linear-gradient(to bottom, rgba(0,0,0,${(settings.hero_background.filter_intensity ?? 50) / 100 * 0.5}) 0%, transparent 30%, transparent 70%, rgba(0,0,0,${(settings.hero_background.filter_intensity ?? 50) / 100 * 0.7}) 100%)`
+                                  }}
+                                />
+                              )}
                             </div>
                           )}
                         </div>
