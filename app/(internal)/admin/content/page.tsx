@@ -43,7 +43,16 @@ interface SectionSettings {
 interface SettingsState {
   hero_title: LocalizedText;
   hero_subtitle: LocalizedText;
-  hero_background: { type: string; url: string; video_url: string };
+  hero_background: {
+    type: 'video' | 'image';
+    image_url: string;
+    youtube_id: string;
+    video_start: number;
+    video_end: number;
+    video_loop: boolean;
+    filters: string[];
+    filter_intensity: number;
+  };
   hero_cta: { text: LocalizedText; enabled: boolean };
   hero_badge: { text: LocalizedText; enabled: boolean };
   section_about: SectionSettings;
@@ -72,7 +81,16 @@ interface SettingsState {
 const defaultSettings: SettingsState = {
   hero_title: { de: 'BEBAN BARBERSHOP', en: 'BEBAN BARBERSHOP' },
   hero_subtitle: { de: 'Premium Herrenfriseur seit 2018', en: 'Premium Barber since 2018' },
-  hero_background: { type: 'image', url: '/hero-bg.jpg', video_url: '' },
+  hero_background: {
+    type: 'video',
+    image_url: '/hero-bg.jpg',
+    youtube_id: '3vCGQvscX34',
+    video_start: 24,
+    video_end: 54,
+    video_loop: true,
+    filters: ['darken'],
+    filter_intensity: 50,
+  },
   hero_cta: { text: { de: 'Jetzt buchen', en: 'Book now' }, enabled: true },
   hero_badge: { text: { de: 'Premium Barbershop', en: 'Premium Barbershop' }, enabled: true },
   section_about: { title: { de: 'Über uns', en: 'About us' }, subtitle: { de: 'Tradition trifft modernen Style', en: 'Tradition meets modern style' } },
@@ -534,6 +552,216 @@ export default function MedienPage() {
                     <div className="flex justify-end">
                       <SaveButton onSave={() => saveField('hero_cta')} saving={saving === 'hero_cta'} saved={savedFields.has('hero_cta')} />
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Hintergrund */}
+              <div>
+                <SectionHeader title="Hintergrund" subtitle="Video oder Bild im Hero-Bereich" />
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                  {/* Typ-Auswahl */}
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium text-slate-900 w-24">Typ</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, type: 'video' } }))}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          settings.hero_background.type === 'video'
+                            ? 'bg-gold text-black'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
+                        }`}
+                      >
+                        Video
+                      </button>
+                      <button
+                        onClick={() => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, type: 'image' } }))}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          settings.hero_background.type === 'image'
+                            ? 'bg-gold text-black'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
+                        }`}
+                      >
+                        Bild
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Video-Einstellungen */}
+                  {settings.hero_background.type === 'video' && (
+                    <div className="space-y-4 pt-2 border-t border-slate-200">
+                      {/* YouTube ID */}
+                      <div className="flex items-start gap-4">
+                        <span className="text-sm font-medium text-slate-900 w-24 pt-2">YouTube</span>
+                        <div className="flex-1 space-y-2">
+                          <input
+                            type="text"
+                            value={settings.hero_background.youtube_id}
+                            onChange={(e) => {
+                              // Extrahiere Video-ID aus URL oder direkter ID
+                              let id = e.target.value;
+                              const match = id.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([^&?\s]{11})/);
+                              if (match) id = match[1];
+                              setSettings(s => ({ ...s, hero_background: { ...s.hero_background, youtube_id: id } }));
+                            }}
+                            placeholder="Video-ID oder YouTube-URL"
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                          />
+                          {/* YouTube-Vorschau */}
+                          {settings.hero_background.youtube_id && (
+                            <div className="relative aspect-video w-full max-w-md rounded-lg overflow-hidden bg-black">
+                              <iframe
+                                src={`https://www.youtube.com/embed/${settings.hero_background.youtube_id}?start=${settings.hero_background.video_start}&autoplay=0&controls=1`}
+                                allow="encrypted-media"
+                                className="absolute inset-0 w-full h-full"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Start/End Zeit */}
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm font-medium text-slate-900 w-24">Zeitraum</span>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value={settings.hero_background.video_start}
+                            onChange={(e) => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, video_start: parseInt(e.target.value) || 0 } }))}
+                            min={0}
+                            className="w-20 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                          />
+                          <span className="text-sm text-slate-500">bis</span>
+                          <input
+                            type="number"
+                            value={settings.hero_background.video_end}
+                            onChange={(e) => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, video_end: parseInt(e.target.value) || 0 } }))}
+                            min={0}
+                            className="w-20 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                          />
+                          <span className="text-sm text-slate-500">Sekunden</span>
+                        </div>
+                      </div>
+
+                      {/* Loop */}
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm font-medium text-slate-900 w-24">Wiederholen</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={settings.hero_background.video_loop}
+                            onChange={(e) => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, video_loop: e.target.checked } }))}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gold"></div>
+                        </label>
+                        <span className="text-xs text-slate-500">Video wird in Endlosschleife abgespielt</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bild-Einstellungen */}
+                  {settings.hero_background.type === 'image' && (
+                    <div className="space-y-4 pt-2 border-t border-slate-200">
+                      <div className="flex items-start gap-4">
+                        <span className="text-sm font-medium text-slate-900 w-24 pt-2">Bild-URL</span>
+                        <div className="flex-1 space-y-2">
+                          <input
+                            type="text"
+                            value={settings.hero_background.image_url}
+                            onChange={(e) => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, image_url: e.target.value } }))}
+                            placeholder="/hero-bg.jpg oder https://..."
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                          />
+                          {/* Bild-Vorschau */}
+                          {settings.hero_background.image_url && (
+                            <div className="relative aspect-video w-full max-w-md rounded-lg overflow-hidden bg-slate-200">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={settings.hero_background.image_url}
+                                alt="Hero Hintergrund"
+                                className="absolute inset-0 w-full h-full object-cover"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Filter */}
+                  <div className="space-y-3 pt-2 border-t border-slate-200">
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-medium text-slate-900 w-24">Filter</span>
+                      <span className="text-xs text-slate-500">Mehrere Filter kombinierbar</span>
+                    </div>
+                    <div className="grid grid-cols-5 gap-2">
+                      {[
+                        { id: 'none', label: 'Kein Filter', icon: '○' },
+                        { id: 'darken', label: 'Abdunkeln', icon: '◐' },
+                        { id: 'blur', label: 'Blur', icon: '◎' },
+                        { id: 'glass', label: 'Milchglas', icon: '▢' },
+                        { id: 'grayscale', label: 'S/W', icon: '◑' },
+                        { id: 'sepia', label: 'Sepia', icon: '▣' },
+                        { id: 'contrast', label: 'Kontrast', icon: '◆' },
+                        { id: 'desaturate', label: 'Entsättigt', icon: '◇' },
+                        { id: 'vignette', label: 'Vignette', icon: '◉' },
+                        { id: 'gradient', label: 'Verlauf', icon: '▽' },
+                      ].map(filter => {
+                        const isSelected = filter.id === 'none'
+                          ? settings.hero_background.filters.length === 0
+                          : settings.hero_background.filters.includes(filter.id);
+                        return (
+                          <button
+                            key={filter.id}
+                            onClick={() => {
+                              if (filter.id === 'none') {
+                                setSettings(s => ({ ...s, hero_background: { ...s.hero_background, filters: [] } }));
+                              } else {
+                                setSettings(s => ({
+                                  ...s,
+                                  hero_background: {
+                                    ...s.hero_background,
+                                    filters: isSelected
+                                      ? s.hero_background.filters.filter(f => f !== filter.id)
+                                      : [...s.hero_background.filters, filter.id]
+                                  }
+                                }));
+                              }
+                            }}
+                            className={`flex flex-col items-center gap-1 p-2 rounded-lg text-xs transition-colors ${
+                              isSelected
+                                ? 'bg-gold/20 border-2 border-gold text-slate-900'
+                                : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
+                            }`}
+                          >
+                            <span className="text-lg">{filter.icon}</span>
+                            <span>{filter.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Filter-Intensität */}
+                    {settings.hero_background.filters.length > 0 && (
+                      <div className="flex items-center gap-4 pt-2">
+                        <span className="text-sm font-medium text-slate-900 w-24">Intensität</span>
+                        <input
+                          type="range"
+                          min={10}
+                          max={100}
+                          value={settings.hero_background.filter_intensity}
+                          onChange={(e) => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, filter_intensity: parseInt(e.target.value) } }))}
+                          className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-gold"
+                        />
+                        <span className="text-sm text-slate-600 w-12 text-right">{settings.hero_background.filter_intensity}%</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Speichern */}
+                  <div className="flex justify-end pt-2 border-t border-slate-200">
+                    <SaveButton onSave={() => saveField('hero_background')} saving={saving === 'hero_background'} saved={savedFields.has('hero_background')} />
                   </div>
                 </div>
               </div>

@@ -1,11 +1,25 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useBooking } from '@/context/BookingContext';
 import { useTranslations } from 'next-intl';
 import { useHeroSettings } from '@/hooks/useSiteSettings';
 
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+
+// Filter-CSS-Mappings
+const FILTER_CSS: Record<string, (intensity: number) => string> = {
+  darken: (i) => `brightness(${1 - i * 0.006})`,  // 0.4-1.0
+  blur: (i) => `blur(${i * 0.1}px)`,  // 0-10px
+  glass: (i) => `saturate(${1 + i * 0.01}) contrast(${1 + i * 0.005})`,
+  grayscale: (i) => `grayscale(${i}%)`,
+  sepia: (i) => `sepia(${i * 0.5}%)`,  // 0-50%
+  contrast: (i) => `contrast(${100 + i * 0.5}%)`,  // 100-150%
+  desaturate: (i) => `saturate(${100 - i * 0.7}%)`,  // 30-100%
+  vignette: () => '',  // Vignette wird per CSS umgesetzt
+  gradient: () => '',  // Gradient wird per Overlay umgesetzt
+  warm: (i) => `sepia(${i * 0.2}%) saturate(${100 + i * 0.3}%)`,
+};
 
 export function Hero() {
   const [status, setStatus] = useState<{ isOpen: boolean; message: string } | null>(null);
@@ -14,12 +28,55 @@ export function Hero() {
   const tDays = useTranslations('days');
   const { settings: heroSettings, getLocalizedText, isLoading } = useHeroSettings();
 
-  // Debug logging
-  console.log('Hero Settings:', {
-    isLoading,
-    title: heroSettings.title,
-    localizedTitle: getLocalizedText(heroSettings.title)
-  });
+  const { background } = heroSettings;
+
+  // Build YouTube embed URL dynamically
+  const youtubeEmbedUrl = useMemo(() => {
+    if (background.type !== 'video' || !background.youtube_id) return null;
+
+    const params = new URLSearchParams({
+      autoplay: '1',
+      mute: '1',
+      controls: '0',
+      showinfo: '0',
+      modestbranding: '1',
+      rel: '0',
+      iv_load_policy: '3',
+      disablekb: '1',
+      playsinline: '1',
+    });
+
+    if (background.video_start > 0) {
+      params.set('start', background.video_start.toString());
+    }
+    if (background.video_end > 0) {
+      params.set('end', background.video_end.toString());
+    }
+    if (background.video_loop) {
+      params.set('loop', '1');
+      params.set('playlist', background.youtube_id);
+    }
+
+    return `https://www.youtube.com/embed/${background.youtube_id}?${params.toString()}`;
+  }, [background]);
+
+  // Build CSS filter string from selected filters
+  const filterStyle = useMemo(() => {
+    if (!background.filters || background.filters.length === 0) return '';
+
+    const intensity = background.filter_intensity || 50;
+    const filterStrings = background.filters
+      .filter(f => FILTER_CSS[f] && f !== 'vignette' && f !== 'gradient')
+      .map(f => FILTER_CSS[f](intensity))
+      .filter(Boolean);
+
+    return filterStrings.join(' ');
+  }, [background.filters, background.filter_intensity]);
+
+  // Check for vignette and gradient
+  const hasVignette = background.filters?.includes('vignette');
+  const hasGradient = background.filters?.includes('gradient');
+  const vignetteIntensity = (background.filter_intensity || 50) / 100;
 
   // Get title and subtitle from settings, fallback to defaults
   const heroTitle = getLocalizedText(heroSettings.title) || 'BEBAN BARBER SHOP 2.0';
@@ -68,17 +125,62 @@ export function Hero() {
 
   return (
     <section className="relative h-screen w-full overflow-hidden">
-      {/* Fullscreen YouTube Video als Hintergrund */}
-      <div className="absolute inset-0 pointer-events-none scale-150">
-        <iframe
-          src="https://www.youtube.com/embed/3vCGQvscX34?start=24&end=54&autoplay=1&mute=1&loop=1&playlist=3vCGQvscX34&controls=0&showinfo=0&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&playsinline=1"
-          allow="autoplay; encrypted-media"
-          allowFullScreen
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300vw] h-[300vh] md:w-[200vw] md:h-[200vh]"
-          style={{ border: 'none' }}
+      {/* Dynamischer Hintergrund: Video oder Bild */}
+      {background.type === 'video' && youtubeEmbedUrl ? (
+        <div
+          className="absolute inset-0 pointer-events-none scale-150"
+          style={{ filter: filterStyle || undefined }}
+        >
+          <iframe
+            src={youtubeEmbedUrl}
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300vw] h-[300vh] md:w-[200vw] md:h-[200vh]"
+            style={{ border: 'none' }}
+          />
+        </div>
+      ) : background.type === 'image' && background.image_url ? (
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: `url(${background.image_url})`,
+            filter: filterStyle || undefined
+          }}
         />
-      </div>
-      {/* Eleganter Retro-Barber Overlay - mehrschichtig */}
+      ) : (
+        // Fallback: Standard-Video
+        <div className="absolute inset-0 pointer-events-none scale-150">
+          <iframe
+            src="https://www.youtube.com/embed/3vCGQvscX34?start=24&end=54&autoplay=1&mute=1&loop=1&playlist=3vCGQvscX34&controls=0&showinfo=0&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&playsinline=1"
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300vw] h-[300vh] md:w-[200vw] md:h-[200vh]"
+            style={{ border: 'none' }}
+          />
+        </div>
+      )}
+
+      {/* Vignette Overlay */}
+      {hasVignette && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,${vignetteIntensity * 0.8}) 100%)`
+          }}
+        />
+      )}
+
+      {/* Gradient Overlay */}
+      {hasGradient && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `linear-gradient(to bottom, rgba(0,0,0,${vignetteIntensity * 0.5}) 0%, transparent 30%, transparent 70%, rgba(0,0,0,${vignetteIntensity * 0.7}) 100%)`
+          }}
+        />
+      )}
+
+      {/* Standard-Overlay für Lesbarkeit */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/70" />
       <div className="absolute inset-0 bg-[#1a1510]/50" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />

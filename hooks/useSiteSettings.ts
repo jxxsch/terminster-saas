@@ -34,7 +34,16 @@ export interface SiteSettings {
   hero_title: LocalizedText;
   hero_subtitle: LocalizedText;
   hero_cta: { text: LocalizedText; enabled: boolean };
-  hero_background: { type: string; url: string; video_url: string };
+  hero_background: {
+    type: 'video' | 'image';
+    image_url: string;
+    youtube_id: string;
+    video_start: number;
+    video_end: number;
+    video_loop: boolean;
+    filters: string[];
+    filter_intensity: number;
+  };
 
   // Section titles
   section_about: SectionSettings;
@@ -68,7 +77,16 @@ const defaultSettings: SiteSettings = {
   hero_title: { de: '', en: '' },
   hero_subtitle: { de: '', en: '' },
   hero_cta: { text: { de: 'Jetzt buchen', en: 'Book now' }, enabled: true },
-  hero_background: { type: 'video', url: '', video_url: '' },
+  hero_background: {
+    type: 'video',
+    image_url: '',
+    youtube_id: '3vCGQvscX34',
+    video_start: 24,
+    video_end: 54,
+    video_loop: true,
+    filters: ['darken', 'sepia'],
+    filter_intensity: 50,
+  },
   section_about: { title: { de: '', en: '' }, subtitle: { de: '', en: '' } },
   section_services: { title: { de: '', en: '' }, subtitle: { de: '', en: '' } },
   section_team: { title: { de: '', en: '' }, subtitle: { de: '', en: '' } },
@@ -177,12 +195,34 @@ export function useContactSettings() {
 /**
  * Hook to load hero settings
  */
+interface HeroBackground {
+  type: 'video' | 'image';
+  image_url: string;
+  youtube_id: string;
+  video_start: number;
+  video_end: number;
+  video_loop: boolean;
+  filters: string[];
+  filter_intensity: number;
+}
+
+const defaultHeroBackground: HeroBackground = {
+  type: 'video',
+  image_url: '',
+  youtube_id: '3vCGQvscX34',
+  video_start: 24,
+  video_end: 54,
+  video_loop: true,
+  filters: ['darken', 'sepia'],
+  filter_intensity: 50,
+};
+
 export function useHeroSettings() {
   const [settings, setSettings] = useState({
     title: { de: '', en: '' } as LocalizedText,
     subtitle: { de: '', en: '' } as LocalizedText,
     cta: { text: { de: 'Jetzt buchen', en: 'Book now' }, enabled: true },
-    background: { type: 'video', url: '', video_url: '' },
+    background: defaultHeroBackground,
     phone: '',
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -195,16 +235,16 @@ export function useHeroSettings() {
           getSetting<LocalizedText>('hero_title'),
           getSetting<LocalizedText>('hero_subtitle'),
           getSetting<{ text: LocalizedText; enabled: boolean }>('hero_cta'),
-          getSetting<{ type: string; url: string; video_url: string }>('hero_background'),
+          getSetting<HeroBackground>('hero_background'),
           getSetting<{ value: string }>('contact_phone'),
         ]);
 
-        console.log('useHeroSettings loaded:', { title, subtitle });
+        console.log('useHeroSettings loaded:', { title, subtitle, background });
         setSettings({
           title: title || { de: '', en: '' },
           subtitle: subtitle || { de: '', en: '' },
           cta: cta || { text: { de: 'Jetzt buchen', en: 'Book now' }, enabled: true },
-          background: background || { type: 'video', url: '', video_url: '' },
+          background: background || defaultHeroBackground,
           phone: phone?.value || '',
         });
       } catch (error) {
