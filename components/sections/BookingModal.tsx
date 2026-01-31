@@ -710,7 +710,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [bookedAppointmentId, setBookedAppointmentId] = useState<string | null>(null);
   const [bookingError, setBookingError] = useState('');
+  const [showCalendarOptions, setShowCalendarOptions] = useState(false);
 
   const [contactMode, setContactMode] = useState<'choice' | 'guest' | 'auth'>('choice');
   const [authTab, setAuthTab] = useState<'login' | 'register' | 'forgot' | 'password-setup'>('login');
@@ -892,7 +894,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     setCustomerPhone('');
     setContactMode('choice');
     setBookingSuccess(false);
+    setBookedAppointmentId(null);
     setBookingError('');
+    setShowCalendarOptions(false);
     setCurrentWeekOffset(0);
     resetAuthForm();
   };
@@ -907,6 +911,102 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     setAuthBirthDate('');
     setAuthError('');
     setAuthSuccess('');
+  };
+
+  // Kalender-Hilfsfunktionen
+  const getCalendarData = () => {
+    if (!selectedDay || !selectedSlot || !selectedBarberData) return null;
+
+    const [hour, minute] = selectedSlot.split(':').map(Number);
+    const startDate = new Date(selectedDay + 'T00:00:00');
+    startDate.setHours(hour, minute, 0, 0);
+
+    const endDate = new Date(startDate);
+    endDate.setMinutes(endDate.getMinutes() + 30);
+
+    const title = `Termin bei ${selectedBarberData.name} - Beban Barbershop`;
+    const location = 'Beban Barbershop, Friedrich-Ebert-Platz 3a, 51373 Leverkusen';
+    const details = `Dein Termin im Beban Barbershop bei ${selectedBarberData.name}\n\nAdresse: ${location}`;
+
+    return { startDate, endDate, title, location, details };
+  };
+
+  const addToGoogleCalendar = () => {
+    const data = getCalendarData();
+    if (!data) return;
+
+    const formatDate = (date: Date) => {
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
+    };
+
+    const url = new URL('https://calendar.google.com/calendar/render');
+    url.searchParams.set('action', 'TEMPLATE');
+    url.searchParams.set('text', data.title);
+    url.searchParams.set('dates', `${formatDate(data.startDate)}/${formatDate(data.endDate)}`);
+    url.searchParams.set('location', data.location);
+    url.searchParams.set('details', data.details);
+
+    window.open(url.toString(), '_blank');
+    setShowCalendarOptions(false);
+  };
+
+  const addToAppleCalendar = () => {
+    const data = getCalendarData();
+    if (!data) return;
+
+    const formatICSDate = (date: Date) => {
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
+    };
+
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Beban Barbershop//Booking//DE',
+      'BEGIN:VEVENT',
+      `DTSTART:${formatICSDate(data.startDate)}`,
+      `DTEND:${formatICSDate(data.endDate)}`,
+      `SUMMARY:${data.title}`,
+      `LOCATION:${data.location}`,
+      `DESCRIPTION:${data.details.replace(/\n/g, '\\n')}`,
+      'BEGIN:VALARM',
+      'TRIGGER:-PT1H',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:Terminerinnerung',
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `beban-termin-${selectedDay}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setShowCalendarOptions(false);
+  };
+
+  const addToOutlookCalendar = () => {
+    const data = getCalendarData();
+    if (!data) return;
+
+    const formatDate = (date: Date) => date.toISOString();
+
+    const url = new URL('https://outlook.live.com/calendar/0/deeplink/compose');
+    url.searchParams.set('subject', data.title);
+    url.searchParams.set('startdt', formatDate(data.startDate));
+    url.searchParams.set('enddt', formatDate(data.endDate));
+    url.searchParams.set('location', data.location);
+    url.searchParams.set('body', data.details);
+    url.searchParams.set('path', '/calendar/action/compose');
+
+    window.open(url.toString(), '_blank');
+    setShowCalendarOptions(false);
   };
 
   const handleClose = () => {
@@ -1067,6 +1167,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
           console.error('Email send error:', emailError);
         }
 
+        setBookedAppointmentId(result.appointment.id);
         setBookingSuccess(true);
         await refreshAppointments();
       } else {
@@ -1159,17 +1260,105 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
           ) : bookingSuccess ? (
             <div style={styles.successContainer}>
               <div style={styles.successIcon}>
-                <svg width="32" height="32" fill="none" stroke="#22c55e" viewBox="0 0 24 24">
+                <svg width="32" height="32" fill="none" stroke="#16a34a" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
               <h3 style={styles.successTitle}>{t('bookingSuccess')}</h3>
               <p style={styles.successText}>
-                {t('confirmationSent')} <span style={styles.gold}>{customerEmail}</span>
+                {t('success.message', {
+                  barber: selectedBarberData?.name || '',
+                  date: `${selectedDayData?.dayNameLong || ''}, ${selectedDayData?.dayNumFullDate || ''}`,
+                  time: selectedSlot || ''
+                })}
               </p>
+              {/* Kalender-Optionen - 3 Spalten */}
+              <div style={{ width: '100%', marginTop: '1rem' }}>
+                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginBottom: '0.5rem', textAlign: 'center' }}>{t('success.addToCalendar')}</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+                  <button
+                    onClick={addToGoogleCalendar}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.75rem 0.5rem',
+                      backgroundColor: '#fff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '0.5rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#d4a853'; e.currentTarget.style.backgroundColor = '#fffbeb'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.backgroundColor = '#fff'; }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    <span style={{ fontSize: '0.6875rem', color: '#374151' }}>Google</span>
+                  </button>
+                  <button
+                    onClick={addToAppleCalendar}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.75rem 0.5rem',
+                      backgroundColor: '#fff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '0.5rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#d4a853'; e.currentTarget.style.backgroundColor = '#fffbeb'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.backgroundColor = '#fff'; }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83" fill="#333"/>
+                      <path d="M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" fill="#333"/>
+                    </svg>
+                    <span style={{ fontSize: '0.6875rem', color: '#374151' }}>Apple</span>
+                  </button>
+                  <button
+                    onClick={addToOutlookCalendar}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.75rem 0.5rem',
+                      backgroundColor: '#fff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '0.5rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#d4a853'; e.currentTarget.style.backgroundColor = '#fffbeb'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.backgroundColor = '#fff'; }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6z" fill="#0078D4"/>
+                      <path d="M22 6l-10 7L2 6" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    <span style={{ fontSize: '0.6875rem', color: '#374151' }}>Outlook</span>
+                  </button>
+                </div>
+              </div>
+
               <button
                 onClick={handleClose}
-                style={{ ...styles.submitBtn, backgroundColor: '#d4a853' }}
+                style={{
+                  ...styles.submitBtn,
+                  backgroundColor: '#d4a853',
+                  justifyContent: 'center',
+                  width: '100%',
+                  marginTop: '1rem'
+                }}
               >
                 {tCommon('close')}
               </button>
@@ -1491,21 +1680,6 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                         <span>{t('loggedInAs')} <span style={{ fontWeight: 500, color: '#0f172a' }}>{customer?.name}</span></span>
-                      </div>
-                      <div style={styles.inputGrid}>
-                        <input type="text" placeholder={t('name')} value={customerName} onChange={(e) => setCustomerName(e.target.value)} style={styles.input} />
-                        <input type="email" placeholder={t('email')} value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} style={styles.input} />
-                        <input
-                          type="tel"
-                          placeholder={t('phone')}
-                          value={customerPhone}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/[^\d+\-\s]/g, '');
-                            if (value.length <= 20) setCustomerPhone(value);
-                          }}
-                          style={styles.input}
-                          maxLength={20}
-                        />
                       </div>
                       <div style={{ ...styles.loggedInActions, marginTop: '0.75rem' }}>
                         <button type="button" onClick={() => setShowCustomerPortal(true)} style={{ ...styles.actionBtn, border: '1px solid rgba(212, 168, 83, 0.6)', color: '#d4a853' }}>
