@@ -754,82 +754,84 @@ export default function MedienPage() {
                   )}
 
                   {/* Filter mit individueller Intensität */}
-                  <div className="space-y-4 pt-2 border-t border-slate-200">
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm font-medium text-slate-900 w-24">Filter</span>
-                      <span className="text-xs text-slate-500">Mehrere Filter kombinierbar</span>
+                  <div className="space-y-3 pt-2 border-t border-slate-200">
+                    {/* Label */}
+                    <div>
+                      <span className="text-sm font-medium text-slate-900">Filter</span>
+                      <span className="text-xs text-slate-400 ml-2">(Mehrere kombinierbar)</span>
                     </div>
 
-                    {/* Filter-Liste */}
-                    <div className="space-y-3">
+                    {/* Filter-Buttons nebeneinander */}
+                    <div className="flex gap-2">
                       {HERO_FILTERS.map(filter => {
                         const filters = settings.hero_background.filters || {};
                         const isActive = filter.id in filters;
-                        const intensity = filters[filter.id] ?? 50;
 
                         return (
-                          <div key={filter.id} className="flex items-center gap-3">
-                            {/* Toggle Button */}
-                            <button
-                              onClick={() => {
-                                setSettings(s => {
-                                  const currentFilters = { ...(s.hero_background.filters || {}) };
-                                  if (isActive) {
-                                    delete currentFilters[filter.id];
-                                  } else {
-                                    currentFilters[filter.id] = 50;
-                                  }
-                                  return {
-                                    ...s,
-                                    hero_background: { ...s.hero_background, filters: currentFilters }
-                                  };
-                                });
-                              }}
-                              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-w-[120px] ${
-                                isActive
-                                  ? 'bg-gold/20 border-2 border-gold text-slate-900'
-                                  : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
-                              }`}
-                            >
-                              <span className="text-base">{filter.icon}</span>
-                              <span>{filter.label}</span>
-                            </button>
-
-                            {/* Intensitäts-Slider (nur wenn aktiv) */}
-                            {isActive && (
-                              <div className="flex items-center gap-3 flex-1">
-                                <input
-                                  type="range"
-                                  min={0}
-                                  max={100}
-                                  value={intensity}
-                                  onChange={(e) => {
-                                    const newIntensity = parseInt(e.target.value);
-                                    setSettings(s => ({
-                                      ...s,
-                                      hero_background: {
-                                        ...s.hero_background,
-                                        filters: { ...(s.hero_background.filters || {}), [filter.id]: newIntensity }
-                                      }
-                                    }));
-                                  }}
-                                  className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-gold"
-                                />
-                                <span className="text-sm text-slate-600 w-12 text-right">{intensity}%</span>
-                              </div>
-                            )}
-                          </div>
+                          <button
+                            key={filter.id}
+                            onClick={() => {
+                              setSettings(s => {
+                                const currentFilters = { ...(s.hero_background.filters || {}) };
+                                if (isActive) {
+                                  delete currentFilters[filter.id];
+                                } else {
+                                  currentFilters[filter.id] = 50;
+                                }
+                                return {
+                                  ...s,
+                                  hero_background: { ...s.hero_background, filters: currentFilters }
+                                };
+                              });
+                            }}
+                            className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-lg text-xs font-medium transition-colors ${
+                              isActive
+                                ? 'bg-gold/20 border-2 border-gold text-slate-900'
+                                : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
+                            }`}
+                          >
+                            <span className="text-lg">{filter.icon}</span>
+                            <span>{filter.label}</span>
+                          </button>
                         );
                       })}
                     </div>
+
+                    {/* Intensitäts-Slider für aktive Filter */}
+                    {HERO_FILTERS.filter(f => (settings.hero_background.filters || {})[f.id] !== undefined).map(filter => {
+                      const intensity = (settings.hero_background.filters || {})[filter.id] ?? 50;
+                      return (
+                        <div key={filter.id} className="flex items-center gap-3">
+                          <span className="text-xs text-slate-500 w-20">{filter.label}</span>
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            value={intensity}
+                            onChange={(e) => {
+                              const newIntensity = parseInt(e.target.value);
+                              setSettings(s => ({
+                                ...s,
+                                hero_background: {
+                                  ...s.hero_background,
+                                  filters: { ...(s.hero_background.filters || {}), [filter.id]: newIntensity }
+                                }
+                              }));
+                            }}
+                            className="flex-1 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-gold"
+                          />
+                          <span className="text-xs text-slate-500 w-10 text-right">{intensity}%</span>
+                        </div>
+                      );
+                    })}
 
                     {/* Alle Filter zurücksetzen */}
                     {Object.keys(settings.hero_background.filters || {}).length > 0 && (
                       <button
                         onClick={() => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, filters: {} } }))}
-                        className="text-sm text-slate-500 hover:text-slate-700 underline"
+                        className="text-xs text-slate-400 hover:text-slate-600"
                       >
-                        Alle Filter entfernen
+                        Zurücksetzen
                       </button>
                     )}
                   </div>
