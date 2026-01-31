@@ -598,13 +598,17 @@ export default function MedienPage() {
                   {/* Video-Einstellungen */}
                   {(settings.hero_background?.type ?? 'video') === 'video' && (
                     <div className="space-y-4 pt-2 border-t border-slate-200">
-                      {/* YouTube ID */}
+                      {/* YouTube URL */}
                       <div className="flex items-start gap-4">
                         <span className="text-sm font-medium text-slate-900 w-24 pt-2">YouTube</span>
                         <div className="flex-1 space-y-2">
                           <input
                             type="text"
-                            value={settings.hero_background.youtube_id ?? ''}
+                            value={
+                              settings.hero_background.youtube_id?.length === 11
+                                ? `https://www.youtube.com/watch?v=${settings.hero_background.youtube_id}`
+                                : settings.hero_background.youtube_id ?? ''
+                            }
                             onChange={(e) => {
                               // Extrahiere Video-ID aus URL oder direkter ID
                               let id = e.target.value;
@@ -612,7 +616,7 @@ export default function MedienPage() {
                               if (match) id = match[1];
                               setSettings(s => ({ ...s, hero_background: { ...s.hero_background, youtube_id: id } }));
                             }}
-                            placeholder="Video-ID oder YouTube-URL"
+                            placeholder="https://www.youtube.com/watch?v=..."
                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
                           />
                           {/* YouTube-Vorschau */}
