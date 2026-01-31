@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   getAllTimeSlots,
@@ -37,6 +38,13 @@ import {
   getFreeDayExceptions,
   createFreeDayException,
   deleteFreeDayException,
+  // Verkaufsoffene Sonntage - Mitarbeiter
+  OpenSundayStaff,
+  getOpenSundayStaff,
+  createOpenSundayStaff,
+  updateOpenSundayStaff,
+  deleteOpenSundayStaff,
+  deleteOpenSundayStaffByOpenSunday,
 } from '@/lib/supabase';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
 import { SundayPicker } from '@/components/admin/SundayPicker';
@@ -78,12 +86,17 @@ export default function ZeitenPage() {
 
   // Sondertage State
   const [openSundays, setOpenSundays] = useState<OpenSunday[]>([]);
+  const [openSundayStaff, setOpenSundayStaff] = useState<OpenSundayStaff[]>([]);
   const [closedDates, setClosedDates] = useState<ClosedDate[]>([]);
   const [newSundayDate, setNewSundayDate] = useState('');
   const [newSundayOpenTime, setNewSundayOpenTime] = useState('10:00');
   const [newSundayCloseTime, setNewSundayCloseTime] = useState('14:00');
+  const [newSundayStaff, setNewSundayStaff] = useState<{ staffId: string; startTime: string; endTime: string }[]>([]);
   const [addingSunday, setAddingSunday] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [editingSundayId, setEditingSundayId] = useState<number | null>(null);
+  const [editingSundayStaff, setEditingSundayStaff] = useState<{ id: string; staff_id: string; start_time: string; end_time: string }[]>([]);
+  const [savingSundayStaff, setSavingSundayStaff] = useState(false);
   const [newClosedDate, setNewClosedDate] = useState('');
   const [newClosedReason, setNewClosedReason] = useState('');
   const [deleteClosedTarget, setDeleteClosedTarget] = useState<ClosedDate | null>(null);
@@ -111,14 +124,52 @@ export default function ZeitenPage() {
   const [newExceptionReplacementDate, setNewExceptionReplacementDate] = useState('');
   const [addingException, setAddingException] = useState(false);
   const [exceptionBarber, setExceptionBarber] = useState<string | null>(null);
+  const [showExceptionBarberDropdown, setShowExceptionBarberDropdown] = useState(false);
   const [showExceptionDatePicker, setShowExceptionDatePicker] = useState(false);
   const [showReplacementDatePicker, setShowReplacementDatePicker] = useState(false);
+
+  // Refs für Portal-Positionierung
+  const barberDropdownRef = useRef<HTMLButtonElement>(null);
+  const datePickerRef = useRef<HTMLButtonElement>(null);
+  const replacementDatePickerRef = useRef<HTMLButtonElement>(null);
+  const datePickerContainerRef = useRef<HTMLDivElement>(null);
+  const replacementDatePickerContainerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Auto-Scroll wenn DatePicker geöffnet wird
+  useEffect(() => {
+    if (showExceptionDatePicker && datePickerContainerRef.current) {
+      setTimeout(() => {
+        // Scroll den Kalender-Bereich ins Sichtfeld
+        const container = datePickerContainerRef.current?.querySelector('.absolute');
+        if (container) {
+          container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 100);
+    }
+  }, [showExceptionDatePicker]);
+
+  // Auto-Scroll wenn Ersatztag-DatePicker geöffnet wird
+  useEffect(() => {
+    if (showReplacementDatePicker && replacementDatePickerContainerRef.current) {
+      setTimeout(() => {
+        const container = replacementDatePickerContainerRef.current?.querySelector('.absolute');
+        if (container) {
+          container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 100);
+    }
+  }, [showReplacementDatePicker]);
 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
-      const [slotsData, hoursData, sundaysData, closedData, openHolidaysData, bundeslandData, teamData, workHoursData, exceptionsData] = await Promise.all([
+      const [slotsData, hoursData, sundaysData, closedData, openHolidaysData, bundeslandData, teamData, workHoursData, exceptionsData, sundayStaffData] = await Promise.all([
         getAllTimeSlots(),
         getOpeningHours(),
         getOpenSundays(),
@@ -128,10 +179,12 @@ export default function ZeitenPage() {
         getAllTeam(),
         getStaffWorkingHours(),
         getFreeDayExceptions(),
+        getOpenSundayStaff(),
       ]);
       setTimeSlots(slotsData);
       setHours(hoursData);
       setOpenSundays(sundaysData);
+      setOpenSundayStaff(sundayStaffData);
       setClosedDates(closedData);
       setOpenHolidays(openHolidaysData);
       if (bundeslandData) setBundesland(bundeslandData);
@@ -211,6 +264,10 @@ export default function ZeitenPage() {
   async function handleAddOpenSunday(e: React.FormEvent) {
     e.preventDefault();
     if (!newSundayDate) return;
+    if (newSundayStaff.length === 0) {
+      alert('Bitte wählen Sie mindestens einen Mitarbeiter aus.');
+      return;
+    }
     const date = new Date(newSundayDate);
     if (date.getDay() !== 0) {
       alert('Bitte wählen Sie einen Sonntag aus.');
@@ -219,10 +276,19 @@ export default function ZeitenPage() {
     setAddingSunday(true);
     const created = await createOpenSunday(newSundayDate, newSundayOpenTime, newSundayCloseTime);
     if (created) {
+      // Mitarbeiter-Zuweisungen speichern
+      const staffPromises = newSundayStaff.map(s =>
+        createOpenSundayStaff(created.id, s.staffId, s.startTime, s.endTime)
+      );
+      const createdStaff = await Promise.all(staffPromises);
+      const validStaff = createdStaff.filter(s => s !== null) as OpenSundayStaff[];
+
       setOpenSundays([...openSundays, created].sort((a, b) => a.date.localeCompare(b.date)));
+      setOpenSundayStaff([...openSundayStaff, ...validStaff]);
       setNewSundayDate('');
       setNewSundayOpenTime('10:00');
       setNewSundayCloseTime('14:00');
+      setNewSundayStaff([]);
     }
     setAddingSunday(false);
   }
@@ -231,7 +297,134 @@ export default function ZeitenPage() {
     const success = await deleteOpenSunday(id);
     if (success) {
       setOpenSundays(openSundays.filter(s => s.id !== id));
+      // Mitarbeiter-Zuweisungen werden durch CASCADE automatisch gelöscht
+      setOpenSundayStaff(openSundayStaff.filter(s => s.open_sunday_id !== id));
     }
+  }
+
+  // Mitarbeiter zum Sonntag hinzufügen
+  function handleAddSundayStaff() {
+    if (team.length === 0) return;
+    // Finde ersten Mitarbeiter, der noch nicht hinzugefügt wurde
+    const availableStaff = team.filter(m => !newSundayStaff.some(s => s.staffId === m.id));
+    if (availableStaff.length === 0) return;
+
+    setNewSundayStaff([
+      ...newSundayStaff,
+      {
+        staffId: availableStaff[0].id,
+        startTime: newSundayOpenTime,
+        endTime: newSundayCloseTime
+      }
+    ]);
+  }
+
+  // Mitarbeiter aus der Liste entfernen
+  function handleRemoveSundayStaff(index: number) {
+    setNewSundayStaff(newSundayStaff.filter((_, i) => i !== index));
+  }
+
+  // Mitarbeiter-Daten aktualisieren
+  function handleUpdateSundayStaff(index: number, field: 'staffId' | 'startTime' | 'endTime', value: string) {
+    setNewSundayStaff(newSundayStaff.map((s, i) =>
+      i === index ? { ...s, [field]: value } : s
+    ));
+  }
+
+  // === Bearbeiten bestehender Sonntage ===
+
+  // Bearbeitung starten - lokale Kopie der Mitarbeiter erstellen
+  function startEditingSunday(sundayId: number) {
+    const sundayStaff = openSundayStaff.filter(s => s.open_sunday_id === sundayId);
+    setEditingSundayStaff(sundayStaff.map(s => ({
+      id: s.id,
+      staff_id: s.staff_id,
+      start_time: s.start_time,
+      end_time: s.end_time,
+    })));
+    setEditingSundayId(sundayId);
+  }
+
+  // Bearbeitung abbrechen
+  function cancelEditingSunday() {
+    setEditingSundayId(null);
+    setEditingSundayStaff([]);
+  }
+
+  // Lokale Änderungen an Mitarbeiter-Zeiten
+  function updateEditingStaffTime(staffId: string, field: 'start_time' | 'end_time', value: string) {
+    setEditingSundayStaff(editingSundayStaff.map(s =>
+      s.id === staffId ? { ...s, [field]: value } : s
+    ));
+  }
+
+  // Mitarbeiter aus lokaler Liste entfernen
+  function removeEditingStaff(staffId: string) {
+    setEditingSundayStaff(editingSundayStaff.filter(s => s.id !== staffId));
+  }
+
+  // Neuen Mitarbeiter zur lokalen Liste hinzufügen
+  function addEditingStaff(openTime: string, closeTime: string) {
+    const usedStaffIds = editingSundayStaff.map(s => s.staff_id);
+    const availableStaff = team.filter(m => !usedStaffIds.includes(m.id));
+    if (availableStaff.length === 0) return;
+
+    setEditingSundayStaff([
+      ...editingSundayStaff,
+      {
+        id: `new-${Date.now()}`, // Temporäre ID für neue Einträge
+        staff_id: availableStaff[0].id,
+        start_time: openTime,
+        end_time: closeTime,
+      }
+    ]);
+  }
+
+  // Mitarbeiter in lokaler Liste ändern
+  function changeEditingStaffMember(oldStaffId: string, newStaffId: string) {
+    setEditingSundayStaff(editingSundayStaff.map(s =>
+      s.id === oldStaffId ? { ...s, staff_id: newStaffId } : s
+    ));
+  }
+
+  // Alle Änderungen speichern
+  async function saveEditingSunday() {
+    if (!editingSundayId) return;
+    setSavingSundayStaff(true);
+
+    const originalStaff = openSundayStaff.filter(s => s.open_sunday_id === editingSundayId);
+    const originalIds = originalStaff.map(s => s.id);
+    const editingIds = editingSundayStaff.filter(s => !s.id.startsWith('new-')).map(s => s.id);
+
+    // Gelöschte Mitarbeiter entfernen
+    const deletedIds = originalIds.filter(id => !editingIds.includes(id));
+    for (const id of deletedIds) {
+      await deleteOpenSundayStaff(id);
+    }
+
+    // Bestehende Mitarbeiter aktualisieren
+    for (const staff of editingSundayStaff.filter(s => !s.id.startsWith('new-'))) {
+      const original = originalStaff.find(s => s.id === staff.id);
+      if (original && (original.start_time !== staff.start_time || original.end_time !== staff.end_time)) {
+        await updateOpenSundayStaff(staff.id, {
+          start_time: staff.start_time,
+          end_time: staff.end_time,
+        });
+      }
+    }
+
+    // Neue Mitarbeiter hinzufügen
+    for (const staff of editingSundayStaff.filter(s => s.id.startsWith('new-'))) {
+      await createOpenSundayStaff(editingSundayId, staff.staff_id, staff.start_time, staff.end_time);
+    }
+
+    // Daten neu laden
+    const updatedStaff = await getOpenSundayStaff();
+    setOpenSundayStaff(updatedStaff);
+
+    setSavingSundayStaff(false);
+    setEditingSundayId(null);
+    setEditingSundayStaff([]);
   }
 
   async function handleAddClosedDate(e: React.FormEvent) {
@@ -788,107 +981,362 @@ export default function ZeitenPage() {
 
             <div>
               {/* Add Form */}
-              <form onSubmit={handleAddOpenSunday} className="flex gap-3 items-end mb-6">
-                <div className="flex-1 relative">
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Sonntag auswählen</label>
-                  <button
-                    type="button"
-                    onClick={() => setShowCalendar(!showCalendar)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-left focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none hover:border-slate-300 transition-colors flex items-center justify-between"
-                  >
-                    <span className={newSundayDate ? 'text-slate-900' : 'text-slate-400'}>
-                      {newSundayDate ? formatDate(newSundayDate) : 'Datum wählen...'}
-                    </span>
-                    <svg className={`w-4 h-4 text-slate-400 transition-transform ${showCalendar ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  {showCalendar && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setShowCalendar(false)} />
-                      <div className="absolute top-full left-0 mt-1 z-20 shadow-lg">
-                        <SundayPicker
-                          value={newSundayDate}
-                          onChange={(date) => {
-                            setNewSundayDate(date);
-                            setShowCalendar(false);
-                          }}
-                          existingDates={openSundays.map(s => s.date)}
-                        />
-                      </div>
-                    </>
+              <form onSubmit={handleAddOpenSunday} className="space-y-4 mb-6">
+                {/* Erste Zeile: Datum und Öffnungszeiten */}
+                <div className="flex gap-3 items-end">
+                  <div className="flex-1 relative">
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Sonntag auswählen</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowCalendar(!showCalendar)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-left focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none hover:border-slate-300 transition-colors flex items-center justify-between"
+                    >
+                      <span className={newSundayDate ? 'text-slate-900' : 'text-slate-400'}>
+                        {newSundayDate ? formatDate(newSundayDate) : 'Datum wählen...'}
+                      </span>
+                      <svg className={`w-4 h-4 text-slate-400 transition-transform ${showCalendar ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    {showCalendar && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setShowCalendar(false)} />
+                        <div className="absolute top-full left-0 mt-1 z-20 shadow-lg">
+                          <SundayPicker
+                            value={newSundayDate}
+                            onChange={(date) => {
+                              setNewSundayDate(date);
+                              setShowCalendar(false);
+                            }}
+                            existingDates={openSundays.map(s => s.date)}
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <div className="w-28">
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Öffnung</label>
+                    <select
+                      value={newSundayOpenTime}
+                      onChange={(e) => {
+                        setNewSundayOpenTime(e.target.value);
+                        // Aktualisiere Mitarbeiter-Zeiten, wenn noch nicht angepasst
+                        setNewSundayStaff(newSundayStaff.map(s => ({ ...s, startTime: e.target.value })));
+                      }}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-7"
+                      required
+                    >
+                      {Array.from({ length: 29 }, (_, i) => {
+                        const hour = Math.floor(i / 2) + 6;
+                        const minute = i % 2 === 0 ? '00' : '30';
+                        const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                        return <option key={time} value={time}>{time}</option>;
+                      })}
+                    </select>
+                  </div>
+                  <div className="w-28">
+                    <label className="block text-xs font-medium text-slate-600 mb-1">Schließung</label>
+                    <select
+                      value={newSundayCloseTime}
+                      onChange={(e) => {
+                        setNewSundayCloseTime(e.target.value);
+                        // Aktualisiere Mitarbeiter-Zeiten
+                        setNewSundayStaff(newSundayStaff.map(s => ({ ...s, endTime: e.target.value })));
+                      }}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-7"
+                      required
+                    >
+                      {Array.from({ length: 29 }, (_, i) => {
+                        const hour = Math.floor(i / 2) + 6;
+                        const minute = i % 2 === 0 ? '00' : '30';
+                        const time = `${hour.toString().padStart(2, '0')}:${minute}`;
+                        return <option key={time} value={time}>{time}</option>;
+                      })}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Mitarbeiter-Auswahl */}
+                <div className="bg-slate-50/50 rounded-xl p-4 border border-slate-100">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-xs font-medium text-slate-600">Anwesende Mitarbeiter</label>
+                    <button
+                      type="button"
+                      onClick={handleAddSundayStaff}
+                      disabled={newSundayStaff.length >= team.length}
+                      className="text-xs text-gold hover:text-gold/80 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Mitarbeiter hinzufügen
+                    </button>
+                  </div>
+
+                  {newSundayStaff.length === 0 ? (
+                    <p className="text-xs text-slate-400 text-center py-3">
+                      Bitte mindestens einen Mitarbeiter hinzufügen
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {newSundayStaff.map((staffEntry, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                          <select
+                            value={staffEntry.staffId}
+                            onChange={(e) => handleUpdateSundayStaff(index, 'staffId', e.target.value)}
+                            className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer"
+                          >
+                            {team.map(m => (
+                              <option key={m.id} value={m.id} disabled={newSundayStaff.some((s, i) => i !== index && s.staffId === m.id)}>
+                                {m.name}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            value={staffEntry.startTime}
+                            onChange={(e) => handleUpdateSundayStaff(index, 'startTime', e.target.value)}
+                            className="w-20 px-2 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer"
+                          >
+                            {(() => {
+                              const options: React.ReactElement[] = [];
+                              const [openH, openM] = newSundayOpenTime.split(':').map(Number);
+                              const [closeH, closeM] = newSundayCloseTime.split(':').map(Number);
+                              const openMins = openH * 60 + openM;
+                              const closeMins = closeH * 60 + closeM;
+                              for (let mins = openMins; mins <= closeMins; mins += 30) {
+                                const h = Math.floor(mins / 60);
+                                const m = mins % 60;
+                                const time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                                options.push(<option key={time} value={time}>{time}</option>);
+                              }
+                              return options;
+                            })()}
+                          </select>
+                          <span className="text-slate-400 text-xs">bis</span>
+                          <select
+                            value={staffEntry.endTime}
+                            onChange={(e) => handleUpdateSundayStaff(index, 'endTime', e.target.value)}
+                            className="w-20 px-2 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer"
+                          >
+                            {(() => {
+                              const options: React.ReactElement[] = [];
+                              const [openH, openM] = newSundayOpenTime.split(':').map(Number);
+                              const [closeH, closeM] = newSundayCloseTime.split(':').map(Number);
+                              const openMins = openH * 60 + openM;
+                              const closeMins = closeH * 60 + closeM;
+                              for (let mins = openMins; mins <= closeMins; mins += 30) {
+                                const h = Math.floor(mins / 60);
+                                const m = mins % 60;
+                                const time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                                options.push(<option key={time} value={time}>{time}</option>);
+                              }
+                              return options;
+                            })()}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSundayStaff(index)}
+                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
-                <div className="w-28">
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Öffnung</label>
-                  <select
-                    value={newSundayOpenTime}
-                    onChange={(e) => setNewSundayOpenTime(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-7"
-                    required
+
+                {/* Submit Button */}
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={addingSunday || !newSundayDate || newSundayStaff.length === 0}
+                    className="px-5 py-2.5 bg-gold text-black text-xs font-semibold rounded-xl hover:bg-gold/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {Array.from({ length: 29 }, (_, i) => {
-                      const hour = Math.floor(i / 2) + 6;
-                      const minute = i % 2 === 0 ? '00' : '30';
-                      const time = `${hour.toString().padStart(2, '0')}:${minute}`;
-                      return <option key={time} value={time}>{time}</option>;
-                    })}
-                  </select>
+                    {addingSunday ? '...' : 'Hinzufügen'}
+                  </button>
                 </div>
-                <div className="w-28">
-                  <label className="block text-xs font-medium text-slate-600 mb-1">Schließung</label>
-                  <select
-                    value={newSundayCloseTime}
-                    onChange={(e) => setNewSundayCloseTime(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-7"
-                    required
-                  >
-                    {Array.from({ length: 29 }, (_, i) => {
-                      const hour = Math.floor(i / 2) + 6;
-                      const minute = i % 2 === 0 ? '00' : '30';
-                      const time = `${hour.toString().padStart(2, '0')}:${minute}`;
-                      return <option key={time} value={time}>{time}</option>;
-                    })}
-                  </select>
-                </div>
-                <button
-                  type="submit"
-                  disabled={addingSunday || !newSundayDate}
-                  className="px-5 py-2.5 bg-gold text-black text-xs font-semibold rounded-xl hover:bg-gold/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {addingSunday ? '...' : 'Hinzufügen'}
-                </button>
               </form>
 
               {futureSundays.length > 0 ? (
                 <>
                   {/* Header-Zeile */}
-                  <div className="grid grid-cols-[1fr_100px_100px_60px] gap-4 px-4 py-1.5 text-[11px] font-medium text-slate-400 border-b border-slate-100">
+                  <div className="grid grid-cols-[140px_80px_80px_1fr_80px] gap-4 px-4 py-1.5 text-[11px] font-medium text-slate-400 border-b border-slate-100">
                     <div>Datum</div>
                     <div>Öffnung</div>
                     <div>Schließung</div>
+                    <div>Mitarbeiter</div>
                     <div></div>
                   </div>
 
                   {/* Liste */}
                   <div className="divide-y divide-slate-50">
-                    {futureSundays.map((sunday) => (
-                      <div key={sunday.id} className="grid grid-cols-[1fr_100px_100px_60px] gap-4 items-center px-4 py-3 hover:bg-slate-50/50 transition-colors">
-                        <div className="text-sm font-medium text-slate-900">{formatDate(sunday.date)}</div>
-                        <div className="text-sm text-slate-600">{sunday.open_time?.slice(0, 5) || '10:00'}</div>
-                        <div className="text-sm text-slate-600">{sunday.close_time?.slice(0, 5) || '14:00'}</div>
-                        <div className="flex justify-end">
-                          <button
-                            onClick={() => handleDeleteOpenSunday(sunday.id)}
-                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
+                    {futureSundays.map((sunday) => {
+                      const sundayStaff = openSundayStaff.filter(s => s.open_sunday_id === sunday.id);
+                      const isEditing = editingSundayId === sunday.id;
+                      const openTime = sunday.open_time?.slice(0, 5) || '10:00';
+                      const closeTime = sunday.close_time?.slice(0, 5) || '14:00';
+
+                      return (
+                        <div key={sunday.id}>
+                          {/* Hauptzeile */}
+                          <div className="grid grid-cols-[140px_80px_80px_1fr_80px] gap-4 items-center px-4 py-3 hover:bg-slate-50/50 transition-colors">
+                            <div className="text-sm font-medium text-slate-900">{formatDate(sunday.date)}</div>
+                            <div className="text-sm text-slate-600">{openTime}</div>
+                            <div className="text-sm text-slate-600">{closeTime}</div>
+                            <div className="flex flex-wrap gap-1.5">
+                              {sundayStaff.length > 0 ? (
+                                sundayStaff.map(staff => {
+                                  const member = team.find(m => m.id === staff.staff_id);
+                                  return (
+                                    <span
+                                      key={staff.id}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 bg-gold/10 text-gold text-xs rounded-full"
+                                      title={`${staff.start_time} - ${staff.end_time}`}
+                                    >
+                                      {member?.name || 'Unbekannt'}
+                                      <span className="text-gold/60 text-[10px]">
+                                        {staff.start_time}-{staff.end_time}
+                                      </span>
+                                    </span>
+                                  );
+                                })
+                              ) : (
+                                <span className="text-xs text-slate-400">Keine Mitarbeiter</span>
+                              )}
+                            </div>
+                            <div className="flex justify-end gap-1">
+                              <button
+                                onClick={() => isEditing ? cancelEditingSunday() : startEditingSunday(sunday.id)}
+                                className={`p-1.5 rounded-lg transition-colors ${isEditing ? 'text-gold bg-gold/10' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                                title="Bearbeiten"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => handleDeleteOpenSunday(sunday.id)}
+                                className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                title="Löschen"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Bearbeitungs-Bereich */}
+                          {isEditing && (
+                            <div className="px-4 pb-4 bg-slate-50/50 border-t border-slate-100">
+                              <div className="pt-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs font-medium text-slate-600">Mitarbeiter bearbeiten</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => addEditingStaff(openTime, closeTime)}
+                                    disabled={editingSundayStaff.length >= team.length}
+                                    className="text-xs text-gold hover:text-gold/80 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                                  >
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Hinzufügen
+                                  </button>
+                                </div>
+                                <div className="space-y-2">
+                                  {(() => {
+                                    // Generiere Zeitoptionen innerhalb der Öffnungszeiten
+                                    const timeOptions: string[] = [];
+                                    const [openHour, openMin] = openTime.split(':').map(Number);
+                                    const [closeHour, closeMin] = closeTime.split(':').map(Number);
+                                    const openMinutes = openHour * 60 + openMin;
+                                    const closeMinutes = closeHour * 60 + closeMin;
+
+                                    for (let mins = openMinutes; mins <= closeMinutes; mins += 30) {
+                                      const h = Math.floor(mins / 60);
+                                      const m = mins % 60;
+                                      timeOptions.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+                                    }
+
+                                    return editingSundayStaff.map(staff => {
+                                      const usedStaffIds = editingSundayStaff.filter(s => s.id !== staff.id).map(s => s.staff_id);
+                                      return (
+                                        <div key={staff.id} className="flex gap-2 items-center">
+                                          <select
+                                            value={staff.staff_id}
+                                            onChange={(e) => changeEditingStaffMember(staff.id, e.target.value)}
+                                            className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer"
+                                          >
+                                            {team.map(m => (
+                                              <option key={m.id} value={m.id} disabled={usedStaffIds.includes(m.id)}>
+                                                {m.name}
+                                              </option>
+                                            ))}
+                                          </select>
+                                          <select
+                                            value={staff.start_time}
+                                            onChange={(e) => updateEditingStaffTime(staff.id, 'start_time', e.target.value)}
+                                            className="w-20 px-2 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer"
+                                          >
+                                            {timeOptions.map(time => (
+                                              <option key={time} value={time}>{time}</option>
+                                            ))}
+                                          </select>
+                                          <span className="text-slate-400 text-xs">bis</span>
+                                          <select
+                                            value={staff.end_time}
+                                            onChange={(e) => updateEditingStaffTime(staff.id, 'end_time', e.target.value)}
+                                            className="w-20 px-2 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer"
+                                          >
+                                            {timeOptions.map(time => (
+                                              <option key={time} value={time}>{time}</option>
+                                            ))}
+                                          </select>
+                                          <button
+                                            type="button"
+                                            onClick={() => removeEditingStaff(staff.id)}
+                                            disabled={editingSundayStaff.length <= 1}
+                                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                            title={editingSundayStaff.length <= 1 ? 'Mindestens ein Mitarbeiter erforderlich' : 'Entfernen'}
+                                          >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                          </button>
+                                        </div>
+                                      );
+                                    });
+                                  })()}
+                                </div>
+
+                                {/* Speichern / Abbrechen Buttons */}
+                                <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-slate-200">
+                                  <button
+                                    type="button"
+                                    onClick={cancelEditingSunday}
+                                    className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+                                  >
+                                    Abbrechen
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={saveEditingSunday}
+                                    disabled={savingSundayStaff || editingSundayStaff.length === 0}
+                                    className="px-4 py-2 text-xs font-semibold text-black bg-gold hover:bg-gold/90 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {savingSundayStaff ? 'Speichert...' : 'Speichern'}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </>
               ) : (
@@ -1212,36 +1660,69 @@ export default function ZeitenPage() {
                   {/* Freier-Tag-Ausnahmen - unabhängiger Block */}
                   <div>
                     <div className="mb-4">
-                      <h3 className="text-sm font-semibold text-slate-900">Ausnahmen für freie Tage (Tauschtage)</h3>
+                      <h3 className="text-sm font-semibold text-slate-900">Ausnahmen für freie Tage</h3>
                       <p className="text-xs text-slate-400 mt-0.5">
                         Mitarbeiter kann an seinem freien Tag ausnahmsweise arbeiten und optional einen Ersatztag erhalten.
                       </p>
                     </div>
 
                     {/* Formular für neue Ausnahme */}
-                    <form onSubmit={handleAddFreeDayException} className="grid grid-cols-[180px_1fr_90px_90px_1fr_auto] gap-3 items-end mb-6">
-                      {/* Barber-Auswahl */}
-                      <div>
+                    <form onSubmit={handleAddFreeDayException} className={`grid grid-cols-[180px_1fr_90px_90px_1fr_auto] gap-3 items-end ${(showExceptionDatePicker || showReplacementDatePicker) ? 'mb-[355px]' : 'mb-6'}`}>
+                      {/* Barber-Auswahl (Custom Dropdown mit Portal) */}
+                      <div className="relative">
                         <label className="block text-xs font-medium text-slate-600 mb-1">Mitarbeiter</label>
-                        <select
-                          value={exceptionBarber || ''}
-                          onChange={(e) => setExceptionBarber(e.target.value || null)}
-                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
-                          required
+                        <button
+                          ref={barberDropdownRef}
+                          type="button"
+                          onClick={() => setShowExceptionBarberDropdown(!showExceptionBarberDropdown)}
+                          className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-left focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none hover:border-slate-300 transition-colors flex items-center justify-between"
                         >
-                          <option value="">Auswählen...</option>
-                          {team.filter(m => m.free_day !== null).map(member => (
-                            <option key={member.id} value={member.id}>
-                              {member.name} ({DAY_NAMES[member.free_day!]} frei)
-                            </option>
-                          ))}
-                        </select>
+                          <span className={exceptionBarber ? 'text-slate-900' : 'text-slate-400'}>
+                            {exceptionBarber ? team.find(m => m.id === exceptionBarber)?.name : 'Auswählen...'}
+                          </span>
+                          <svg className={`w-4 h-4 text-slate-400 transition-transform ${showExceptionBarberDropdown ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        {showExceptionBarberDropdown && mounted && barberDropdownRef.current && createPortal(
+                          <>
+                            <div className="fixed inset-0 z-[9998]" onClick={() => setShowExceptionBarberDropdown(false)} />
+                            <div
+                              className="fixed z-[9999] bg-white rounded-xl shadow-lg border border-slate-200 py-1 max-h-48 overflow-y-auto"
+                              style={{
+                                top: barberDropdownRef.current.getBoundingClientRect().bottom + 4,
+                                left: barberDropdownRef.current.getBoundingClientRect().left,
+                                width: barberDropdownRef.current.getBoundingClientRect().width,
+                              }}
+                            >
+                              {team.filter(m => m.free_day !== null).map(member => (
+                                <button
+                                  key={member.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setExceptionBarber(member.id);
+                                    setShowExceptionBarberDropdown(false);
+                                  }}
+                                  className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-50 transition-colors ${exceptionBarber === member.id ? 'bg-gold/10 text-gold' : 'text-slate-700'}`}
+                                >
+                                  <span className="font-medium">{member.name}</span>
+                                  <span className="text-slate-400 ml-1">({DAY_NAMES[member.free_day!]} frei)</span>
+                                </button>
+                              ))}
+                              {team.filter(m => m.free_day !== null).length === 0 && (
+                                <div className="px-3 py-2 text-sm text-slate-400">Keine Mitarbeiter mit freiem Tag</div>
+                              )}
+                            </div>
+                          </>,
+                          document.body
+                        )}
                       </div>
 
                       {/* Datum - Arbeitet am */}
-                      <div className="relative">
+                      <div ref={datePickerContainerRef} className="relative">
                         <label className="block text-xs font-medium text-slate-600 mb-1">Arbeitet am</label>
                         <button
+                          ref={datePickerRef}
                           type="button"
                           onClick={() => setShowExceptionDatePicker(!showExceptionDatePicker)}
                           className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-left focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none hover:border-slate-300 transition-colors flex items-center justify-between"
@@ -1263,6 +1744,7 @@ export default function ZeitenPage() {
                                   setNewExceptionDate(date);
                                   setShowExceptionDatePicker(false);
                                 }}
+                                inline
                               />
                             </div>
                           </>
@@ -1312,9 +1794,10 @@ export default function ZeitenPage() {
                       </div>
 
                       {/* Ersatztag */}
-                      <div className="relative">
+                      <div ref={replacementDatePickerContainerRef} className="relative">
                         <label className="block text-xs font-medium text-slate-600 mb-1">Ersatztag frei (optional)</label>
                         <button
+                          ref={replacementDatePickerRef}
                           type="button"
                           onClick={() => setShowReplacementDatePicker(!showReplacementDatePicker)}
                           className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-left focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none hover:border-slate-300 transition-colors flex items-center justify-between"
@@ -1336,6 +1819,7 @@ export default function ZeitenPage() {
                                   setNewExceptionReplacementDate(date);
                                   setShowReplacementDatePicker(false);
                                 }}
+                                inline
                               />
                             </div>
                           </>

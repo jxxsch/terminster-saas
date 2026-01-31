@@ -29,23 +29,22 @@ const CATEGORIES = [
   { value: 'shop', label: 'Shop' },
 ];
 
-// Filter-CSS-Mappings für Hero-Hintergrund
-const FILTER_CSS: Record<string, (intensity: number) => string> = {
-  darken: (i) => `brightness(${1 - i * 0.006})`,
-  blur: (i) => `blur(${i * 0.1}px)`,
-  glass: (i) => `saturate(${1 + i * 0.01}) contrast(${1 + i * 0.005})`,
-  grayscale: (i) => `grayscale(${i}%)`,
-  sepia: (i) => `sepia(${i * 0.5}%)`,
-  contrast: (i) => `contrast(${100 + i * 0.5}%)`,
-  desaturate: (i) => `saturate(${100 - i * 0.7}%)`,
-  warm: (i) => `sepia(${i * 0.2}%) saturate(${100 + i * 0.3}%)`,
-};
+// Verfügbare Filter mit CSS-Mappings
+const HERO_FILTERS = [
+  { id: 'darken', label: 'Abdunkeln', icon: '◐', css: (i: number) => `brightness(${1 - i * 0.007})` },
+  { id: 'blur', label: 'Blur', icon: '◎', css: (i: number) => `blur(${i * 0.15}px)` },
+  { id: 'grayscale', label: 'S/W', icon: '◑', css: (i: number) => `grayscale(${i}%)` },
+  { id: 'sepia', label: 'Sepia', icon: '▣', css: (i: number) => `sepia(${i}%)` },
+];
 
-function buildFilterStyle(filters: string[] | undefined, intensity: number): string {
-  if (!filters || filters.length === 0) return '';
-  return filters
-    .filter(f => FILTER_CSS[f])
-    .map(f => FILTER_CSS[f](intensity))
+function buildFilterStyleFromObject(filters: Record<string, number> | undefined): string {
+  if (!filters || Object.keys(filters).length === 0) return '';
+  return Object.entries(filters)
+    .map(([key, intensity]) => {
+      const filter = HERO_FILTERS.find(f => f.id === key);
+      return filter ? filter.css(intensity) : '';
+    })
+    .filter(Boolean)
     .join(' ');
 }
 
@@ -70,8 +69,7 @@ interface SettingsState {
     video_start: number;
     video_end: number;
     video_loop: boolean;
-    filters: string[];
-    filter_intensity: number;
+    filters: Record<string, number>;
   };
   hero_cta: { text: LocalizedText; enabled: boolean };
   hero_badge: { text: LocalizedText; enabled: boolean };
@@ -108,8 +106,7 @@ const defaultSettings: SettingsState = {
     video_start: 24,
     video_end: 54,
     video_loop: true,
-    filters: ['darken'],
-    filter_intensity: 50,
+    filters: { darken: 50 },
   },
   hero_cta: { text: { de: 'Jetzt buchen', en: 'Book now' }, enabled: true },
   hero_badge: { text: { de: 'Premium Barbershop', en: 'Premium Barbershop' }, enabled: true },
@@ -642,7 +639,6 @@ export default function MedienPage() {
                           {/* YouTube-Vorschau mit Live-Filter */}
                           {settings.hero_background.youtube_id && settings.hero_background.youtube_id.length === 11 && (
                             <div className="w-full mt-3 rounded-lg overflow-hidden bg-black border border-slate-200 aspect-video relative">
-                              {/* Video mit CSS-Filtern */}
                               <iframe
                                 key={settings.hero_background.youtube_id}
                                 src={`https://www.youtube.com/embed/${settings.hero_background.youtube_id}?start=${settings.hero_background.video_start ?? 0}&autoplay=0&controls=1`}
@@ -652,27 +648,9 @@ export default function MedienPage() {
                                 style={{
                                   border: 'none',
                                   display: 'block',
-                                  filter: buildFilterStyle(settings.hero_background.filters, settings.hero_background.filter_intensity ?? 50),
+                                  filter: buildFilterStyleFromObject(settings.hero_background.filters),
                                 }}
                               />
-                              {/* Vignette Overlay */}
-                              {settings.hero_background.filters?.includes('vignette') && (
-                                <div
-                                  className="absolute inset-0 pointer-events-none"
-                                  style={{
-                                    background: `radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,${(settings.hero_background.filter_intensity ?? 50) / 100 * 0.8}) 100%)`
-                                  }}
-                                />
-                              )}
-                              {/* Gradient Overlay */}
-                              {settings.hero_background.filters?.includes('gradient') && (
-                                <div
-                                  className="absolute inset-0 pointer-events-none"
-                                  style={{
-                                    background: `linear-gradient(to bottom, rgba(0,0,0,${(settings.hero_background.filter_intensity ?? 50) / 100 * 0.5}) 0%, transparent 30%, transparent 70%, rgba(0,0,0,${(settings.hero_background.filter_intensity ?? 50) / 100 * 0.7}) 100%)`
-                                  }}
-                                />
-                              )}
                             </div>
                           )}
                         </div>
@@ -775,77 +753,84 @@ export default function MedienPage() {
                     </div>
                   )}
 
-                  {/* Filter */}
-                  <div className="space-y-3 pt-2 border-t border-slate-200">
+                  {/* Filter mit individueller Intensität */}
+                  <div className="space-y-4 pt-2 border-t border-slate-200">
                     <div className="flex items-center gap-4">
                       <span className="text-sm font-medium text-slate-900 w-24">Filter</span>
                       <span className="text-xs text-slate-500">Mehrere Filter kombinierbar</span>
                     </div>
-                    <div className="grid grid-cols-5 gap-2">
-                      {[
-                        { id: 'none', label: 'Kein Filter', icon: '○' },
-                        { id: 'darken', label: 'Abdunkeln', icon: '◐' },
-                        { id: 'blur', label: 'Blur', icon: '◎' },
-                        { id: 'glass', label: 'Milchglas', icon: '▢' },
-                        { id: 'grayscale', label: 'S/W', icon: '◑' },
-                        { id: 'sepia', label: 'Sepia', icon: '▣' },
-                        { id: 'contrast', label: 'Kontrast', icon: '◆' },
-                        { id: 'desaturate', label: 'Entsättigt', icon: '◇' },
-                        { id: 'vignette', label: 'Vignette', icon: '◉' },
-                        { id: 'gradient', label: 'Verlauf', icon: '▽' },
-                      ].map(filter => {
-                        const filters = settings.hero_background.filters || [];
-                        const isSelected = filter.id === 'none'
-                          ? filters.length === 0
-                          : filters.includes(filter.id);
+
+                    {/* Filter-Liste */}
+                    <div className="space-y-3">
+                      {HERO_FILTERS.map(filter => {
+                        const filters = settings.hero_background.filters || {};
+                        const isActive = filter.id in filters;
+                        const intensity = filters[filter.id] ?? 50;
+
                         return (
-                          <button
-                            key={filter.id}
-                            onClick={() => {
-                              if (filter.id === 'none') {
-                                setSettings(s => ({ ...s, hero_background: { ...s.hero_background, filters: [] } }));
-                              } else {
+                          <div key={filter.id} className="flex items-center gap-3">
+                            {/* Toggle Button */}
+                            <button
+                              onClick={() => {
                                 setSettings(s => {
-                                  const currentFilters = s.hero_background.filters || [];
+                                  const currentFilters = { ...(s.hero_background.filters || {}) };
+                                  if (isActive) {
+                                    delete currentFilters[filter.id];
+                                  } else {
+                                    currentFilters[filter.id] = 50;
+                                  }
                                   return {
                                     ...s,
-                                    hero_background: {
-                                      ...s.hero_background,
-                                      filters: isSelected
-                                        ? currentFilters.filter(f => f !== filter.id)
-                                        : [...currentFilters, filter.id]
-                                    }
+                                    hero_background: { ...s.hero_background, filters: currentFilters }
                                   };
                                 });
-                              }
-                            }}
-                            className={`flex flex-col items-center gap-1 p-2 rounded-lg text-xs transition-colors ${
-                              isSelected
-                                ? 'bg-gold/20 border-2 border-gold text-slate-900'
-                                : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
-                            }`}
-                          >
-                            <span className="text-lg">{filter.icon}</span>
-                            <span>{filter.label}</span>
-                          </button>
+                              }}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-w-[120px] ${
+                                isActive
+                                  ? 'bg-gold/20 border-2 border-gold text-slate-900'
+                                  : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
+                              }`}
+                            >
+                              <span className="text-base">{filter.icon}</span>
+                              <span>{filter.label}</span>
+                            </button>
+
+                            {/* Intensitäts-Slider (nur wenn aktiv) */}
+                            {isActive && (
+                              <div className="flex items-center gap-3 flex-1">
+                                <input
+                                  type="range"
+                                  min={0}
+                                  max={100}
+                                  value={intensity}
+                                  onChange={(e) => {
+                                    const newIntensity = parseInt(e.target.value);
+                                    setSettings(s => ({
+                                      ...s,
+                                      hero_background: {
+                                        ...s.hero_background,
+                                        filters: { ...(s.hero_background.filters || {}), [filter.id]: newIntensity }
+                                      }
+                                    }));
+                                  }}
+                                  className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-gold"
+                                />
+                                <span className="text-sm text-slate-600 w-12 text-right">{intensity}%</span>
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>
 
-                    {/* Filter-Intensität */}
-                    {(settings.hero_background.filters?.length || 0) > 0 && (
-                      <div className="flex items-center gap-4 pt-2">
-                        <span className="text-sm font-medium text-slate-900 w-24">Intensität</span>
-                        <input
-                          type="range"
-                          min={10}
-                          max={100}
-                          value={settings.hero_background.filter_intensity ?? 50}
-                          onChange={(e) => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, filter_intensity: parseInt(e.target.value) } }))}
-                          className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-gold"
-                        />
-                        <span className="text-sm text-slate-600 w-12 text-right">{settings.hero_background.filter_intensity ?? 50}%</span>
-                      </div>
+                    {/* Alle Filter zurücksetzen */}
+                    {Object.keys(settings.hero_background.filters || {}).length > 0 && (
+                      <button
+                        onClick={() => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, filters: {} } }))}
+                        className="text-sm text-slate-500 hover:text-slate-700 underline"
+                      >
+                        Alle Filter entfernen
+                      </button>
                     )}
                   </div>
 

@@ -7,18 +7,12 @@ import { useHeroSettings } from '@/hooks/useSiteSettings';
 
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
-// Filter-CSS-Mappings
+// Filter-CSS-Mappings (nur die 4 verfügbaren Filter)
 const FILTER_CSS: Record<string, (intensity: number) => string> = {
-  darken: (i) => `brightness(${1 - i * 0.006})`,  // 0.4-1.0
-  blur: (i) => `blur(${i * 0.1}px)`,  // 0-10px
-  glass: (i) => `saturate(${1 + i * 0.01}) contrast(${1 + i * 0.005})`,
+  darken: (i) => `brightness(${1 - i * 0.007})`,
+  blur: (i) => `blur(${i * 0.15}px)`,
   grayscale: (i) => `grayscale(${i}%)`,
-  sepia: (i) => `sepia(${i * 0.5}%)`,  // 0-50%
-  contrast: (i) => `contrast(${100 + i * 0.5}%)`,  // 100-150%
-  desaturate: (i) => `saturate(${100 - i * 0.7}%)`,  // 30-100%
-  vignette: () => '',  // Vignette wird per CSS umgesetzt
-  gradient: () => '',  // Gradient wird per Overlay umgesetzt
-  warm: (i) => `sepia(${i * 0.2}%) saturate(${100 + i * 0.3}%)`,
+  sepia: (i) => `sepia(${i}%)`,
 };
 
 export function Hero() {
@@ -60,23 +54,15 @@ export function Hero() {
     return `https://www.youtube.com/embed/${background.youtube_id}?${params.toString()}`;
   }, [background]);
 
-  // Build CSS filter string from selected filters
+  // Build CSS filter string from filters object with individual intensities
   const filterStyle = useMemo(() => {
-    if (!background.filters || background.filters.length === 0) return '';
+    if (!background.filters || Object.keys(background.filters).length === 0) return '';
 
-    const intensity = background.filter_intensity || 50;
-    const filterStrings = background.filters
-      .filter(f => FILTER_CSS[f] && f !== 'vignette' && f !== 'gradient')
-      .map(f => FILTER_CSS[f](intensity))
-      .filter(Boolean);
-
-    return filterStrings.join(' ');
-  }, [background.filters, background.filter_intensity]);
-
-  // Check for vignette and gradient
-  const hasVignette = background.filters?.includes('vignette');
-  const hasGradient = background.filters?.includes('gradient');
-  const vignetteIntensity = (background.filter_intensity || 50) / 100;
+    return Object.entries(background.filters)
+      .map(([key, intensity]) => FILTER_CSS[key] ? FILTER_CSS[key](intensity) : '')
+      .filter(Boolean)
+      .join(' ');
+  }, [background.filters]);
 
   // Get title and subtitle from settings, fallback to defaults
   const heroTitle = getLocalizedText(heroSettings.title) || 'BEBAN BARBER SHOP 2.0';
@@ -158,26 +144,6 @@ export function Hero() {
             style={{ border: 'none' }}
           />
         </div>
-      )}
-
-      {/* Vignette Overlay */}
-      {hasVignette && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,${vignetteIntensity * 0.8}) 100%)`
-          }}
-        />
-      )}
-
-      {/* Gradient Overlay */}
-      {hasGradient && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `linear-gradient(to bottom, rgba(0,0,0,${vignetteIntensity * 0.5}) 0%, transparent 30%, transparent 70%, rgba(0,0,0,${vignetteIntensity * 0.7}) 100%)`
-          }}
-        />
       )}
 
       {/* Standard-Overlay für Lesbarkeit */}

@@ -46,10 +46,18 @@ function formatDateLocal(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+interface PasswordSetupData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+}
+
 interface BookingModalClassicProps {
   isOpen: boolean;
   onClose: () => void;
   preselectedBarber?: string;
+  passwordSetupData?: PasswordSetupData | null;
 }
 
 // Kalenderwoche berechnen (ISO 8601)
@@ -547,7 +555,7 @@ function findNextAvailableDate(
   return null;
 }
 
-export function BookingModalClassic({ isOpen, onClose, preselectedBarber }: BookingModalClassicProps) {
+export function BookingModalClassic({ isOpen, onClose, preselectedBarber, passwordSetupData }: BookingModalClassicProps) {
   const t = useTranslations('booking');
   const tAuth = useTranslations('auth');
   const tCommon = useTranslations('common');

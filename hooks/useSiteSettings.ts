@@ -41,8 +41,7 @@ export interface SiteSettings {
     video_start: number;
     video_end: number;
     video_loop: boolean;
-    filters: string[];
-    filter_intensity: number;
+    filters: Record<string, number>;
   };
 
   // Section titles
@@ -84,8 +83,7 @@ const defaultSettings: SiteSettings = {
     video_start: 24,
     video_end: 54,
     video_loop: true,
-    filters: ['darken', 'sepia'],
-    filter_intensity: 50,
+    filters: { darken: 50 },
   },
   section_about: { title: { de: '', en: '' }, subtitle: { de: '', en: '' } },
   section_services: { title: { de: '', en: '' }, subtitle: { de: '', en: '' } },
@@ -202,8 +200,7 @@ interface HeroBackground {
   video_start: number;
   video_end: number;
   video_loop: boolean;
-  filters: string[];
-  filter_intensity: number;
+  filters: Record<string, number>;
 }
 
 const defaultHeroBackground: HeroBackground = {
@@ -213,8 +210,7 @@ const defaultHeroBackground: HeroBackground = {
   video_start: 24,
   video_end: 54,
   video_loop: true,
-  filters: ['darken', 'sepia'],
-  filter_intensity: 50,
+  filters: { darken: 50 },
 };
 
 export function useHeroSettings() {

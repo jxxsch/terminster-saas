@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beban Barber Shop 2.0</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --gold: #d4af37;
+      --gold-dark: #b8960c;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #1a2a3a 0%, #0d1a26 50%, #0a1015 100%);
+      color: white;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .frame {
+      width: 100%;
+      max-width: 1400px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 24px;
+      min-height: calc(100vh - 3rem);
+      position: relative;
+      overflow: hidden;
+      background: rgba(0,0,0,0.2);
+    }
+
+    .video-bg {
+      position: absolute;
+      inset: 0;
+      opacity: 0.6;
+    }
+
+    .video-bg iframe,
+    .video-bg #player {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 180%;
+      height: 180%;
+      pointer-events: none;
+    }
+
+    .video-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(20,40,60,0.8) 0%, rgba(10,20,30,0.6) 100%);
+    }
+
+    /* Header */
+    .header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 1.5rem 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.1rem;
+      font-weight: 500;
+      text-decoration: none;
+      color: white;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--gold);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: black;
+      font-size: 1rem;
+    }
+
+    .separator {
+      width: 1px;
+      height: 20px;
+      background: rgba(255,255,255,0.25);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .nav-links a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      font-size: 0.75rem;
+      font-weight: 400;
+      padding: 0.5rem 1rem;
+      border-radius: 100px;
+      transition: all 0.3s;
+      letter-spacing: 0.02em;
+    }
+
+    .nav-links a:hover {
+      color: white;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .lang {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      transition: color 0.3s;
+    }
+
+    .lang:hover {
+      color: white;
+    }
+
+    .header-cta {
+      padding: 0.7rem 1.5rem;
+      background: white;
+      color: black;
+      border: none;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .header-cta:hover {
+      background: var(--gold);
+    }
+
+    .user-btn {
+      width: 38px;
+      height: 38px;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 100px;
+      background: transparent;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+
+    .user-btn:hover {
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+
+    /* Content */
+    .content {
+      position: relative;
+      z-index: 10;
+      padding: 7rem 3rem 3rem;
+      min-height: calc(100vh - 3rem);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      font-weight: 400;
+      line-height: 1.05;
+      max-width: 700px;
+      margin-bottom: 1rem;
+    }
+
+    .main-title em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    .bottom-row {
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .left-info {
+      max-width: 320px;
+    }
+
+    .description {
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: rgba(255,255,255,0.7);
+      font-weight: 300;
+    }
+
+    .rating {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .rating-star {
+      color: var(--gold);
+      font-size: 1.1rem;
+    }
+
+    .rating-number {
+      font-size: 1.2rem;
+      font-weight: 500;
+    }
+
+    .rating-text {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.5);
+    }
+
+    /* Booking Card */
+    .booking-card {
+      width: 340px;
+      background: rgba(25,30,40,0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 1.75rem;
+      border: 1px solid rgba(255,255,255,0.1);
+      flex-shrink: 0;
+    }
+
+    .booking-card h3 {
+      font-size: 1.15rem;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+    }
+
+    .booking-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .booking-field {
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 0.85rem 1rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .booking-field:hover {
+      background: rgba(255,255,255,0.12);
+    }
+
+    .booking-field-label {
+      font-size: 0.6rem;
+      color: rgba(255,255,255,0.4);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.3rem;
+    }
+
+    .booking-field-value {
+      font-size: 0.9rem;
+      font-weight: 400;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .booking-field-value .icon {
+      font-size: 1rem;
+    }
+
+    .booking-divider {
+      height: 1px;
+      background: rgba(255,255,255,0.1);
+      margin: 1.25rem 0;
+    }
+
+    .booking-price {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .price {
+      font-size: 1.75rem;
+      font-weight: 500;
+    }
+
+    .price span {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.5);
+      font-weight: 400;
+    }
+
+    .duration {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.5);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .booking-btn {
+      width: 100%;
+      padding: 1.1rem;
+      background: white;
+      color: black;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .booking-btn:hover {
+      background: var(--gold);
+    }
+
+    /* Scroll Indicator */
+    .scroll-indicator {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .scroll-indicator .arrow {
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(5px); }
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .nav-links {
+        display: none;
+      }
+
+      .bottom-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .booking-card {
+        width: 100%;
+        max-width: 400px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 1rem;
+      }
+
+      .frame {
+        min-height: calc(100vh - 2rem);
+        border-radius: 16px;
+      }
+
+      .header {
+        padding: 1rem 1.5rem;
+      }
+
+      .content {
+        padding: 5rem 1.5rem 2rem;
+      }
+
+      .main-title {
+        font-size: 2.5rem;
+      }
+
+      .booking-card {
+        padding: 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="frame">
+    <div class="video-bg">
+      <div id="player"></div>
+    </div>
+
+    <script>
+      // YouTube IFrame API laden
+      var tag = document.createElement('script');
+      tag.src = "https://www.youtube.com/iframe_api";
+      var firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+      var player;
+      function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player', {
+          videoId: '3vCGQvscX34',
+          playerVars: {
+            autoplay: 1,
+            mute: 1,
+            controls: 0,
+            showinfo: 0,
+            modestbranding: 1,
+            loop: 1,
+            playlist: '3vCGQvscX34',
+            start: 24,
+            end: 54,
+            rel: 0,
+            iv_load_policy: 3,
+            disablekb: 1,
+            playsinline: 1,
+            enablejsapi: 1
+          },
+          events: {
+            onReady: function(event) {
+              event.target.mute();
+              event.target.playVideo();
+            },
+            onStateChange: function(event) {
+              // Loop wenn Video endet
+              if (event.data === YT.PlayerState.ENDED) {
+                player.seekTo(24);
+                player.playVideo();
+              }
+            }
+          }
+        });
+      }
+    </script>
+
+    <header class="header">
+      <div class="header-left">
+        <a href="#" class="logo">
+          <div class="logo-icon">B</div>
+          <span>Beban</span>
+        </a>
+        <div class="separator"></div>
+        <nav class="nav-links">
+          <a href="#about">Über uns</a>
+          <a href="#services">Services</a>
+          <a href="#team">Team</a>
+          <a href="#gallery">Galerie</a>
+          <a href="#contact">Kontakt</a>
+        </nav>
+      </div>
+      <div class="header-right">
+        <span class="lang">DE</span>
+        <button class="header-cta">Termin buchen</button>
+        <div class="separator"></div>
+        <button class="user-btn">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="content">
+      <h1 class="main-title">
+        The Art of<br>
+        <em>Grooming</em><br>
+        Excellence
+      </h1>
+
+      <div class="bottom-row">
+        <div class="left-info">
+          <p class="description">
+            Entdecken Sie erstklassige Herrenpflege in der Rathaus Galerie Leverkusen. Wo Tradition auf modernen Stil trifft.
+          </p>
+          <div class="rating">
+            <span class="rating-star">★</span>
+            <span class="rating-number">4.9</span>
+            <span class="rating-text">von 500+ Bewertungen</span>
+          </div>
+        </div>
+
+        <div class="booking-card">
+          <h3>Termin reservieren</h3>
+
+          <div class="booking-row">
+            <div class="booking-field">
+              <div class="booking-field-label">Datum</div>
+              <div class="booking-field-value">
+                <span class="icon">📅</span> Heute
+              </div>
+            </div>
+            <div class="booking-field">
+              <div class="booking-field-label">Uhrzeit</div>
+              <div class="booking-field-value">
+                <span class="icon">🕐</span> 14:00
+              </div>
+            </div>
+          </div>
+
+          <div class="booking-row">
+            <div class="booking-field">
+              <div class="booking-field-label">Service</div>
+              <div class="booking-field-value">Haarschnitt</div>
+            </div>
+            <div class="booking-field">
+              <div class="booking-field-label">Barber</div>
+              <div class="booking-field-value">Beliebig</div>
+            </div>
+          </div>
+
+          <div class="booking-divider"></div>
+
+          <div class="booking-price">
+            <div class="price">20€ <span>/ Service</span></div>
+            <div class="duration">
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              30 Min
+            </div>
+          </div>
+
+          <button class="booking-btn">Jetzt buchen</button>
+        </div>
+      </div>
+
+      <div class="scroll-indicator">
+        <span>Scroll</span>
+        <span class="arrow">↓</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

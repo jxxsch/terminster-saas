@@ -115,6 +115,7 @@ interface DatePickerProps {
   autoOpen?: boolean;
   required?: boolean;
   initialMonth?: string; // YYYY-MM-DD - Kalender startet in diesem Monat
+  inline?: boolean; // Nur Kalender anzeigen, ohne Input-Feld
 }
 
 export function DatePicker({
@@ -126,8 +127,9 @@ export function DatePicker({
   autoOpen = false,
   required = false,
   initialMonth,
+  inline = false,
 }: DatePickerProps) {
-  const [isOpen, setIsOpen] = useState(autoOpen);
+  const [isOpen, setIsOpen] = useState(autoOpen || inline);
   const [viewDate, setViewDate] = useState(() => {
     if (value) return new Date(value);
     if (initialMonth) return new Date(initialMonth);
@@ -272,6 +274,102 @@ export function DatePicker({
     ? new Date(value).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
     : '';
 
+  // Kalender-Content als wiederverwendbare Variable
+  const calendarContent = (
+    <>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <button
+          type="button"
+          onClick={prevMonth}
+          className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
+        >
+          <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <span className="text-sm font-semibold text-slate-800">
+          {monthNames[month]} {year}
+        </span>
+        <button
+          type="button"
+          onClick={nextMonth}
+          className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
+        >
+          <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Day names */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
+        {dayNames.map(d => (
+          <div key={d} className="text-center text-[10px] font-medium text-slate-400 py-1">
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Days grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {calendarDays.map((day, idx) => {
+          const isToday = day.dateStr === todayStr;
+          const isSelected = day.dateStr === value;
+          const holiday = allHolidays.get(day.dateStr);
+          const isDisabled = !!(min && day.dateStr < min);
+          const isWeekend = (idx % 7) >= 5;
+
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => handleDateClick(day.dateStr)}
+              disabled={isDisabled}
+              title={holiday || undefined}
+              className={`
+                relative w-8 h-8 text-xs rounded-lg transition-all
+                ${!day.isCurrentMonth ? 'text-slate-300' : ''}
+                ${day.isCurrentMonth && !isSelected && !isToday ? 'text-slate-700 hover:bg-slate-100' : ''}
+                ${isWeekend && day.isCurrentMonth && !isSelected && !isToday ? 'text-slate-400' : ''}
+                ${isToday && !isSelected ? 'bg-gold/20 text-gold font-semibold ring-1 ring-gold/50' : ''}
+                ${isSelected ? 'bg-gold text-black font-semibold' : ''}
+                ${holiday && day.isCurrentMonth ? 'text-red-500 font-medium' : ''}
+                ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
+              `}
+            >
+              {day.day}
+              {holiday && day.isCurrentMonth && (
+                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-red-400 rounded-full" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="mt-3 pt-2 border-t border-slate-100 flex items-center gap-4 text-[10px] text-slate-400">
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded bg-gold/20 ring-1 ring-gold/50" />
+          <span>Heute</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-1 h-1 bg-red-400 rounded-full" />
+          <span>Feiertag</span>
+        </div>
+      </div>
+    </>
+  );
+
+  // Inline-Modus: Nur Kalender ohne Input und Portal
+  if (inline) {
+    return (
+      <div className="bg-white rounded-xl border border-slate-200 p-3 w-[280px]">
+        {calendarContent}
+      </div>
+    );
+  }
+
   return (
     <div ref={containerRef} className="relative">
       {label && (
@@ -294,87 +392,7 @@ export function DatePicker({
           className="fixed z-[9999] bg-white rounded-xl shadow-xl border border-slate-200 p-3 w-[280px]"
           style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3">
-            <button
-              type="button"
-              onClick={prevMonth}
-              className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <span className="text-sm font-semibold text-slate-800">
-              {monthNames[month]} {year}
-            </span>
-            <button
-              type="button"
-              onClick={nextMonth}
-              className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Day names */}
-          <div className="grid grid-cols-7 gap-1 mb-1">
-            {dayNames.map(d => (
-              <div key={d} className="text-center text-[10px] font-medium text-slate-400 py-1">
-                {d}
-              </div>
-            ))}
-          </div>
-
-          {/* Days grid */}
-          <div className="grid grid-cols-7 gap-1">
-            {calendarDays.map((day, idx) => {
-              const isToday = day.dateStr === todayStr;
-              const isSelected = day.dateStr === value;
-              const holiday = allHolidays.get(day.dateStr);
-              const isDisabled = !!(min && day.dateStr < min);
-              const isWeekend = (idx % 7) >= 5;
-
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleDateClick(day.dateStr)}
-                  disabled={isDisabled}
-                  title={holiday || undefined}
-                  className={`
-                    relative w-8 h-8 text-xs rounded-lg transition-all
-                    ${!day.isCurrentMonth ? 'text-slate-300' : ''}
-                    ${day.isCurrentMonth && !isSelected && !isToday ? 'text-slate-700 hover:bg-slate-100' : ''}
-                    ${isWeekend && day.isCurrentMonth && !isSelected && !isToday ? 'text-slate-400' : ''}
-                    ${isToday && !isSelected ? 'bg-gold/20 text-gold font-semibold ring-1 ring-gold/50' : ''}
-                    ${isSelected ? 'bg-gold text-black font-semibold' : ''}
-                    ${holiday && day.isCurrentMonth ? 'text-red-500 font-medium' : ''}
-                    ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
-                  `}
-                >
-                  {day.day}
-                  {holiday && day.isCurrentMonth && (
-                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 bg-red-400 rounded-full" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Legend */}
-          <div className="mt-3 pt-2 border-t border-slate-100 flex items-center gap-4 text-[10px] text-slate-400">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-3 rounded bg-gold/20 ring-1 ring-gold/50" />
-              <span>Heute</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-1 h-1 bg-red-400 rounded-full" />
-              <span>Feiertag</span>
-            </div>
-          </div>
+          {calendarContent}
         </div>,
         document.body
       )}
