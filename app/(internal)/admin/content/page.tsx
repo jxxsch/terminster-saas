@@ -65,6 +65,7 @@ interface SettingsState {
   hero_background: {
     type: 'video' | 'image';
     image_url: string;
+    image_position: string;
     youtube_id: string;
     video_start: number;
     video_end: number;
@@ -102,6 +103,7 @@ const defaultSettings: SettingsState = {
   hero_background: {
     type: 'video',
     image_url: '/hero-bg.jpg',
+    image_position: '50% 50%',
     youtube_id: '3vCGQvscX34',
     video_start: 24,
     video_end: 54,
@@ -760,18 +762,58 @@ export default function MedienPage() {
                               </button>
                             )}
                           </div>
-                          {/* Bild-Vorschau mit Filtern */}
+                          {/* Bild-Vorschau mit Filtern und Drag */}
                           {settings.hero_background.image_url && (
-                            <div className="w-full rounded-lg overflow-hidden bg-slate-200 border border-slate-200 aspect-video relative">
+                            <div
+                              className="w-full rounded-lg overflow-hidden bg-slate-200 border border-slate-200 aspect-video relative cursor-move group"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                const startX = e.clientX;
+                                const startY = e.clientY;
+                                const pos = settings.hero_background.image_position?.split(' ') || ['50%', '50%'];
+                                const startPosX = parseFloat(pos[0]);
+                                const startPosY = parseFloat(pos[1]);
+                                const rect = e.currentTarget.getBoundingClientRect();
+
+                                const handleMove = (moveEvent: MouseEvent) => {
+                                  const deltaX = ((moveEvent.clientX - startX) / rect.width) * 100;
+                                  const deltaY = ((moveEvent.clientY - startY) / rect.height) * 100;
+                                  const newX = Math.max(0, Math.min(100, startPosX - deltaX));
+                                  const newY = Math.max(0, Math.min(100, startPosY - deltaY));
+                                  setSettings(s => ({
+                                    ...s,
+                                    hero_background: {
+                                      ...s.hero_background,
+                                      image_position: `${Math.round(newX)}% ${Math.round(newY)}%`
+                                    }
+                                  }));
+                                };
+
+                                const handleUp = () => {
+                                  window.removeEventListener('mousemove', handleMove);
+                                  window.removeEventListener('mouseup', handleUp);
+                                };
+
+                                window.addEventListener('mousemove', handleMove);
+                                window.addEventListener('mouseup', handleUp);
+                              }}
+                            >
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={settings.hero_background.image_url}
                                 alt="Hero Hintergrund"
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover pointer-events-none"
                                 style={{
                                   filter: buildFilterStyleFromObject(settings.hero_background.filters),
+                                  objectPosition: settings.hero_background.image_position || '50% 50%',
                                 }}
                               />
+                              {/* Drag-Hinweis */}
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                <span className="text-white text-sm font-medium bg-black/50 px-3 py-1.5 rounded-lg">
+                                  Ziehen zum Verschieben
+                                </span>
+                              </div>
                             </div>
                           )}
                         </div>

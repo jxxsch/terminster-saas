@@ -196,6 +196,7 @@ export function useContactSettings() {
 interface HeroBackground {
   type: 'video' | 'image';
   image_url: string;
+  image_position: string;
   youtube_id: string;
   video_start: number;
   video_end: number;
@@ -206,6 +207,7 @@ interface HeroBackground {
 const defaultHeroBackground: HeroBackground = {
   type: 'video',
   image_url: '',
+  image_position: '50% 50%',
   youtube_id: '3vCGQvscX34',
   video_start: 24,
   video_end: 54,

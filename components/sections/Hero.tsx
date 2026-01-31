@@ -127,9 +127,10 @@ export function Hero() {
         </div>
       ) : background.type === 'image' && background.image_url ? (
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover"
           style={{
             backgroundImage: `url(${background.image_url})`,
+            backgroundPosition: background.image_position || '50% 50%',
             filter: filterStyle || undefined
           }}
         />
