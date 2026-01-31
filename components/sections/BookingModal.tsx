@@ -711,6 +711,12 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [bookedAppointmentId, setBookedAppointmentId] = useState<string | null>(null);
+  const [bookedDetails, setBookedDetails] = useState<{
+    barberName: string;
+    date: string;
+    dateFormatted: string;
+    time: string;
+  } | null>(null);
   const [bookingError, setBookingError] = useState('');
   const [showCalendarOptions, setShowCalendarOptions] = useState(false);
 
@@ -895,6 +901,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     setContactMode('choice');
     setBookingSuccess(false);
     setBookedAppointmentId(null);
+    setBookedDetails(null);
     setBookingError('');
     setShowCalendarOptions(false);
     setCurrentWeekOffset(0);
@@ -915,18 +922,18 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
 
   // Kalender-Hilfsfunktionen
   const getCalendarData = () => {
-    if (!selectedDay || !selectedSlot || !selectedBarberData) return null;
+    if (!bookedDetails) return null;
 
-    const [hour, minute] = selectedSlot.split(':').map(Number);
-    const startDate = new Date(selectedDay + 'T00:00:00');
+    const [hour, minute] = bookedDetails.time.split(':').map(Number);
+    const startDate = new Date(bookedDetails.date + 'T00:00:00');
     startDate.setHours(hour, minute, 0, 0);
 
     const endDate = new Date(startDate);
     endDate.setMinutes(endDate.getMinutes() + 30);
 
-    const title = `Termin bei ${selectedBarberData.name} - Beban Barbershop`;
+    const title = `Termin bei ${bookedDetails.barberName} - Beban Barbershop`;
     const location = 'Beban Barbershop, Friedrich-Ebert-Platz 3a, 51373 Leverkusen';
-    const details = `Dein Termin im Beban Barbershop bei ${selectedBarberData.name}\n\nAdresse: ${location}`;
+    const details = `Dein Termin im Beban Barbershop bei ${bookedDetails.barberName}\n\nAdresse: ${location}`;
 
     return { startDate, endDate, title, location, details };
   };
@@ -1167,6 +1174,14 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
           console.error('Email send error:', emailError);
         }
 
+        // Termin-Details speichern für Success-Modal
+        const dayData = days.find(d => d.dateStr === selectedDay);
+        setBookedDetails({
+          barberName: selectedBarberData?.name || '',
+          date: selectedDay!,
+          dateFormatted: `${dayData?.dayNameLong || ''}, ${dayData?.dayNumFullDate || ''}`,
+          time: selectedSlot!,
+        });
         setBookedAppointmentId(result.appointment.id);
         setBookingSuccess(true);
         await refreshAppointments();
@@ -1267,9 +1282,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
               <h3 style={styles.successTitle}>{t('bookingSuccess')}</h3>
               <p style={styles.successText}>
                 {t('success.message', {
-                  barber: selectedBarberData?.name || '',
-                  date: `${selectedDayData?.dayNameLong || ''}, ${selectedDayData?.dayNumFullDate || ''}`,
-                  time: selectedSlot || ''
+                  barber: bookedDetails?.barberName || '',
+                  date: bookedDetails?.dateFormatted || '',
+                  time: bookedDetails?.time || ''
                 })}
               </p>
               {/* Kalender-Optionen - 3 Spalten */}
