@@ -708,9 +708,10 @@ export default function MedienPage() {
                         { id: 'vignette', label: 'Vignette', icon: '◉' },
                         { id: 'gradient', label: 'Verlauf', icon: '▽' },
                       ].map(filter => {
+                        const filters = settings.hero_background.filters || [];
                         const isSelected = filter.id === 'none'
-                          ? settings.hero_background.filters.length === 0
-                          : settings.hero_background.filters.includes(filter.id);
+                          ? filters.length === 0
+                          : filters.includes(filter.id);
                         return (
                           <button
                             key={filter.id}
@@ -718,15 +719,18 @@ export default function MedienPage() {
                               if (filter.id === 'none') {
                                 setSettings(s => ({ ...s, hero_background: { ...s.hero_background, filters: [] } }));
                               } else {
-                                setSettings(s => ({
-                                  ...s,
-                                  hero_background: {
-                                    ...s.hero_background,
-                                    filters: isSelected
-                                      ? s.hero_background.filters.filter(f => f !== filter.id)
-                                      : [...s.hero_background.filters, filter.id]
-                                  }
-                                }));
+                                setSettings(s => {
+                                  const currentFilters = s.hero_background.filters || [];
+                                  return {
+                                    ...s,
+                                    hero_background: {
+                                      ...s.hero_background,
+                                      filters: isSelected
+                                        ? currentFilters.filter(f => f !== filter.id)
+                                        : [...currentFilters, filter.id]
+                                    }
+                                  };
+                                });
                               }
                             }}
                             className={`flex flex-col items-center gap-1 p-2 rounded-lg text-xs transition-colors ${
@@ -743,18 +747,18 @@ export default function MedienPage() {
                     </div>
 
                     {/* Filter-Intensität */}
-                    {settings.hero_background.filters.length > 0 && (
+                    {(settings.hero_background.filters?.length || 0) > 0 && (
                       <div className="flex items-center gap-4 pt-2">
                         <span className="text-sm font-medium text-slate-900 w-24">Intensität</span>
                         <input
                           type="range"
                           min={10}
                           max={100}
-                          value={settings.hero_background.filter_intensity}
+                          value={settings.hero_background.filter_intensity ?? 50}
                           onChange={(e) => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, filter_intensity: parseInt(e.target.value) } }))}
                           className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-gold"
                         />
-                        <span className="text-sm text-slate-600 w-12 text-right">{settings.hero_background.filter_intensity}%</span>
+                        <span className="text-sm text-slate-600 w-12 text-right">{settings.hero_background.filter_intensity ?? 50}%</span>
                       </div>
                     )}
                   </div>
