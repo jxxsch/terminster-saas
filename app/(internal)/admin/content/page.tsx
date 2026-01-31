@@ -795,7 +795,7 @@ export default function MedienPage() {
                                 <span>{filter.label}</span>
                               </button>
                               {/* Slider direkt darunter */}
-                              <div className="flex flex-col items-center gap-0.5">
+                              <div className="flex flex-col items-center gap-1.5">
                                 <input
                                   type="range"
                                   min={0}
