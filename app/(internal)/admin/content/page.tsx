@@ -608,12 +608,15 @@ export default function MedienPage() {
                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
                           />
                           {/* YouTube-Vorschau */}
-                          {settings.hero_background.youtube_id && (
-                            <div className="relative aspect-video w-full max-w-md rounded-lg overflow-hidden bg-black">
+                          {settings.hero_background.youtube_id && settings.hero_background.youtube_id.length === 11 && (
+                            <div className="relative aspect-video w-full max-w-md rounded-lg overflow-hidden bg-black mt-2">
                               <iframe
+                                key={settings.hero_background.youtube_id}
                                 src={`https://www.youtube.com/embed/${settings.hero_background.youtube_id}?start=${settings.hero_background.video_start ?? 0}&autoplay=0&controls=1`}
                                 allow="encrypted-media"
+                                allowFullScreen
                                 className="absolute inset-0 w-full h-full"
+                                style={{ border: 'none' }}
                               />
                             </div>
                           )}
