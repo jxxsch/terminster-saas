@@ -640,21 +640,49 @@ export default function MedienPage() {
                         <span className="text-sm font-medium text-slate-900 w-24">Zeitraum</span>
                         <div className="flex items-center gap-2">
                           <input
-                            type="number"
-                            value={settings.hero_background.video_start ?? 0}
-                            onChange={(e) => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, video_start: parseInt(e.target.value) || 0 } }))}
-                            min={0}
-                            className="w-20 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                            type="text"
+                            value={(() => {
+                              const secs = settings.hero_background.video_start ?? 0;
+                              const m = Math.floor(secs / 60);
+                              const s = secs % 60;
+                              return `${m}:${s.toString().padStart(2, '0')}`;
+                            })()}
+                            onChange={(e) => {
+                              const parts = e.target.value.split(':');
+                              let seconds = 0;
+                              if (parts.length === 2) {
+                                seconds = (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+                              } else {
+                                seconds = parseInt(e.target.value) || 0;
+                              }
+                              setSettings(s => ({ ...s, hero_background: { ...s.hero_background, video_start: seconds } }));
+                            }}
+                            placeholder="0:00"
+                            className="w-20 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 text-center focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
                           />
                           <span className="text-sm text-slate-500">bis</span>
                           <input
-                            type="number"
-                            value={settings.hero_background.video_end ?? 0}
-                            onChange={(e) => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, video_end: parseInt(e.target.value) || 0 } }))}
-                            min={0}
-                            className="w-20 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                            type="text"
+                            value={(() => {
+                              const secs = settings.hero_background.video_end ?? 0;
+                              const m = Math.floor(secs / 60);
+                              const s = secs % 60;
+                              return `${m}:${s.toString().padStart(2, '0')}`;
+                            })()}
+                            onChange={(e) => {
+                              const parts = e.target.value.split(':');
+                              let seconds = 0;
+                              if (parts.length === 2) {
+                                seconds = (parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0);
+                              } else {
+                                seconds = parseInt(e.target.value) || 0;
+                              }
+                              setSettings(s => ({ ...s, hero_background: { ...s.hero_background, video_end: seconds } }));
+                            }}
+                            placeholder="0:00"
+                            className="w-20 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 text-center focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
                           />
-                          <span className="text-sm text-slate-500">Sekunden</span>
+                          <span className="text-sm text-slate-500">mm:ss</span>
                         </div>
                       </div>
 
