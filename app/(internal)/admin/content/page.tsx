@@ -728,23 +728,46 @@ export default function MedienPage() {
                   {(settings.hero_background?.type) === 'image' && (
                     <div className="space-y-4 pt-2 border-t border-slate-200">
                       <div className="flex items-start gap-4">
-                        <span className="text-sm font-medium text-slate-900 w-24 pt-2">Bild-URL</span>
-                        <div className="flex-1 space-y-2">
-                          <input
-                            type="text"
-                            value={settings.hero_background.image_url ?? ''}
-                            onChange={(e) => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, image_url: e.target.value } }))}
-                            placeholder="/hero-bg.jpg oder https://..."
-                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
-                          />
-                          {/* Bild-Vorschau */}
+                        <span className="text-sm font-medium text-slate-900 w-24 pt-2">Bild</span>
+                        <div className="flex-1 space-y-3">
+                          {/* Upload Button */}
+                          <div className="flex items-center gap-3">
+                            <label className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:border-gold hover:text-slate-900 cursor-pointer transition-colors">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  const url = await uploadImage(file, 'hero');
+                                  if (url) {
+                                    setSettings(s => ({ ...s, hero_background: { ...s.hero_background, image_url: url } }));
+                                  }
+                                }}
+                              />
+                              📁 Bild hochladen
+                            </label>
+                            {settings.hero_background.image_url && (
+                              <button
+                                onClick={() => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, image_url: '' } }))}
+                                className="text-xs text-red-500 hover:text-red-700"
+                              >
+                                Entfernen
+                              </button>
+                            )}
+                          </div>
+                          {/* Bild-Vorschau mit Filtern */}
                           {settings.hero_background.image_url && (
-                            <div className="relative aspect-video w-full max-w-md rounded-lg overflow-hidden bg-slate-200">
+                            <div className="w-full rounded-lg overflow-hidden bg-slate-200 border border-slate-200 aspect-video relative">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={settings.hero_background.image_url}
                                 alt="Hero Hintergrund"
-                                className="absolute inset-0 w-full h-full object-cover"
+                                className="w-full h-full object-cover"
+                                style={{
+                                  filter: buildFilterStyleFromObject(settings.hero_background.filters),
+                                }}
                               />
                             </div>
                           )}
