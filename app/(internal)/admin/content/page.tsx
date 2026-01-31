@@ -596,7 +596,7 @@ export default function MedienPage() {
                         <div className="flex-1 space-y-2">
                           <input
                             type="text"
-                            value={settings.hero_background.youtube_id}
+                            value={settings.hero_background.youtube_id ?? ''}
                             onChange={(e) => {
                               // Extrahiere Video-ID aus URL oder direkter ID
                               let id = e.target.value;
@@ -611,7 +611,7 @@ export default function MedienPage() {
                           {settings.hero_background.youtube_id && (
                             <div className="relative aspect-video w-full max-w-md rounded-lg overflow-hidden bg-black">
                               <iframe
-                                src={`https://www.youtube.com/embed/${settings.hero_background.youtube_id}?start=${settings.hero_background.video_start}&autoplay=0&controls=1`}
+                                src={`https://www.youtube.com/embed/${settings.hero_background.youtube_id}?start=${settings.hero_background.video_start ?? 0}&autoplay=0&controls=1`}
                                 allow="encrypted-media"
                                 className="absolute inset-0 w-full h-full"
                               />
@@ -626,7 +626,7 @@ export default function MedienPage() {
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
-                            value={settings.hero_background.video_start}
+                            value={settings.hero_background.video_start ?? 0}
                             onChange={(e) => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, video_start: parseInt(e.target.value) || 0 } }))}
                             min={0}
                             className="w-20 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
@@ -634,7 +634,7 @@ export default function MedienPage() {
                           <span className="text-sm text-slate-500">bis</span>
                           <input
                             type="number"
-                            value={settings.hero_background.video_end}
+                            value={settings.hero_background.video_end ?? 0}
                             onChange={(e) => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, video_end: parseInt(e.target.value) || 0 } }))}
                             min={0}
                             className="w-20 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
@@ -649,7 +649,7 @@ export default function MedienPage() {
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={settings.hero_background.video_loop}
+                            checked={settings.hero_background.video_loop ?? true}
                             onChange={(e) => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, video_loop: e.target.checked } }))}
                             className="sr-only peer"
                           />
@@ -668,7 +668,7 @@ export default function MedienPage() {
                         <div className="flex-1 space-y-2">
                           <input
                             type="text"
-                            value={settings.hero_background.image_url}
+                            value={settings.hero_background.image_url ?? ''}
                             onChange={(e) => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, image_url: e.target.value } }))}
                             placeholder="/hero-bg.jpg oder https://..."
                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
