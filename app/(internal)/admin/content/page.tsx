@@ -590,7 +590,7 @@ export default function MedienPage() {
                     <span className="text-sm font-medium text-slate-900 w-24">Typ</span>
                     <div className="flex gap-2">
                       <button
-                        onClick={() => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, type: 'video' } }))}
+                        onClick={() => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, type: 'video', filters: {} } }))}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                           settings.hero_background.type === 'video'
                             ? 'bg-gold text-black'
@@ -600,7 +600,7 @@ export default function MedienPage() {
                         Video
                       </button>
                       <button
-                        onClick={() => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, type: 'image' } }))}
+                        onClick={() => setSettings(s => ({ ...s, hero_background: { ...s.hero_background, type: 'image', filters: {} } }))}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                           settings.hero_background.type === 'image'
                             ? 'bg-gold text-black'
