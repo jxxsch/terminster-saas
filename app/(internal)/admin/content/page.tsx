@@ -154,7 +154,15 @@ export default function MedienPage() {
       const newSettings = { ...defaultSettings };
       Object.keys(defaultSettings).forEach(key => {
         if (settingsData[key]) {
-          (newSettings as Record<string, unknown>)[key] = settingsData[key];
+          // Deep-merge für hero_background um Default-Werte zu erhalten
+          if (key === 'hero_background' && typeof settingsData[key] === 'object') {
+            (newSettings as Record<string, unknown>)[key] = {
+              ...defaultSettings.hero_background,
+              ...settingsData[key],
+            };
+          } else {
+            (newSettings as Record<string, unknown>)[key] = settingsData[key];
+          }
         }
       });
       setSettings(newSettings as SettingsState);
@@ -588,7 +596,7 @@ export default function MedienPage() {
                   </div>
 
                   {/* Video-Einstellungen */}
-                  {settings.hero_background.type === 'video' && (
+                  {(settings.hero_background?.type ?? 'video') === 'video' && (
                     <div className="space-y-4 pt-2 border-t border-slate-200">
                       {/* YouTube ID */}
                       <div className="flex items-start gap-4">
@@ -664,7 +672,7 @@ export default function MedienPage() {
                   )}
 
                   {/* Bild-Einstellungen */}
-                  {settings.hero_background.type === 'image' && (
+                  {(settings.hero_background?.type) === 'image' && (
                     <div className="space-y-4 pt-2 border-t border-slate-200">
                       <div className="flex items-start gap-4">
                         <span className="text-sm font-medium text-slate-900 w-24 pt-2">Bild-URL</span>
