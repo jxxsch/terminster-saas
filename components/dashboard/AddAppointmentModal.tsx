@@ -7,6 +7,7 @@ import {
   searchCustomers,
   formatPrice,
   formatDuration,
+  getAppointments,
   Appointment,
   Series,
   TeamMember,
@@ -82,14 +83,23 @@ export function AddAppointmentModal({
   // Get barber name from team
   const barberName = team.find(t => t.id === barberId)?.name || 'Unbekannt';
 
-  // Hilfsfunktion: Prüft Konflikte für eine Serie
-  const checkSeriesConflicts = (daysToCheck: number[], intervalType: 'weekly' | 'biweekly' | 'monthly'): SeriesConflict[] => {
+  // Hilfsfunktion: Prüft Konflikte für eine Serie (lädt zukünftige Termine aus DB)
+  const checkSeriesConflicts = async (daysToCheck: number[], intervalType: 'weekly' | 'biweekly' | 'monthly'): Promise<SeriesConflict[]> => {
     const foundConflicts: SeriesConflict[] = [];
     const startDate = new Date(date);
 
+    // Lade Termine für die nächsten 6 Monate
+    const endDate = new Date(startDate);
+    endDate.setMonth(endDate.getMonth() + 6);
+
+    const futureAppointments = await getAppointments(
+      startDate.toISOString().split('T')[0],
+      endDate.toISOString().split('T')[0]
+    );
+
     // Prüfe alle existierenden Termine für diesen Barber und Zeitslot
-    existingAppointments
-      .filter(apt => apt.barber_id === barberId && apt.time_slot === timeSlot)
+    futureAppointments
+      .filter(apt => apt.barber_id === barberId && apt.time_slot === timeSlot && apt.status !== 'cancelled')
       .forEach(apt => {
         const aptDate = new Date(apt.date);
         const aptDayOfWeek = aptDate.getDay() === 0 ? 7 : aptDate.getDay();
@@ -311,8 +321,8 @@ export function AddAppointmentModal({
       setError('');
 
       if (isPauseSeries && pauseDays.length > 0) {
-        // Prüfe auf Konflikte
-        const foundConflicts = checkSeriesConflicts(pauseDays, 'weekly');
+        // Prüfe auf Konflikte (lädt zukünftige Termine aus DB)
+        const foundConflicts = await checkSeriesConflicts(pauseDays, 'weekly');
 
         if (foundConflicts.length > 0) {
           // Zeige Konflikt-Modal
@@ -377,8 +387,8 @@ export function AddAppointmentModal({
     setError('');
 
     if (isSeries) {
-      // Prüfe auf Konflikte
-      const foundConflicts = checkSeriesConflicts([dayOfWeek], intervalType);
+      // Prüfe auf Konflikte (lädt zukünftige Termine aus DB)
+      const foundConflicts = await checkSeriesConflicts([dayOfWeek], intervalType);
 
       if (foundConflicts.length > 0) {
         // Zeige Konflikt-Modal
@@ -880,7 +890,7 @@ export function AddAppointmentModal({
                       type="button"
                       onClick={() => setIsSeries(!isSeries)}
                       className={`relative w-10 h-5 rounded-full transition-colors ${
-                        isSeries ? 'bg-blue-500' : 'bg-gray-200'
+                        isSeries ? 'bg-gold' : 'bg-gray-200'
                       }`}
                     >
                       <span
@@ -900,7 +910,7 @@ export function AddAppointmentModal({
                           onClick={() => setIntervalType('weekly')}
                           className={`px-2.5 py-1 rounded-lg text-xs transition-all border ${
                             intervalType === 'weekly'
-                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
@@ -911,7 +921,7 @@ export function AddAppointmentModal({
                           onClick={() => setIntervalType('biweekly')}
                           className={`px-2.5 py-1 rounded-lg text-xs transition-all border ${
                             intervalType === 'biweekly'
-                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
@@ -922,7 +932,7 @@ export function AddAppointmentModal({
                           onClick={() => setIntervalType('monthly')}
                           className={`px-2.5 py-1 rounded-lg text-xs transition-all border ${
                             intervalType === 'monthly'
-                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
