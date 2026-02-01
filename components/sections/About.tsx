@@ -49,13 +49,21 @@ export function About() {
           {sectionTitle}
         </h2>
 
-        {/* Intro Text - 3 Spalten oder 1 Spalte wenn custom Text */}
+        {/* Intro Text - 3 Spalten */}
         {aboutContent ? (
-          <div className={`mb-20 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <p className="text-gray-700 text-sm leading-relaxed font-light text-justify whitespace-pre-line">
-              {aboutContent}
-            </p>
-          </div>
+          // Custom Text aus Settings - bei Zeilenumbrüchen in Spalten aufteilen
+          (() => {
+            const paragraphs = aboutContent.split('\n\n').filter(p => p.trim());
+            return (
+              <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 mb-20 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                {paragraphs.slice(0, 3).map((paragraph, index) => (
+                  <p key={index} className="text-gray-700 text-sm leading-relaxed font-light text-justify">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+            );
+          })()
         ) : (
           <div className={`grid grid-cols-1 md:grid-cols-3 gap-8 mb-20 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <p className="text-gray-700 text-sm leading-relaxed font-light text-justify">
