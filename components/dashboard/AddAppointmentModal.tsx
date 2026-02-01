@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   createAppointment,
   createSeries,
@@ -991,62 +992,58 @@ export function AddAppointmentModal({
       </div>
 
       {/* Konflikt-Modal */}
-      {showConflictModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60" onClick={handleCancelConflicts} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
-            {/* Header */}
-            <div className="px-5 py-4 border-b border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                  <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-gray-900">Termine bereits belegt</h3>
-                  <p className="text-xs text-gray-500">
-                    {conflicts.length} {conflicts.length === 1 ? 'Termin wird' : 'Termine werden'} übersprungen
-                  </p>
+      {showConflictModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={handleCancelConflicts} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-[400px] max-w-[calc(100vw-2rem)] p-5">
+            <div className="flex items-start gap-4">
+              {/* Icon */}
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-amber-100 text-amber-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-semibold text-slate-900">Termine bereits belegt</h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  {conflicts.length} {conflicts.length === 1 ? 'Termin wird' : 'Termine werden'} übersprungen
+                </p>
+
+                {/* Konflikt-Liste */}
+                <div className="mt-4 max-h-48 overflow-y-auto space-y-2">
+                  {conflicts.map((conflict, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg"
+                    >
+                      <span className="text-sm font-medium text-slate-900">{conflict.formattedDate}</span>
+                      <span className="text-xs text-slate-500">{conflict.customerName}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
 
-            {/* Content */}
-            <div className="px-5 py-4 max-h-64 overflow-y-auto">
-              <p className="text-sm text-gray-600 mb-3">
-                Die folgenden Termine sind bereits belegt und werden bei der Serie ausgelassen:
-              </p>
-              <div className="space-y-2">
-                {conflicts.map((conflict, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg"
-                  >
-                    <span className="text-sm font-medium text-gray-900">{conflict.formattedDate}</span>
-                    <span className="text-xs text-gray-500">{conflict.customerName}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="px-5 py-4 border-t border-gray-100 flex gap-3">
+            {/* Buttons */}
+            <div className="flex justify-end gap-2 mt-5">
               <button
                 onClick={handleCancelConflicts}
-                className="flex-1 px-4 py-2.5 border border-gray-200 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
               >
                 Abbrechen
               </button>
               <button
                 onClick={handleConfirmWithConflicts}
-                className="flex-1 px-4 py-2.5 bg-gold text-sm font-medium text-white rounded-xl hover:bg-gold/90 transition-colors"
+                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors bg-gold text-white hover:bg-gold/90"
               >
-                Verstanden
+                Trotzdem speichern
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
