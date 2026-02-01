@@ -876,8 +876,8 @@ export function AddAppointmentModal({
                 <div className="border-t border-gray-100 pt-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                        <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isSeries ? 'bg-gold/20' : 'bg-gray-100'}`}>
+                        <svg className={`w-3 h-3 ${isSeries ? 'text-gold' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
                       </div>
@@ -889,13 +889,13 @@ export function AddAppointmentModal({
                     <button
                       type="button"
                       onClick={() => setIsSeries(!isSeries)}
-                      className={`relative w-10 h-5 rounded-full transition-colors ${
-                        isSeries ? 'bg-gold' : 'bg-gray-200'
+                      className={`relative w-12 h-6 rounded-full transition-colors outline-none focus:outline-none ${
+                        isSeries ? 'bg-gold' : 'bg-gray-300'
                       }`}
                     >
                       <span
-                        className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                          isSeries ? 'translate-x-5' : 'translate-x-0.5'
+                        className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-200 ${
+                          isSeries ? 'translate-x-6' : 'translate-x-0'
                         }`}
                       />
                     </button>
