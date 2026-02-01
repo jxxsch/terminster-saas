@@ -1696,6 +1696,25 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                         </svg>
                         <span>{t('loggedInAs')} <span style={{ fontWeight: 500, color: '#0f172a' }}>{customer?.name}</span></span>
                       </div>
+                      {/* Telefonnummer-Eingabe wenn fehlend */}
+                      {!customerPhone && (
+                        <div style={{ marginTop: '0.75rem' }}>
+                          <input
+                            type="tel"
+                            placeholder={t('phone')}
+                            value={customerPhone}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/[^\d+\-\s]/g, '');
+                              if (value.length <= 20) setCustomerPhone(value);
+                            }}
+                            style={{ ...styles.input, borderColor: '#f59e0b', backgroundColor: '#fffbeb' }}
+                            maxLength={20}
+                          />
+                          <p style={{ fontSize: '0.6875rem', color: '#d97706', marginTop: '0.25rem' }}>
+                            Bitte Telefonnummer ergänzen
+                          </p>
+                        </div>
+                      )}
                       <div style={{ ...styles.loggedInActions, marginTop: '0.75rem' }}>
                         <button type="button" onClick={() => setShowCustomerPortal(true)} style={{ ...styles.actionBtn, border: '1px solid rgba(212, 168, 83, 0.6)', color: '#d4a853' }}>
                           {t('myAppointments')}
