@@ -45,15 +45,17 @@ export async function POST(request: NextRequest) {
     const firstName = customer.first_name || customer.name?.split(' ')[0] || 'Kunde';
     const lastName = customer.last_name || customer.name?.split(' ').slice(1).join(' ') || '';
 
-    // Neuen Einladungs-Link generieren
+    // Neuen Passwort-Reset-Link generieren (für bestehende Benutzer)
     const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://terminster.com').trim();
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: 'invite',
+      type: 'recovery',
       email: email.toLowerCase(),
       options: {
         redirectTo: `${baseUrl}/de`,
       },
     });
+
+    console.log('generateLink result:', { linkData: !!linkData, linkError });
 
     if (linkError) {
       console.error('Generate link error:', linkError);
