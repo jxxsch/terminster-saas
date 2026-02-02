@@ -11,7 +11,8 @@
     "location": "Konum",
     "bookNow": "Randevu Al",
     "myArea": "Hesabım",
-    "login": "Giriş Yap"
+    "login": "Giriş Yap",
+    "register": "Kayıt Ol"
   },
   "hero": {
     "title": "2016'dan beri erkek kültürü",
@@ -43,7 +44,17 @@
     "duration": "{minutes} dk",
     "from": "başlayan",
     "badge": "Hizmetlerimiz",
-    "headline": "Hassasiyet, Ustalık & Stil"
+    "headline": "Hassasiyet, Ustalık & Stil",
+    "items": {
+      "haircut": { "name": "Saç Kesimi", "description": "Modern & Klasik" },
+      "shave": { "name": "Sakal Tıraşı", "description": "Islak Tıraş & Sıcak Havlu" },
+      "combo": { "name": "Saç & Sakal", "description": "Kombi Paket" },
+      "eyebrows": { "name": "Kaş", "description": "Hassas Şekillendirme" },
+      "clipper": { "name": "Makine", "description": "Makine ile Kesim" },
+      "wash": { "name": "Yıkama", "description": "Kafa Masajı ile" },
+      "complete": { "name": "Komple", "description": "Yıkama, Kesim, Tıraş, Kaş" },
+      "kids": { "name": "Çocuk", "description": "Çocuk Saç Kesimi" }
+    }
   },
   "about": {
     "title": "Hakkımızda",
@@ -217,6 +228,17 @@
     "atTime": "saat",
     "booking": "Randevu alınıyor...",
     "bookAppointment": "Randevu Al",
+    "showMore": "Daha fazla göster",
+    "showLess": "Daha az göster",
+    "barberUnavailable": "Berber müsait değil",
+    "closed": "Kapalı",
+    "notAvailable": "Müsait değil",
+    "loadError": "Veri yüklenirken hata oluştu",
+    "retry": "Tekrar dene",
+    "bookingSuccess": "Randevu başarıyla alındı!",
+    "confirmationSent": "Onay gönderildi",
+    "bookingFailed": "Randevu başarısız. Lütfen tekrar deneyin.",
+    "nextAppointment": "Sonraki randevu",
     "success": {
       "title": "Randevu başarıyla alındı!",
       "message": "{barber} ile {date} tarihinde saat {time} randevunuz onaylandı.",
@@ -316,6 +338,7 @@
     "email": "E-posta",
     "password": "Şifre",
     "passwordMinLength": "En az 6 karakter",
+    "confirmPassword": "Şifreyi onayla",
     "firstName": "Ad",
     "lastName": "Soyad",
     "phone": "Telefon",
@@ -337,7 +360,8 @@
       "enterFirstName": "Lütfen adınızı girin",
       "enterLastName": "Lütfen soyadınızı girin",
       "enterPhone": "Lütfen telefon numarası girin",
-      "enterBirthDate": "Lütfen doğum tarihi girin"
+      "enterBirthDate": "Lütfen doğum tarihi girin",
+      "passwordMismatch": "Şifreler eşleşmiyor"
     },
     "goToLogin": "Girişe git"
   },
