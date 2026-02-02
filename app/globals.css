@@ -301,7 +301,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 0.25em;
-  background-color: rgb(14, 14, 26);
+  background-color: #000000;
   color: rgb(234, 234, 234);
   font-weight: 600;
   transition: 0.6s;
