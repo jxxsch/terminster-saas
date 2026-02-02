@@ -48,7 +48,22 @@
   "about": {
     "title": "Hakkımızda",
     "subtitle": "Gelenek Modernlikle Buluşuyor",
-    "description": "2016'dan beri rahat bir atmosferde birinci sınıf berber hizmetleri sunuyoruz. Deneyimli ekibimiz kalite, hassasiyet ve kişisel danışmanlığa önem verir."
+    "description": "2016'dan beri rahat bir atmosferde birinci sınıf berber hizmetleri sunuyoruz. Deneyimli ekibimiz kalite, hassasiyet ve kişisel danışmanlığa önem verir.",
+    "badge": "2016'dan beri",
+    "headline": "Beban Barber Shop, Berber & Yaşam Tarzı",
+    "intro": {
+      "paragraph1": "Beban Barber Shop 2.0'a hoş geldiniz – Leverkusen Wiesdorf'un kalbindeki özel erkek bakım merkeziniz. Burada sizi sadece bir saç kesimi veya sakal tıraşı değil, stil, hassasiyet ve konforu bir araya getiren bir deneyim bekliyor.",
+      "paragraph2": "Sadece erkeklere özel olarak bir hizmetten fazlasını sunuyoruz: Her kesim ve tıraşta mükemmellik tutkusu. Deneyimli berberlerimiz titiz özen ve detaylara dikkatle görünümünüzü mükemmelleştiriyor.",
+      "paragraph3": "Geleneğin trendle buluştuğu bir dünyaya adım atın ve Leverkusen'deki birçok erkeğin neden bizi ilk tercih olarak gördüğünü keşfedin. Rathaus Galerie'de sizi rahatlama ve stil dolu bir mekan bekliyor."
+    },
+    "stats": {
+      "yearsExperience": "Yıl Deneyim",
+      "satisfiedCustomers": "Memnun Müşteri",
+      "googleRating": "Google Değerlendirmesi",
+      "passion": "Tutku"
+    },
+    "quote": "Burada her müşteri bir misafirdir. Sadece saç kesmiyoruz – nesiller boyu sürecek deneyimler yaratıyor ve gelenekleri yaşatıyoruz.",
+    "ownerTitle": "Kurucu & Usta Berber"
   },
   "team": {
     "title": "Ekibimiz",
@@ -108,7 +123,44 @@
   "footer": {
     "rights": "Tüm hakları saklıdır",
     "imprint": "Künye",
-    "privacy": "Gizlilik Politikası"
+    "privacy": "Gizlilik Politikası",
+    "badge": "İletişim",
+    "headline": "Ziyaretinizi Bekliyoruz",
+    "address": {
+      "label": "Adres",
+      "building": "Rathaus Galerie",
+      "street": "Friedrich-Ebert-Platz 3a",
+      "city": "51373 Leverkusen"
+    },
+    "hours": {
+      "label": "Çalışma Saatleri",
+      "weekdays": "Pzt - Cmt",
+      "weekdaysTime": "10:00 - 19:00",
+      "sunday": "Pazar",
+      "closed": "Kapalı"
+    },
+    "phone": {
+      "label": "Telefon"
+    },
+    "email": {
+      "label": "E-posta"
+    },
+    "bookButton": "Randevu Al",
+    "messageButton": "Mesaj Gönder",
+    "location": "Rathaus Galerie · Üst Kat",
+    "form": {
+      "badge": "İletişim",
+      "title": "Mesaj Gönder",
+      "nameLabel": "İsim",
+      "namePlaceholder": "Adınız",
+      "emailLabel": "E-posta",
+      "emailPlaceholder": "E-posta adresiniz",
+      "phoneLabel": "Telefon",
+      "phonePlaceholder": "Telefon numaranız",
+      "messageLabel": "Mesaj",
+      "messagePlaceholder": "Mesajınız...",
+      "submitButton": "Mesaj Gönder"
+    }
   },
   "booking": {
     "title": "Randevu Al",
