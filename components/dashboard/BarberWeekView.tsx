@@ -671,7 +671,9 @@ export function BarberWeekView({
   return (
     <DragProvider
       appointments={appointments}
+      series={series}
       onAppointmentMoved={handleAppointmentMoved}
+      onSeriesUpdated={handleSeriesUpdated}
       onMoveError={handleMoveError}
       onBarberHeaderDrop={handleBarberHeaderDrop}
       disabled={selectionMode}
@@ -815,7 +817,11 @@ export function BarberWeekView({
                                 (() => {
                                   // Für Serientermine: seriesKey berechnen
                                   const seriesKey = seriesItem ? `series_${seriesItem.id}_${day.dateStr}` : null;
-                                  return (
+                                  // Für Pause-Serien: DraggableSlot verwenden
+                                  const isPauseSeries = seriesItem?.customer_name?.includes('Pause');
+                                  const pauseDragId = isPauseSeries && seriesItem ? `series-pause|${seriesItem.id}|${day.dateStr}` : null;
+
+                                  const slotContent = (
                                     <AppointmentSlot
                                       appointment={appointment}
                                       series={seriesItem}
@@ -840,6 +846,17 @@ export function BarberWeekView({
                                         : (seriesKey ? (shiftKey) => handleSelectAppointment(seriesKey, day.dateStr, shiftKey) : undefined)}
                                     />
                                   );
+
+                                  // Wrap Pause-Serien in DraggableSlot
+                                  if (pauseDragId && !selectionMode) {
+                                    return (
+                                      <DraggableSlot id={pauseDragId} disabled={false}>
+                                        {slotContent}
+                                      </DraggableSlot>
+                                    );
+                                  }
+
+                                  return slotContent;
                                 })()
                               )}
                             </DroppableCell>

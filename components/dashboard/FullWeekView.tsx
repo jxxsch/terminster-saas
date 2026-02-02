@@ -235,6 +235,12 @@ export function FullWeekView({ monday }: FullWeekViewProps) {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
+  const handleSeriesUpdated = useCallback((updated: Series) => {
+    setSeries(prev => prev.map(s => s.id === updated.id ? updated : s));
+    setToast({ message: 'Pause verschoben', type: 'success' });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
   const handleMoveError = useCallback((error: string) => {
     setToast({ message: error, type: 'error' });
     setTimeout(() => setToast(null), 3000);
@@ -257,7 +263,9 @@ export function FullWeekView({ monday }: FullWeekViewProps) {
   return (
     <DragProvider
       appointments={appointments}
+      series={series}
       onAppointmentMoved={handleAppointmentMoved}
+      onSeriesUpdated={handleSeriesUpdated}
       onMoveError={handleMoveError}
     >
       <div className="flex-1 flex flex-col min-h-0">
@@ -419,6 +427,14 @@ export function FullWeekView({ monday }: FullWeekViewProps) {
                                       {hasContent ? (
                                         appointment && appointment.status === 'confirmed' ? (
                                           <DraggableSlot id={appointment.id} disabled={false}>
+                                            <CompactSlot
+                                              appointment={appointment}
+                                              series={seriesItem}
+                                              onClick={() => handleSlotClick(barber.id, day.dateStr, slot)}
+                                            />
+                                          </DraggableSlot>
+                                        ) : seriesItem?.customer_name?.includes('Pause') ? (
+                                          <DraggableSlot id={`series-pause|${seriesItem.id}|${day.dateStr}`} disabled={false}>
                                             <CompactSlot
                                               appointment={appointment}
                                               series={seriesItem}

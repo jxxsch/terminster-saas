@@ -15,11 +15,12 @@ import {
   rectIntersection,
   CollisionDetection,
 } from '@dnd-kit/core';
-import { Appointment, moveAppointment } from '@/lib/supabase';
+import { Appointment, Series, moveAppointment, updateSeries } from '@/lib/supabase';
 
 interface DragContextValue {
   isDragging: boolean;
   activeAppointment: Appointment | null;
+  activePauseSeries: { series: Series; date: string } | null;
   overBarberHeader: { barberId: string; barberName: string; date: string } | null;
 }
 
@@ -34,6 +35,7 @@ export interface BarberHeaderDropInfo {
 const DragContextState = createContext<DragContextValue>({
   isDragging: false,
   activeAppointment: null,
+  activePauseSeries: null,
   overBarberHeader: null,
 });
 
@@ -74,7 +76,9 @@ export function useDragContext() {
 interface DragProviderProps {
   children: ReactNode;
   appointments: Appointment[];
+  series?: Series[];
   onAppointmentMoved: (oldAppointment: Appointment, newAppointment: Appointment) => void;
+  onSeriesUpdated?: (updatedSeries: Series) => void;
   onMoveError: (error: string) => void;
   onBarberHeaderDrop?: (info: BarberHeaderDropInfo) => void;
   disabled?: boolean;
@@ -83,12 +87,15 @@ interface DragProviderProps {
 export function DragProvider({
   children,
   appointments,
+  series = [],
   onAppointmentMoved,
+  onSeriesUpdated,
   onMoveError,
   onBarberHeaderDrop,
   disabled = false,
 }: DragProviderProps) {
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
+  const [activePauseSeries, setActivePauseSeries] = useState<{ series: Series; date: string } | null>(null);
   const [overBarberHeader, setOverBarberHeader] = useState<{ barberId: string; barberName: string; date: string } | null>(null);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -110,12 +117,28 @@ export function DragProvider({
   const handleDragStart = useCallback((event: DragStartEvent) => {
     if (disabled) return;
     const { active } = event;
-    const appointmentId = active.id as string;
-    const appointment = appointments.find(apt => apt.id === appointmentId);
+    const id = active.id as string;
+
+    // Check if it's a pause series: "series-pause|{seriesId}|{date}"
+    if (id.startsWith('series-pause|')) {
+      const parts = id.split('|');
+      if (parts.length === 3) {
+        const seriesId = parts[1];
+        const date = parts[2];
+        const seriesItem = series.find(s => s.id === seriesId);
+        if (seriesItem) {
+          setActivePauseSeries({ series: seriesItem, date });
+          return;
+        }
+      }
+    }
+
+    // Normal appointment
+    const appointment = appointments.find(apt => apt.id === id);
     if (appointment) {
       setActiveAppointment(appointment);
     }
-  }, [appointments, disabled]);
+  }, [appointments, series, disabled]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { over, active } = event;
@@ -181,7 +204,9 @@ export function DragProvider({
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
+    const currentPauseSeries = activePauseSeries;
     setActiveAppointment(null);
+    setActivePauseSeries(null);
     setOverBarberHeader(null);
 
     // Timer aufräumen
@@ -192,11 +217,50 @@ export function DragProvider({
 
     if (!over || !active) return;
 
-    const appointmentId = active.id as string;
-    const appointment = appointments.find(apt => apt.id === appointmentId);
-    if (!appointment) return;
-
+    const activeId = active.id as string;
     const dropId = over.id as string;
+
+    // Handle pause series drag - only allow same-day time slot changes
+    if (activeId.startsWith('series-pause|') && currentPauseSeries) {
+      // Parse the drop zone ID: "droppable|{barberId}|{date}|{timeSlot}"
+      if (!dropId.startsWith('droppable|')) return;
+
+      const parts = dropId.split('|');
+      if (parts.length !== 4) return;
+
+      const targetBarberId = parts[1];
+      const targetDate = parts[2];
+      const targetTimeSlot = parts[3];
+
+      const pauseSeries = currentPauseSeries.series;
+      const pauseDate = currentPauseSeries.date;
+
+      // Only allow moving to same barber, same day, different time slot
+      if (targetBarberId !== pauseSeries.barber_id) {
+        onMoveError('Pause kann nur innerhalb desselben Barbers verschoben werden');
+        return;
+      }
+      if (targetDate !== pauseDate) {
+        onMoveError('Pause kann nur innerhalb desselben Tages verschoben werden');
+        return;
+      }
+      if (targetTimeSlot === pauseSeries.time_slot) {
+        return; // No change
+      }
+
+      // Update series time_slot
+      const updated = await updateSeries(pauseSeries.id, { time_slot: targetTimeSlot });
+      if (updated && onSeriesUpdated) {
+        onSeriesUpdated(updated);
+      } else if (!updated) {
+        onMoveError('Fehler beim Verschieben der Pause');
+      }
+      return;
+    }
+
+    // Normal appointment drag
+    const appointment = appointments.find(apt => apt.id === activeId);
+    if (!appointment) return;
 
     // Check if dropped on barber header: "barber-header|{barberId}|{date}"
     if (dropId.startsWith('barber-header|')) {
@@ -274,7 +338,7 @@ export function DragProvider({
     } else {
       onMoveError(result.error || 'Fehler beim Verschieben');
     }
-  }, [appointments, onAppointmentMoved, onMoveError, onBarberHeaderDrop]);
+  }, [appointments, activePauseSeries, onAppointmentMoved, onSeriesUpdated, onMoveError, onBarberHeaderDrop]);
 
   return (
     <DndContext
@@ -284,7 +348,7 @@ export function DragProvider({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <DragContextState.Provider value={{ isDragging: !!activeAppointment, activeAppointment, overBarberHeader }}>
+      <DragContextState.Provider value={{ isDragging: !!activeAppointment || !!activePauseSeries, activeAppointment, activePauseSeries, overBarberHeader }}>
         {children}
       </DragContextState.Provider>
 
@@ -293,6 +357,11 @@ export function DragProvider({
         {activeAppointment && (
           <div className="bg-gold/80 text-black px-2 py-1 rounded shadow-lg text-xs font-medium">
             {activeAppointment.customer_name}
+          </div>
+        )}
+        {activePauseSeries && (
+          <div className="bg-gray-300 text-gray-700 px-2 py-1 rounded shadow-lg text-xs font-medium">
+            Pause
           </div>
         )}
       </DragOverlay>

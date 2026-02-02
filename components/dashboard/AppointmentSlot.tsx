@@ -471,110 +471,126 @@ export function AppointmentSlot({
               <div className="space-y-2">
                 {/* Header */}
                 <div className="pb-2 border-b border-gray-100 flex items-center gap-2">
-                  <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  <span className="text-xs font-medium text-blue-600">Serientermin</span>
-                </div>
-
-                {/* Kundenname */}
-                <div>
-                  <span className="text-[9px] text-gray-400 uppercase tracking-wider block">Kunde</span>
-                  <span className="text-sm font-medium text-black">{series.customer_name}</span>
-                </div>
-
-                {/* Telefon - Bearbeitbar */}
-                <div>
-                  <span className="text-[9px] text-gray-400 uppercase tracking-wider block">Telefon</span>
-                  {isEditingSeriesContact ? (
-                    <input
-                      type="tel"
-                      value={seriesPhone}
-                      onChange={(e) => setSeriesPhone(e.target.value)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-full text-sm text-black px-2 py-1 border border-gray-200 rounded focus:border-gold focus:outline-none"
-                      placeholder="Telefonnummer"
-                    />
-                  ) : series.customer_phone ? (
-                    <a
-                      href={`tel:${series.customer_phone}`}
-                      className="text-sm text-gold hover:text-gold-dark transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {series.customer_phone}
-                    </a>
+                  {isSeriesPause ? (
+                    <>
+                      <div className="w-4 h-4 bg-gray-200 rounded-full" />
+                      <span className="text-xs font-medium text-gray-600">Pause (Serie)</span>
+                    </>
                   ) : (
-                    <span className="text-sm text-gray-400">Nicht angegeben</span>
+                    <>
+                      <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      <span className="text-xs font-medium text-blue-600">Serientermin</span>
+                    </>
                   )}
                 </div>
 
-                {/* E-Mail - Bearbeitbar */}
-                <div>
-                  <span className="text-[9px] text-gray-400 uppercase tracking-wider block">E-Mail</span>
-                  {isEditingSeriesContact ? (
-                    <input
-                      type="email"
-                      value={seriesEmail}
-                      onChange={(e) => setSeriesEmail(e.target.value)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-full text-sm text-black px-2 py-1 border border-gray-200 rounded focus:border-gold focus:outline-none"
-                      placeholder="E-Mail"
-                    />
-                  ) : series.customer_email ? (
-                    <a
-                      href={`mailto:${series.customer_email}`}
-                      className="text-sm text-gold hover:text-gold-dark transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {series.customer_email}
-                    </a>
-                  ) : (
-                    <span className="text-sm text-gray-400">Nicht angegeben</span>
-                  )}
-                </div>
-
-                {/* Kontakt Bearbeiten Buttons */}
-                {isEditingSeriesContact ? (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsEditingSeriesContact(false);
-                        setSeriesPhone(series.customer_phone || '');
-                        setSeriesEmail(series.customer_email || '');
-                      }}
-                      className="flex-1 py-1 px-2 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50"
-                    >
-                      Abbrechen
-                    </button>
-                    <button
-                      onClick={handleSaveSeriesContact}
-                      disabled={isSavingSeriesContact}
-                      className="flex-1 py-1 px-2 text-xs text-white bg-gold hover:bg-gold-dark rounded disabled:opacity-50"
-                    >
-                      {isSavingSeriesContact ? 'Speichern...' : 'Speichern'}
-                    </button>
+                {/* Kundenname - nur für normale Serien, nicht für Pause */}
+                {!isSeriesPause && (
+                  <div>
+                    <span className="text-[9px] text-gray-400 uppercase tracking-wider block">Kunde</span>
+                    <span className="text-sm font-medium text-black">{series.customer_name}</span>
                   </div>
-                ) : (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsEditingSeriesContact(true);
-                    }}
-                    className="w-full py-1 px-2 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50 flex items-center justify-center gap-1"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                    Kontakt bearbeiten
-                  </button>
                 )}
 
-                {/* Service */}
-                <div>
-                  <span className="text-[9px] text-gray-400 uppercase tracking-wider block">Service</span>
-                  <span className="text-sm text-gray-700">{getServiceName(series.service_id)}</span>
-                </div>
+                {/* Telefon, E-Mail, Service - nur für normale Serien, nicht für Pause */}
+                {!isSeriesPause && (
+                  <>
+                    {/* Telefon - Bearbeitbar */}
+                    <div>
+                      <span className="text-[9px] text-gray-400 uppercase tracking-wider block">Telefon</span>
+                      {isEditingSeriesContact ? (
+                        <input
+                          type="tel"
+                          value={seriesPhone}
+                          onChange={(e) => setSeriesPhone(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full text-sm text-black px-2 py-1 border border-gray-200 rounded focus:border-gold focus:outline-none"
+                          placeholder="Telefonnummer"
+                        />
+                      ) : series.customer_phone ? (
+                        <a
+                          href={`tel:${series.customer_phone}`}
+                          className="text-sm text-gold hover:text-gold-dark transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {series.customer_phone}
+                        </a>
+                      ) : (
+                        <span className="text-sm text-gray-400">Nicht angegeben</span>
+                      )}
+                    </div>
+
+                    {/* E-Mail - Bearbeitbar */}
+                    <div>
+                      <span className="text-[9px] text-gray-400 uppercase tracking-wider block">E-Mail</span>
+                      {isEditingSeriesContact ? (
+                        <input
+                          type="email"
+                          value={seriesEmail}
+                          onChange={(e) => setSeriesEmail(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-full text-sm text-black px-2 py-1 border border-gray-200 rounded focus:border-gold focus:outline-none"
+                          placeholder="E-Mail"
+                        />
+                      ) : series.customer_email ? (
+                        <a
+                          href={`mailto:${series.customer_email}`}
+                          className="text-sm text-gold hover:text-gold-dark transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {series.customer_email}
+                        </a>
+                      ) : (
+                        <span className="text-sm text-gray-400">Nicht angegeben</span>
+                      )}
+                    </div>
+
+                    {/* Kontakt Bearbeiten Buttons */}
+                    {isEditingSeriesContact ? (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsEditingSeriesContact(false);
+                            setSeriesPhone(series.customer_phone || '');
+                            setSeriesEmail(series.customer_email || '');
+                          }}
+                          className="flex-1 py-1 px-2 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50"
+                        >
+                          Abbrechen
+                        </button>
+                        <button
+                          onClick={handleSaveSeriesContact}
+                          disabled={isSavingSeriesContact}
+                          className="flex-1 py-1 px-2 text-xs text-white bg-gold hover:bg-gold-dark rounded disabled:opacity-50"
+                        >
+                          {isSavingSeriesContact ? 'Speichern...' : 'Speichern'}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsEditingSeriesContact(true);
+                        }}
+                        className="w-full py-1 px-2 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50 flex items-center justify-center gap-1"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                        Kontakt bearbeiten
+                      </button>
+                    )}
+
+                    {/* Service */}
+                    <div>
+                      <span className="text-[9px] text-gray-400 uppercase tracking-wider block">Service</span>
+                      <span className="text-sm text-gray-700">{getServiceName(series.service_id)}</span>
+                    </div>
+                  </>
+                )}
 
                 {/* Intervall - Bearbeitbar */}
                 <div>

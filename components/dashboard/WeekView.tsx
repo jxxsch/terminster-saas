@@ -748,7 +748,9 @@ export function WeekView({
   return (
     <DragProvider
       appointments={appointments}
+      series={series}
       onAppointmentMoved={handleAppointmentMoved}
+      onSeriesUpdated={handleSeriesUpdated}
       onMoveError={handleMoveError}
       onBarberHeaderDrop={handleBarberHeaderDrop}
       disabled={selectionMode}
@@ -959,7 +961,11 @@ export function WeekView({
                             (() => {
                               // Für Serientermine: seriesKey berechnen
                               const seriesKey = seriesItem ? `series_${seriesItem.id}_${currentDay.dateStr}` : null;
-                              return (
+                              // Für Pause-Serien: DraggableSlot verwenden
+                              const isPauseSeries = seriesItem?.customer_name?.includes('Pause');
+                              const pauseDragId = isPauseSeries && seriesItem ? `series-pause|${seriesItem.id}|${currentDay.dateStr}` : null;
+
+                              const slotContent = (
                                 <AppointmentSlot
                                   appointment={appointment}
                                   series={seriesItem}
@@ -984,6 +990,17 @@ export function WeekView({
                                   formatName={formatName}
                                 />
                               );
+
+                              // Wrap Pause-Serien in DraggableSlot
+                              if (pauseDragId && !selectionMode) {
+                                return (
+                                  <DraggableSlot id={pauseDragId} disabled={false}>
+                                    {slotContent}
+                                  </DraggableSlot>
+                                );
+                              }
+
+                              return slotContent;
                             })()
                           )}
                         </DroppableCell>
