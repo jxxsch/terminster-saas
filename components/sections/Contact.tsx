@@ -221,9 +221,9 @@ export function Contact() {
 
           {/* Footer Section */}
           <div className={`mt-12 transition-all duration-700 delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6 py-6 border-t border-gray-200">
+            <div className="flex flex-col items-center md:flex-row gap-6 py-6 border-t border-gray-200">
               {/* Logo & Name */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 md:flex-1">
                 <div className="relative w-8 h-8">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={logoUrl} alt="Beban" className="w-full h-full object-contain" />
@@ -231,7 +231,7 @@ export function Contact() {
                 <span className="text-sm font-medium text-gray-700 tracking-wide">BEBAN Barber Shop 2.0</span>
               </div>
 
-              {/* Social Links */}
+              {/* Social Links - zentriert */}
               <div className="flex items-center gap-3">
                 {contactSettings.instagram && (
                   <a href={contactSettings.instagram} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-gold/10 transition-all group">
@@ -264,7 +264,7 @@ export function Contact() {
               </div>
 
               {/* Links & Copyright */}
-              <div className="flex items-center gap-4 text-xs text-gray-500">
+              <div className="flex items-center gap-4 text-xs text-gray-500 md:flex-1 md:justify-end">
                 <Link href="/impressum" className="hover:text-gold transition-colors">{t('imprint')}</Link>
                 <span className="text-gray-300">·</span>
                 <Link href="/datenschutz" className="hover:text-gold transition-colors">{t('privacy')}</Link>
@@ -287,7 +287,7 @@ export function Contact() {
           />
 
           {/* Modal */}
-          <div className="relative bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+          <div className="relative bg-white w-[90vw] sm:w-[480px] max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
             {/* Header */}
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-5 flex items-center justify-between z-10 rounded-t-2xl">
               <div>
