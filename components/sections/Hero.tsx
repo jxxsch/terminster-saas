@@ -170,7 +170,7 @@ export function Hero() {
             <div className="pt-8">
               <button
                 onClick={() => openBooking()}
-                className="inline-block px-10 py-3.5 border border-white/40 hover:border-white text-white text-xs uppercase tracking-[0.3em] font-medium rounded-full transition-all duration-300 hover:bg-white/10 backdrop-blur-sm"
+                className="hero-cta-btn"
               >
                 {content.ctaText}
               </button>
