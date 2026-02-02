@@ -29,11 +29,14 @@ export function PasswordSetupHandler() {
       setIsProcessing(true);
 
       try {
+        console.log('[PasswordSetupHandler] Rufe setSession auf...');
         // Session mit dem Token setzen
         const { data, error } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken || '',
         });
+
+        console.log('[PasswordSetupHandler] setSession Ergebnis:', { data: !!data, error: error?.message, user: data?.user?.email });
 
         if (error) {
           console.error('[PasswordSetupHandler] Session error:', error);
