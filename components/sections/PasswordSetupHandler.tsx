@@ -29,14 +29,32 @@ export function PasswordSetupHandler() {
       setIsProcessing(true);
 
       try {
-        console.log('[PasswordSetupHandler] Rufe setSession auf...');
-        // Session mit dem Token setzen
-        const { data, error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken || '',
-        });
+        console.log('[PasswordSetupHandler] Rufe setSession auf mit Token:', accessToken?.substring(0, 20) + '...');
+        console.log('[PasswordSetupHandler] Refresh Token:', refreshToken ? 'vorhanden' : 'fehlt');
 
-        console.log('[PasswordSetupHandler] setSession Ergebnis:', { data: !!data, error: error?.message, user: data?.user?.email });
+        // Session mit dem Token setzen
+        let data, error;
+        try {
+          const result = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || '',
+          });
+          data = result.data;
+          error = result.error;
+        } catch (setSessionError) {
+          console.error('[PasswordSetupHandler] setSession Exception:', setSessionError);
+          setIsProcessing(false);
+          return;
+        }
+
+        console.log('[PasswordSetupHandler] setSession Ergebnis:', {
+          hasData: !!data,
+          hasSession: !!data?.session,
+          hasUser: !!data?.user,
+          errorMessage: error?.message,
+          errorCode: error?.code,
+          userEmail: data?.user?.email
+        });
 
         if (error) {
           console.error('[PasswordSetupHandler] Session error:', error);
@@ -60,13 +78,20 @@ export function PasswordSetupHandler() {
           window.history.replaceState(null, '', window.location.pathname);
 
           // LoginModal im Password-Setup-Modus öffnen
-          console.log('[PasswordSetupHandler] Öffne Modal...');
-          openLoginPasswordSetup({
-            email,
-            firstName,
-            lastName,
-            phone,
-          });
+          console.log('[PasswordSetupHandler] Öffne Modal mit:', { email, firstName, lastName, phone });
+          console.log('[PasswordSetupHandler] openLoginPasswordSetup Funktion:', typeof openLoginPasswordSetup);
+
+          try {
+            openLoginPasswordSetup({
+              email,
+              firstName,
+              lastName,
+              phone,
+            });
+            console.log('[PasswordSetupHandler] Modal geöffnet!');
+          } catch (modalError) {
+            console.error('[PasswordSetupHandler] Modal Fehler:', modalError);
+          }
         }
       } catch (err) {
         console.error('Recovery token handling error:', err);
