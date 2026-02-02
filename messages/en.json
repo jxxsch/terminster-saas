@@ -239,6 +239,24 @@
     "bookingSuccess": "Appointment successfully booked!",
     "confirmationSent": "Confirmation sent to",
     "bookingFailed": "Booking failed. Please try again.",
+    "allSlotsBooked": "All slots booked",
+    "addPhoneNumber": "Please add phone number",
+    "calendarWeek": "Week",
+    "accountActivate": {
+      "title": "Activate Account",
+      "description": "Set your password to activate your account.",
+      "activating": "Activating...",
+      "button": "Activate Account"
+    },
+    "passwordSetup": {
+      "welcome": "Welcome! Please set a password for your account.",
+      "saving": "Saving...",
+      "button": "Set Password"
+    },
+    "calendar": {
+      "title": "Appointment with {barber} - Beban Barbershop",
+      "details": "Your appointment at Beban Barbershop with {barber}"
+    },
     "success": {
       "title": "Appointment Successfully Booked!",
       "message": "Your appointment with {barber} on {date} at {time} has been confirmed.",
@@ -361,7 +379,8 @@
       "enterLastName": "Please enter last name",
       "enterPhone": "Please enter phone number",
       "enterBirthDate": "Please enter date of birth",
-      "passwordMismatch": "Passwords do not match"
+      "passwordMismatch": "Passwords do not match",
+      "passwordSetupFailed": "Could not set password"
     },
     "goToLogin": "Go to login"
   },

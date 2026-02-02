@@ -41,9 +41,10 @@ import { Bundesland, isHoliday, getHolidayName } from '@/lib/holidays';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { useRealtimeAppointments } from '@/hooks/useRealtimeAppointments';
 
-const DAY_NAMES_SHORT = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-const DAY_NAMES_LONG = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-const MONTH_NAMES = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+// Day/Month names are now passed via i18n - see getDayNames() and getMonthNames() below
+const DAY_KEYS_SHORT = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+const DAY_KEYS_LONG = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as const;
 
 function formatDateLocal(date: Date): string {
   const year = date.getFullYear();
@@ -94,13 +95,20 @@ interface DayInfo {
   isDisabled: boolean;
 }
 
+interface I18nDayMonth {
+  dayShort: (key: string) => string;
+  dayLong: (key: string) => string;
+  month: (key: string) => string;
+}
+
 function getWeekDays(
   weekOffset: number,
   closedDatesList: ClosedDate[] = [],
   openSundaysList: OpenSunday[] = [],
   bundesland: Bundesland = 'NW',
   openHolidaysList: OpenHoliday[] = [],
-  maxWeeks: number = 4
+  maxWeeks: number = 4,
+  i18n?: I18nDayMonth
 ): { days: DayInfo[]; weekNumber: number; monday: Date } {
   const now = new Date();
   const today = new Date();
@@ -151,13 +159,19 @@ function getWeekDays(
     const isClosed = isManualClosed || isHolidayClosed;
     const closedReason = closedDate?.reason || holidayName || undefined;
 
+    const dayKey = DAY_KEYS_SHORT[date.getDay()];
+    const monthKey = MONTH_KEYS[month];
+    const dayNameShort = i18n ? i18n.dayShort(dayKey) : dayKey.toUpperCase();
+    const dayNameLong = i18n ? i18n.dayLong(dayKey) : dayKey;
+    const monthName = i18n ? i18n.month(monthKey) : monthKey;
+
     days.push({
       date,
       dateStr,
-      dayNameShort: DAY_NAMES_SHORT[date.getDay()],
-      dayNameLong: DAY_NAMES_LONG[date.getDay()],
+      dayNameShort,
+      dayNameLong,
       dayNum: day.toString().padStart(2, '0') + '.' + (month + 1).toString().padStart(2, '0'),
-      dayNumFull: `${day}. ${MONTH_NAMES[month]}`,
+      dayNumFull: `${day}. ${monthName}`,
       dayNumFullDate: `${day.toString().padStart(2, '0')}.${(month + 1).toString().padStart(2, '0')}.${year}`,
       isToday,
       isPast,
@@ -720,6 +734,8 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
   const t = useTranslations('booking');
   const tAuth = useTranslations('auth');
   const tCommon = useTranslations('common');
+  const tDays = useTranslations('days');
+  const tMonths = useTranslations('months');
 
   const { customer, isAuthenticated, signIn, signUp, signOut } = useAuth();
   const [team, setTeam] = useState<TeamMember[]>([]);
@@ -803,17 +819,24 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     }
   }, [passwordSetupData, isOpen]);
 
+  const i18nDayMonth: I18nDayMonth = useMemo(() => ({
+    dayShort: (key: string) => tDays(`short.${key}`),
+    dayLong: (key: string) => tDays(`long.${key}`),
+    month: (key: string) => tMonths(key),
+  }), [tDays, tMonths]);
+
   const { days, weekNumber } = useMemo(
-    () => getWeekDays(currentWeekOffset, closedDates, openSundays, bundesland, openHolidays, maxWeeks),
-    [currentWeekOffset, closedDates, openSundays, bundesland, openHolidays, maxWeeks]
+    () => getWeekDays(currentWeekOffset, closedDates, openSundays, bundesland, openHolidays, maxWeeks, i18nDayMonth),
+    [currentWeekOffset, closedDates, openSundays, bundesland, openHolidays, maxWeeks, i18nDayMonth]
   );
 
   const weekRange = useMemo(() => {
     if (days.length === 0) return '';
     const first = days[0];
     const last = days[days.length - 1];
-    return `${first.date.getDate()}. - ${last.date.getDate()}. ${MONTH_NAMES[last.date.getMonth()]}`;
-  }, [days]);
+    const monthKey = MONTH_KEYS[last.date.getMonth()];
+    return `${first.date.getDate()}. - ${last.date.getDate()}. ${tMonths(monthKey)}`;
+  }, [days, tMonths]);
 
   useEffect(() => {
     if (isOpen) {
@@ -974,9 +997,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     const endDate = new Date(startDate);
     endDate.setMinutes(endDate.getMinutes() + 30);
 
-    const title = `Termin bei ${bookedDetails.barberName} - Beban Barbershop`;
+    const title = t('calendar.title', { barber: bookedDetails.barberName });
     const location = 'Beban Barbershop, Friedrich-Ebert-Platz 3a, 51373 Leverkusen';
-    const details = `Dein Termin im Beban Barbershop bei ${bookedDetails.barberName}\n\nAdresse: ${location}`;
+    const details = `${t('calendar.details', { barber: bookedDetails.barberName })}\n\nAdresse: ${location}`;
 
     return { startDate, endDate, title, location, details };
   };
@@ -1159,14 +1182,14 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     try {
       const result = await setNewPassword(authPassword);
       if (result.error) {
-        setAuthError(result.error || 'Passwort konnte nicht gesetzt werden');
+        setAuthError(result.error || tAuth('errors.passwordSetupFailed'));
       } else {
         // Erfolg: Customer Portal öffnen
         setIsPasswordSetupMode(false);
         setShowCustomerPortal(true);
       }
     } catch {
-      setAuthError('Passwort konnte nicht gesetzt werden');
+      setAuthError(tAuth('errors.passwordSetupFailed'));
     } finally {
       setAuthSubmitting(false);
     }
@@ -1430,8 +1453,8 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                   </svg>
                 </div>
-                <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.125rem', fontWeight: 600, color: '#1a1a1a' }}>Konto aktivieren</h3>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Lege dein Passwort fest, um dein Konto zu aktivieren.</p>
+                <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.125rem', fontWeight: 600, color: '#1a1a1a' }}>{t('accountActivate.title')}</h3>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>{t('accountActivate.description')}</p>
               </div>
 
               {authError && (
@@ -1469,11 +1492,11 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                   />
                 </div>
                 <div style={{ ...styles.inputGridTwo, marginBottom: '1rem' }}>
-                  <input type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder="Passwort (min. 6 Zeichen)" autoComplete="new-password" style={styles.input} required minLength={6} />
-                  <input type="password" value={authConfirmPassword} onChange={(e) => setAuthConfirmPassword(e.target.value)} placeholder="Passwort bestätigen" autoComplete="new-password" style={styles.input} required minLength={6} />
+                  <input type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder={tAuth('passwordMinLength')} autoComplete="new-password" style={styles.input} required minLength={6} />
+                  <input type="password" value={authConfirmPassword} onChange={(e) => setAuthConfirmPassword(e.target.value)} placeholder={tAuth('confirmPassword')} autoComplete="new-password" style={styles.input} required minLength={6} />
                 </div>
                 <button type="submit" disabled={authSubmitting} style={{ ...styles.submitBtn, width: '100%', justifyContent: 'center', opacity: authSubmitting ? 0.5 : 1, backgroundColor: '#d4a853' }}>
-                  {authSubmitting ? 'Wird aktiviert...' : 'Konto aktivieren'}
+                  {authSubmitting ? t('accountActivate.activating') : t('accountActivate.button')}
                 </button>
               </form>
             </div>
@@ -1562,7 +1585,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                         </svg>
                       </button>
                       <div style={styles.weekInfo}>
-                        <span style={styles.weekLabel}>KW {weekNumber}</span>
+                        <span style={styles.weekLabel}>{t('calendarWeek')} {weekNumber}</span>
                         <span style={styles.weekRange}>{weekRange}</span>
                       </div>
                       <button
@@ -1676,7 +1699,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
 
                             {isDayDisabled ? (
                               <div style={styles.noSlotsMsg}>
-                                Alle Termine ausgebucht
+                                {t('allSlotsBooked')}
                               </div>
                             ) : (
                               <>
@@ -1752,7 +1775,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                             maxLength={20}
                           />
                           <p style={{ fontSize: '0.6875rem', color: '#d97706', marginTop: '0.25rem' }}>
-                            Bitte Telefonnummer ergänzen
+                            {t('addPhoneNumber')}
                           </p>
                         </div>
                       )}
@@ -1911,7 +1934,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                             <form onSubmit={handlePasswordSetup}>
                               <div style={{ marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#f0fdf4', borderRadius: '0.5rem', border: '1px solid #bbf7d0' }}>
                                 <p style={{ fontSize: '0.75rem', color: '#166534', margin: 0, fontWeight: 500 }}>
-                                  Willkommen! Bitte lege ein Passwort für dein Konto fest.
+                                  {t('passwordSetup.welcome')}
                                 </p>
                               </div>
                               <div style={{ ...styles.inputGridTwo, marginBottom: '0.5rem' }}>
@@ -1946,7 +1969,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                                 <input type="password" value={authConfirmPassword} onChange={(e) => setAuthConfirmPassword(e.target.value)} placeholder={tAuth('confirmPassword')} autoComplete="new-password" style={styles.input} required minLength={6} />
                               </div>
                               <button type="submit" disabled={authSubmitting} style={{ ...styles.submitBtn, width: '100%', justifyContent: 'center', opacity: authSubmitting ? 0.5 : 1 }}>
-                                {authSubmitting ? 'Wird gespeichert...' : 'Passwort festlegen'}
+                                {authSubmitting ? t('passwordSetup.saving') : t('passwordSetup.button')}
                               </button>
                             </form>
                           )}

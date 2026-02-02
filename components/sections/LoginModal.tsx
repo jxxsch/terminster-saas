@@ -696,7 +696,7 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Passwort wiederholen"
+                    placeholder={t('confirmPassword')}
                     className="login-input"
                     style={styles.input}
                     autoComplete="new-password"

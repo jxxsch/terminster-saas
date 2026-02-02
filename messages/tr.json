@@ -239,6 +239,24 @@
     "confirmationSent": "Onay gönderildi",
     "bookingFailed": "Randevu başarısız. Lütfen tekrar deneyin.",
     "nextAppointment": "Sonraki randevu",
+    "allSlotsBooked": "Tüm randevular dolu",
+    "addPhoneNumber": "Lütfen telefon numarası ekleyin",
+    "calendarWeek": "Hafta",
+    "accountActivate": {
+      "title": "Hesabı Aktifleştir",
+      "description": "Hesabınızı aktifleştirmek için şifrenizi belirleyin.",
+      "activating": "Aktifleştiriliyor...",
+      "button": "Hesabı Aktifleştir"
+    },
+    "passwordSetup": {
+      "welcome": "Hoş geldiniz! Lütfen hesabınız için bir şifre belirleyin.",
+      "saving": "Kaydediliyor...",
+      "button": "Şifre Belirle"
+    },
+    "calendar": {
+      "title": "{barber} ile Randevu - Beban Barbershop",
+      "details": "Beban Barbershop'ta {barber} ile randevunuz"
+    },
     "success": {
       "title": "Randevu başarıyla alındı!",
       "message": "{barber} ile {date} tarihinde saat {time} randevunuz onaylandı.",
@@ -361,7 +379,8 @@
       "enterLastName": "Lütfen soyadınızı girin",
       "enterPhone": "Lütfen telefon numarası girin",
       "enterBirthDate": "Lütfen doğum tarihi girin",
-      "passwordMismatch": "Şifreler eşleşmiyor"
+      "passwordMismatch": "Şifreler eşleşmiyor",
+      "passwordSetupFailed": "Şifre belirlenemedi"
     },
     "goToLogin": "Girişe git"
   },

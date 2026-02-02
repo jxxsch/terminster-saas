@@ -239,6 +239,24 @@
     "bookingSuccess": "Termin erfolgreich gebucht!",
     "confirmationSent": "Bestätigung gesendet an",
     "bookingFailed": "Buchung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "allSlotsBooked": "Alle Termine ausgebucht",
+    "addPhoneNumber": "Bitte Telefonnummer ergänzen",
+    "calendarWeek": "KW",
+    "accountActivate": {
+      "title": "Konto aktivieren",
+      "description": "Lege dein Passwort fest, um dein Konto zu aktivieren.",
+      "activating": "Wird aktiviert...",
+      "button": "Konto aktivieren"
+    },
+    "passwordSetup": {
+      "welcome": "Willkommen! Bitte lege ein Passwort für dein Konto fest.",
+      "saving": "Wird gespeichert...",
+      "button": "Passwort festlegen"
+    },
+    "calendar": {
+      "title": "Termin bei {barber} - Beban Barbershop",
+      "details": "Dein Termin im Beban Barbershop bei {barber}"
+    },
     "success": {
       "title": "Termin erfolgreich gebucht!",
       "message": "Dein Termin bei {barber} am {date} um {time} Uhr wurde bestätigt.",
@@ -361,7 +379,8 @@
       "enterLastName": "Bitte Nachname eingeben",
       "enterPhone": "Bitte Telefonnummer eingeben",
       "enterBirthDate": "Bitte Geburtsdatum eingeben",
-      "passwordMismatch": "Passwörter stimmen nicht überein"
+      "passwordMismatch": "Passwörter stimmen nicht überein",
+      "passwordSetupFailed": "Passwort konnte nicht gesetzt werden"
     },
     "goToLogin": "Zur Anmeldung"
   },

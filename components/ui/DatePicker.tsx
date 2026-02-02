@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslations } from 'next-intl';
 
 interface DatePickerProps {
   value: string;
@@ -13,17 +14,8 @@ interface DatePickerProps {
   style?: React.CSSProperties;
 }
 
-const MONTHS = [
-  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
-];
-
-const MONTHS_SHORT = [
-  'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
-];
-
-const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const MONTH_KEYS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as const;
+const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
 // Generate years for dropdown (1920 to current year)
 function getYearOptions(minYear: number, maxYear: number): number[] {
@@ -35,6 +27,14 @@ function getYearOptions(minYear: number, maxYear: number): number[] {
 }
 
 export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, max, required, style }: DatePickerProps) {
+  const tMonths = useTranslations('months');
+  const tDays = useTranslations('days');
+  const tCommon = useTranslations('common');
+
+  const MONTHS = useMemo(() => MONTH_KEYS.map(key => tMonths(key)), [tMonths]);
+  const MONTHS_SHORT = useMemo(() => MONTH_KEYS.map(key => tMonths(`short.${key}`)), [tMonths]);
+  const WEEKDAYS = useMemo(() => DAY_KEYS.map(key => tDays(`short.${key}`)), [tDays]);
+
   const [isOpen, setIsOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => {
     if (value) {
@@ -494,7 +494,7 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
           onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
           onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}
         >
-          Löschen
+          {tCommon('delete')}
         </button>
         <button
           type="button"
@@ -503,7 +503,7 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
           onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(212, 168, 83, 0.1)'}
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
         >
-          Heute
+          {tCommon('today')}
         </button>
       </div>
     </div>
