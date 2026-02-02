@@ -125,10 +125,10 @@ export function StickyBookingBar() {
       onClick={() => openBooking()}
       className="sticky-btn-base fixed z-50"
       style={{
-        top: 0,
-        left: 0,
+        top: position.top,
+        left: '50%',
         width: `${position.width}px`,
-        transform: `translate3d(${position.left}px, ${position.top}px, 0) scale(${position.scale})`,
+        transform: `translateX(-50%) scale(${position.scale})`,
         willChange: 'transform',
         background: isInLightArea ? 'var(--color-gold)' : 'transparent',
         color: isInLightArea ? '#ffffff' : 'rgba(212, 175, 55, 0.7)',
