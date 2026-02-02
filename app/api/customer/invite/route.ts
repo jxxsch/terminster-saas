@@ -81,10 +81,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Password-Recovery-Link generieren (damit Kunde Passwort setzen kann)
+    // Einladungs-Link generieren (damit Kunde Passwort setzen kann)
     const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://terminster.com').trim();
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-      type: 'recovery',
+      type: 'invite',
       email: email.toLowerCase(),
       options: {
         redirectTo: `${baseUrl}/de`,

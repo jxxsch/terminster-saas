@@ -22,8 +22,8 @@ export function PasswordSetupHandler() {
 
       console.log('[PasswordSetupHandler] Type:', type, 'Token:', accessToken ? 'vorhanden' : 'fehlt');
 
-      // Nur bei Recovery-Token (Passwort setzen/zurücksetzen)
-      if (type !== 'recovery' || !accessToken) return;
+      // Bei Recovery- oder Invite-Token (Passwort setzen)
+      if ((type !== 'recovery' && type !== 'invite') || !accessToken) return;
 
       console.log('[PasswordSetupHandler] Verarbeite Recovery-Token...');
       setIsProcessing(true);
