@@ -8,7 +8,6 @@ import { Products } from '@/components/sections/Products';
 import { Gallery } from '@/components/sections/Gallery';
 import { Contact } from '@/components/sections/Contact';
 import { ScrollToTop } from '@/components/ui/ScrollToTop';
-import { StickyBookingButton } from '@/components/ui/StickyBookingButton';
 import { AuthErrorHandler } from '@/components/sections/AuthErrorHandler';
 import { CancellationConfirmHandler } from '@/components/sections/CancellationConfirmHandler';
 import { PasswordSetupHandler } from '@/components/sections/PasswordSetupHandler';
@@ -27,7 +26,6 @@ export default function HomePage() {
         <Contact />
       </main>
       <ScrollToTop />
-      <StickyBookingButton />
       <Suspense fallback={null}>
         <AuthErrorHandler />
         <CancellationConfirmHandler />
