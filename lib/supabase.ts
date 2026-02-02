@@ -71,7 +71,8 @@ export interface Service {
   price: number; // in Cent
   duration: number; // in Minuten
   sort_order: number;
-  active: boolean;
+  active: boolean; // Auf Webseite anzeigen
+  show_in_calendar: boolean; // Im Kalender/Buchungstool anzeigen
   created_at: string;
 }
 
@@ -193,6 +194,22 @@ export async function getServices(): Promise<Service[]> {
 
   if (error) {
     console.error('Error fetching services:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// Services für Kalender/Buchungstool (show_in_calendar = true)
+export async function getCalendarServices(): Promise<Service[]> {
+  const { data, error } = await supabase
+    .from('services')
+    .select('*')
+    .eq('show_in_calendar', true)
+    .order('sort_order');
+
+  if (error) {
+    console.error('Error fetching calendar services:', error);
     return [];
   }
 
@@ -2761,4 +2778,93 @@ export function getEffectiveWorkingHours(
   }
 
   return null;
+}
+
+// ============================================
+// REVIEWS - Kundenbewertungen
+// ============================================
+
+export interface Review {
+  id: string;
+  author_name: string;
+  rating: number;
+  text: string;
+  date: string | null;
+  active: boolean;
+  sort_order: number;
+  created_at: string;
+}
+
+// Aktive Rezensionen laden (für Website)
+export async function getReviews(): Promise<Review[]> {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*')
+    .eq('active', true)
+    .order('sort_order', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching reviews:', error);
+    return [];
+  }
+  return data || [];
+}
+
+// Alle Rezensionen laden (für Admin)
+export async function getAllReviews(): Promise<Review[]> {
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*')
+    .order('sort_order', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching all reviews:', error);
+    return [];
+  }
+  return data || [];
+}
+
+// Rezension erstellen
+export async function createReview(review: Omit<Review, 'id' | 'created_at'>): Promise<Review | null> {
+  const { data, error } = await supabase
+    .from('reviews')
+    .insert(review)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating review:', error);
+    return null;
+  }
+  return data;
+}
+
+// Rezension aktualisieren
+export async function updateReview(id: string, updates: Partial<Review>): Promise<Review | null> {
+  const { data, error } = await supabase
+    .from('reviews')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating review:', error);
+    return null;
+  }
+  return data;
+}
+
+// Rezension löschen
+export async function deleteReview(id: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('reviews')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting review:', error);
+    return false;
+  }
+  return true;
 }

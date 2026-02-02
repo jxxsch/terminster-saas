@@ -237,7 +237,6 @@ export function useHeroSettings() {
           getSetting<{ value: string }>('contact_phone'),
         ]);
 
-        console.log('useHeroSettings loaded:', { title, subtitle, background });
         setSettings({
           title: title || { de: '', en: '' },
           subtitle: subtitle || { de: '', en: '' },

@@ -27,6 +27,7 @@ export default function ServicesPage() {
     price: 0,
     duration: 30,
     active: true,
+    show_in_calendar: true,
   });
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function ServicesPage() {
       price: 0,
       duration: 30,
       active: true,
+      show_in_calendar: true,
     });
     setIsCreating(true);
     setEditingId(null);
@@ -64,6 +66,7 @@ export default function ServicesPage() {
       price: service.price / 100,
       duration: service.duration,
       active: service.active,
+      show_in_calendar: service.show_in_calendar ?? true,
     });
     setEditingId(service.id);
     setIsCreating(false);
@@ -87,6 +90,7 @@ export default function ServicesPage() {
         duration: formData.duration,
         sort_order: services.length,
         active: formData.active,
+        show_in_calendar: formData.show_in_calendar,
       });
 
       if (newService) {
@@ -99,6 +103,7 @@ export default function ServicesPage() {
         price: priceInCent,
         duration: formData.duration,
         active: formData.active,
+        show_in_calendar: formData.show_in_calendar,
       });
 
       if (updated) {
@@ -121,6 +126,16 @@ export default function ServicesPage() {
   async function handleToggleActive(service: Service) {
     const updated = await updateService(service.id, {
       active: !service.active,
+    });
+
+    if (updated) {
+      setServices(services.map(s => s.id === updated.id ? updated : s));
+    }
+  }
+
+  async function handleToggleCalendar(service: Service) {
+    const updated = await updateService(service.id, {
+      show_in_calendar: !service.show_in_calendar,
     });
 
     if (updated) {
@@ -188,7 +203,7 @@ export default function ServicesPage() {
                   required
                 />
               </div>
-              <div className="flex items-end pb-1">
+              <div className="flex items-end gap-4 pb-1">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <div className={`relative w-9 h-5 rounded-full transition-colors ${formData.active ? 'bg-emerald-500' : 'bg-slate-300'}`}>
                     <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${formData.active ? 'left-4' : 'left-0.5'}`} />
@@ -199,7 +214,19 @@ export default function ServicesPage() {
                       className="sr-only"
                     />
                   </div>
-                  <span className="text-xs text-slate-600">Aktiv</span>
+                  <span className="text-xs text-slate-600">Webseite</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <div className={`relative w-9 h-5 rounded-full transition-colors ${formData.show_in_calendar ? 'bg-blue-500' : 'bg-slate-300'}`}>
+                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${formData.show_in_calendar ? 'left-4' : 'left-0.5'}`} />
+                    <input
+                      type="checkbox"
+                      checked={formData.show_in_calendar}
+                      onChange={(e) => setFormData({ ...formData, show_in_calendar: e.target.checked })}
+                      className="sr-only"
+                    />
+                  </div>
+                  <span className="text-xs text-slate-600">Kalender</span>
                 </label>
               </div>
             </div>
@@ -287,12 +314,13 @@ export default function ServicesPage() {
               {isCreating && <div className="mb-4">{editFormContent}</div>}
 
               {/* Header-Zeile */}
-              <div className="grid grid-cols-[40px_minmax(120px,1fr)_80px_80px_44px_72px] gap-4 px-4 py-1.5 text-[11px] font-medium text-slate-400 border-b border-slate-100">
+              <div className="grid grid-cols-[40px_minmax(120px,1fr)_80px_80px_60px_60px_72px] gap-4 px-4 py-1.5 text-[11px] font-medium text-slate-400 border-b border-slate-100">
                 <div></div>
                 <div>Name</div>
                 <div>Preis</div>
                 <div>Dauer</div>
-                <div>Status</div>
+                <div className="text-center">Webseite</div>
+                <div className="text-center">Kalender</div>
                 <div></div>
               </div>
 
@@ -300,12 +328,12 @@ export default function ServicesPage() {
               <div className="divide-y divide-slate-50">
                 {services.map((service, index) => (
                   <div key={service.id}>
-                    <div className={`grid grid-cols-[40px_minmax(120px,1fr)_80px_80px_44px_72px] gap-4 items-center px-4 py-3 transition-colors ${editingId === service.id ? 'bg-gold/5' : 'hover:bg-slate-50'}`}>
+                    <div className={`grid grid-cols-[40px_minmax(120px,1fr)_80px_80px_60px_60px_72px] gap-4 items-center px-4 py-3 transition-colors ${editingId === service.id ? 'bg-gold/5' : 'hover:bg-slate-50'}`}>
                       {/* Icon */}
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                        service.active ? 'bg-emerald-50' : 'bg-slate-100'
+                        service.active || service.show_in_calendar ? 'bg-emerald-50' : 'bg-slate-100'
                       }`}>
-                        <svg className={`w-5 h-5 ${service.active ? 'text-emerald-500' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className={`w-5 h-5 ${service.active || service.show_in_calendar ? 'text-emerald-500' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243z" />
                         </svg>
                       </div>
@@ -319,16 +347,32 @@ export default function ServicesPage() {
                       {/* Dauer */}
                       <div className="text-sm text-slate-600">{formatDuration(service.duration)}</div>
 
-                      {/* Status */}
-                      <div>
+                      {/* Webseite Toggle */}
+                      <div className="flex justify-center">
                         <button
                           onClick={() => handleToggleActive(service)}
                           className={`relative w-10 h-5 rounded-full transition-colors ${
                             service.active ? 'bg-emerald-500' : 'bg-slate-200'
                           }`}
+                          title="Auf Webseite anzeigen"
                         >
                           <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
                             service.active ? 'left-5' : 'left-0.5'
+                          }`} />
+                        </button>
+                      </div>
+
+                      {/* Kalender Toggle */}
+                      <div className="flex justify-center">
+                        <button
+                          onClick={() => handleToggleCalendar(service)}
+                          className={`relative w-10 h-5 rounded-full transition-colors ${
+                            service.show_in_calendar ? 'bg-blue-500' : 'bg-slate-200'
+                          }`}
+                          title="Im Kalender anzeigen"
+                        >
+                          <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
+                            service.show_in_calendar ? 'left-5' : 'left-0.5'
                           }`} />
                         </button>
                       </div>

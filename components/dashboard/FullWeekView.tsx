@@ -10,7 +10,7 @@ import {
   getAppointments,
   getSeries,
   getTeam,
-  getServices,
+  getCalendarServices,
   getStaffTimeOffForDateRange,
   getClosedDates,
   Appointment,
@@ -132,7 +132,7 @@ export function FullWeekView({ monday }: FullWeekViewProps) {
         getAppointments(startDate, endDate),
         getSeries(),
         getTeam(),
-        getServices(),
+        getCalendarServices(),
         getStaffTimeOffForDateRange(startDate, endDate),
         getClosedDates(),
       ]);
