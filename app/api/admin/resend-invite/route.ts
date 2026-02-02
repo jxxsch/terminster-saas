@@ -55,10 +55,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log('generateLink result:', { linkData: !!linkData, linkError });
-
     if (linkError) {
-      console.error('Generate link error:', linkError);
       return NextResponse.json(
         { error: `Link konnte nicht generiert werden: ${linkError.message}` },
         { status: 500 }
