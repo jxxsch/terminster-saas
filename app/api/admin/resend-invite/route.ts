@@ -27,9 +27,16 @@ export async function POST(request: NextRequest) {
       .eq('email', email.toLowerCase())
       .single();
 
-    if (!customer?.auth_id) {
+    if (!customer) {
       return NextResponse.json(
-        { error: 'Kein Benutzer mit dieser E-Mail gefunden oder kein Konto verknüpft' },
+        { error: 'Customer nicht gefunden' },
+        { status: 404 }
+      );
+    }
+
+    if (!customer.auth_id) {
+      return NextResponse.json(
+        { error: 'Customer hat kein Auth-Konto verknüpft' },
         { status: 404 }
       );
     }
