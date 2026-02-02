@@ -75,7 +75,7 @@ export function Contact() {
                         </svg>
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-[7px] font-normal text-gray-400 tracking-[0.08em] uppercase mb-1">{t('address.label')}</h3>
+                        <h3 className="text-[10px] font-normal text-gray-400 tracking-[0.05em] uppercase mb-1 origin-left scale-[0.7]">{t('address.label')}</h3>
                         <p className="text-sm text-gray-700 leading-relaxed">{t('address.building')}</p>
                         <p className="text-sm text-gray-700 leading-relaxed">{t('address.street')}</p>
                         <p className="text-sm text-gray-700 leading-relaxed">{t('address.city')}</p>
@@ -92,7 +92,7 @@ export function Contact() {
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-[7px] font-normal text-gray-400 tracking-[0.08em] uppercase mb-1">{t('hours.label')}</h3>
+                        <h3 className="text-[10px] font-normal text-gray-400 tracking-[0.05em] uppercase mb-1 origin-left scale-[0.7]">{t('hours.label')}</h3>
                         <div className="space-y-0.5">
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-500">{t('hours.weekdays')}</span>
@@ -116,7 +116,7 @@ export function Contact() {
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-[7px] font-normal text-gray-400 tracking-[0.08em] uppercase mb-1">Kontakt</h3>
+                        <h3 className="text-[10px] font-normal text-gray-400 tracking-[0.05em] uppercase mb-1 origin-left scale-[0.7]">Kontakt</h3>
                         <div className="space-y-2">
                           {/* Telefon */}
                           <div className="flex items-center gap-2">
