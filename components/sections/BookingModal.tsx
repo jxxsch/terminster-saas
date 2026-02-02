@@ -30,7 +30,9 @@ import {
   StaffTimeOff,
   StaffWorkingHours,
   FreeDayException,
-  OpeningHours
+  OpeningHours,
+  getSeries,
+  Series
 } from '@/lib/supabase';
 import { sendBookingConfirmationEmail } from '@/lib/email-client';
 import { useAuth } from '@/context/AuthContext';
@@ -193,11 +195,49 @@ function getAvailableSlots(
   allSlots: string[],
   bookedAppointments: Appointment[],
   openTime?: string,
-  closeTime?: string
+  closeTime?: string,
+  seriesList?: Series[]
 ): string[] {
+  // Normale Termine
   const bookedSlots = bookedAppointments
     .filter(apt => apt.barber_id === barberId && apt.date === dateStr)
     .map(apt => apt.time_slot);
+
+  // Serientermine für dieses Datum berechnen
+  if (seriesList && seriesList.length > 0) {
+    const dateParts = dateStr.split('-').map(Number);
+    const dateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+    const dayOfWeek = dateObj.getDay() === 0 ? 7 : dateObj.getDay(); // 1=Mo, 7=So
+
+    seriesList.forEach(s => {
+      if (s.barber_id === barberId && s.day_of_week === dayOfWeek) {
+        // Prüfen ob Datum im Gültigkeitsbereich liegt
+        if (s.start_date <= dateStr && (!s.end_date || s.end_date >= dateStr)) {
+          const intervalType = s.interval_type || 'weekly';
+          let shouldBlock = false;
+
+          if (intervalType === 'weekly') {
+            shouldBlock = true;
+          } else if (intervalType === 'biweekly') {
+            // Alle 2 Wochen
+            const startParts = s.start_date.split('-').map(Number);
+            const startUtc = Date.UTC(startParts[0], startParts[1] - 1, startParts[2]);
+            const currentUtc = Date.UTC(dateParts[0], dateParts[1] - 1, dateParts[2]);
+            const diffDays = Math.round((currentUtc - startUtc) / (24 * 60 * 60 * 1000));
+            const diffWeeks = Math.floor(diffDays / 7);
+            shouldBlock = diffWeeks >= 0 && diffWeeks % 2 === 0;
+          } else if (intervalType === 'monthly') {
+            const startDay = parseInt(s.start_date.split('-')[2], 10);
+            shouldBlock = dateObj.getDate() === startDay;
+          }
+
+          if (shouldBlock && !bookedSlots.includes(s.time_slot)) {
+            bookedSlots.push(s.time_slot);
+          }
+        }
+      }
+    });
+  }
 
   let filteredSlots = allSlots.filter(slot => !bookedSlots.includes(slot));
   filteredSlots = filteredSlots.filter(slot => !isSlotInPast(slot, dateStr));
@@ -685,6 +725,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const [bookedAppointments, setBookedAppointments] = useState<Appointment[]>([]);
+  const [seriesList, setSeriesList] = useState<Series[]>([]);
   const [closedDates, setClosedDates] = useState<ClosedDate[]>([]);
   const [openSundays, setOpenSundays] = useState<OpenSunday[]>([]);
   const [openSundayStaff, setOpenSundayStaff] = useState<OpenSundayStaff[]>([]);
@@ -800,10 +841,11 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
       const startDate = formatDateLocal(today);
       const endDate = formatDateLocal(new Date(today.getTime() + 12 * 7 * 24 * 60 * 60 * 1000));
 
-      const [teamData, timeSlotsData, appointmentsData, closedDatesData, openSundaysData, openSundayStaffData, openHolidaysData, bundeslandData, advanceWeeksData, staffTimeOffData, workingHoursData, exceptionsData, openingHoursData] = await Promise.all([
+      const [teamData, timeSlotsData, appointmentsData, seriesData, closedDatesData, openSundaysData, openSundayStaffData, openHolidaysData, bundeslandData, advanceWeeksData, staffTimeOffData, workingHoursData, exceptionsData, openingHoursData] = await Promise.all([
         getTeam(),
         getTimeSlotsArray(),
         getAppointments(startDate, endDate),
+        getSeries(),
         getClosedDates(),
         getOpenSundays(),
         getOpenSundayStaff(),
@@ -819,6 +861,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
       setTeam(teamData);
       setTimeSlots(timeSlotsData);
       setBookedAppointments(appointmentsData);
+      setSeriesList(seriesData);
       setClosedDates(closedDatesData);
       setOpenSundays(openSundaysData);
       setOpenSundayStaff(openSundayStaffData);
@@ -1607,7 +1650,8 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                               timeSlots,
                               bookedAppointments,
                               effectiveOpenTime,
-                              effectiveCloseTime
+                              effectiveCloseTime,
+                              seriesList
                             );
 
                         const isExpanded = expandedDays.has(day.dateStr);
