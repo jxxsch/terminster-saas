@@ -683,16 +683,25 @@ export function AppointmentSlot({
               onClick={() => setShowSeriesCancelModal(false)}
             />
             <div className="relative bg-white rounded-lg shadow-xl p-6 mx-4 text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              </div>
+              {/* Icon nur für normale Serien, nicht für Pause */}
+              {!isSeriesPause && (
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </div>
+              )}
 
-              <h3 className="text-lg font-medium text-gray-900 mb-1">Serientermin bearbeiten</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">
+                {isSeriesPause ? 'Pause bearbeiten' : 'Serientermin bearbeiten'}
+              </h3>
               <p className="text-sm text-gray-500">
-                <span className="font-medium text-gray-700">{series.customer_name}</span>
-                <span className="mx-2">·</span>
+                {!isSeriesPause && (
+                  <>
+                    <span className="font-medium text-gray-700">{series.customer_name}</span>
+                    <span className="mx-2">·</span>
+                  </>
+                )}
                 <span>{date}</span>
                 <span className="mx-2">·</span>
                 <span>{timeSlot} Uhr</span>
