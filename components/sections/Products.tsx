@@ -59,14 +59,9 @@ export function Products() {
         </div>
 
         {/* Header */}
-        <h2 className={`text-3xl md:text-4xl lg:text-5xl font-light text-gray-900 tracking-wide mb-4 text-center transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <h2 className={`text-3xl md:text-4xl lg:text-5xl font-light text-gray-900 tracking-wide mb-12 text-center transition-all duration-700 delay-100 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           {t('headline')}
         </h2>
-
-        {/* Subtitle */}
-        <p className={`text-gray-500 text-center mb-12 transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-          {t('subtitle')}
-        </p>
 
         {/* Floating Container mit 3 Carousels */}
         <div className={`bg-gray-50 rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
