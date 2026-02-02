@@ -82,11 +82,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Password-Recovery-Link generieren (damit Kunde Passwort setzen kann)
+    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://terminster.com').trim();
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: 'recovery',
       email: email.toLowerCase(),
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://terminster.com'}/de`,
+        redirectTo: `${baseUrl}/de`,
       },
     });
 
@@ -112,13 +113,13 @@ export async function POST(request: NextRequest) {
 
     // Link-Domain korrigieren (Supabase verwendet seine eigene Site URL)
     // Wir ersetzen die Redirect-Domain mit unserer eigenen
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://terminster.com';
+    const correctedBaseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://terminster.com').trim();
     try {
       const url = new URL(activationUrl);
       const redirectTo = url.searchParams.get('redirect_to');
       if (redirectTo) {
         // Ersetze die Domain im redirect_to Parameter
-        const newRedirectTo = `${baseUrl}/de`;
+        const newRedirectTo = `${correctedBaseUrl}/de`;
         url.searchParams.set('redirect_to', newRedirectTo);
         activationUrl = url.toString();
       }
