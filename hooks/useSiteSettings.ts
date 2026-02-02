@@ -315,3 +315,96 @@ export function useSectionSettings(section: 'about' | 'services' | 'team' | 'gal
     subtitle: getLocalizedText(settings.subtitle),
   };
 }
+
+/**
+ * Hook to load hero content settings (neue Texte/Links)
+ */
+export interface HeroContent {
+  badge: string;
+  headline: string;
+  subtext: string;
+  ctaText: string;
+  locationLabel: string;
+  locationValue: string;
+  hoursLabel: string;
+  hoursValue: string;
+  instagramUrl: string;
+  facebookUrl: string;
+}
+
+const defaultHeroContent: HeroContent = {
+  badge: 'Beban Barber Shop 2.0',
+  headline: 'Der Barber Ihres Vertrauens in der Rathaus Galerie Leverkusen',
+  subtext: 'Exzellentes Handwerk trifft auf modernes Ambiente.',
+  ctaText: 'Termin buchen',
+  locationLabel: 'Standort',
+  locationValue: 'Friedrich-Ebert-Platz 3a, Leverkusen',
+  hoursLabel: 'Öffnungszeiten',
+  hoursValue: 'Mo-Sa 10:00 - 19:00',
+  instagramUrl: '',
+  facebookUrl: '',
+};
+
+export function useHeroContent() {
+  const [content, setContent] = useState<HeroContent>(defaultHeroContent);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadContent() {
+      try {
+        const [
+          badge,
+          headline,
+          subtext,
+          ctaText,
+          locationLabel,
+          locationValue,
+          hoursLabel,
+          hoursValue,
+          instagram,
+          facebook,
+        ] = await Promise.all([
+          getSetting<string>('hero_badge'),
+          getSetting<string>('hero_headline'),
+          getSetting<string>('hero_subtext'),
+          getSetting<string>('hero_cta_text'),
+          getSetting<string>('hero_location_label'),
+          getSetting<string>('hero_location_value'),
+          getSetting<string>('hero_hours_label'),
+          getSetting<string>('hero_hours_value'),
+          getSetting<{ value: string } | string>('social_instagram'),
+          getSetting<{ value: string } | string>('social_facebook'),
+        ]);
+
+        // Handle social links - can be string or {value: string}
+        const extractUrl = (val: { value: string } | string | null): string => {
+          if (!val) return '';
+          if (typeof val === 'string') return val;
+          if (typeof val === 'object' && 'value' in val) return val.value;
+          return '';
+        };
+
+        setContent({
+          badge: badge || defaultHeroContent.badge,
+          headline: headline || defaultHeroContent.headline,
+          subtext: subtext || defaultHeroContent.subtext,
+          ctaText: ctaText || defaultHeroContent.ctaText,
+          locationLabel: locationLabel || defaultHeroContent.locationLabel,
+          locationValue: locationValue || defaultHeroContent.locationValue,
+          hoursLabel: hoursLabel || defaultHeroContent.hoursLabel,
+          hoursValue: hoursValue || defaultHeroContent.hoursValue,
+          instagramUrl: extractUrl(instagram),
+          facebookUrl: extractUrl(facebook),
+        });
+      } catch (error) {
+        console.error('Error loading hero content:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadContent();
+  }, []);
+
+  return { content, isLoading };
+}

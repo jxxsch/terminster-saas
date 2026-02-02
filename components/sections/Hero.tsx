@@ -1,13 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useBooking } from '@/context/BookingContext';
-import { useTranslations } from 'next-intl';
-import { useHeroSettings } from '@/hooks/useSiteSettings';
+import { useHeroSettings, useHeroContent } from '@/hooks/useSiteSettings';
 
-const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
-
-// Filter-CSS-Mappings (nur die 4 verfügbaren Filter)
+// Filter-CSS-Mappings
 const FILTER_CSS: Record<string, (intensity: number) => string> = {
   darken: (i) => `brightness(${1 - i * 0.007})`,
   blur: (i) => `blur(${i * 0.15}px)`,
@@ -16,15 +13,12 @@ const FILTER_CSS: Record<string, (intensity: number) => string> = {
 };
 
 export function Hero() {
-  const [status, setStatus] = useState<{ isOpen: boolean; message: string } | null>(null);
   const { openBooking } = useBooking();
-  const t = useTranslations('hero');
-  const tDays = useTranslations('days');
-  const { settings: heroSettings, getLocalizedText, isLoading } = useHeroSettings();
-
+  const { settings: heroSettings } = useHeroSettings();
+  const { content } = useHeroContent();
   const { background } = heroSettings;
 
-  // Build YouTube embed URL dynamically
+  // Build YouTube embed URL
   const youtubeEmbedUrl = useMemo(() => {
     if (background.type !== 'video' || !background.youtube_id) return null;
 
@@ -54,64 +48,18 @@ export function Hero() {
     return `https://www.youtube.com/embed/${background.youtube_id}?${params.toString()}`;
   }, [background]);
 
-  // Build CSS filter string from filters object with individual intensities
+  // Build CSS filter string
   const filterStyle = useMemo(() => {
     if (!background.filters || Object.keys(background.filters).length === 0) return '';
-
     return Object.entries(background.filters)
       .map(([key, intensity]) => FILTER_CSS[key] ? FILTER_CSS[key](intensity) : '')
       .filter(Boolean)
       .join(' ');
   }, [background.filters]);
 
-  // Get title and subtitle from settings, fallback to defaults
-  const heroTitle = getLocalizedText(heroSettings.title) || 'BEBAN BARBER SHOP 2.0';
-  const heroSubtitle = getLocalizedText(heroSettings.subtitle) || t('slogan');
-
-  const getShopStatus = useCallback((): { isOpen: boolean; message: string } => {
-    const now = new Date();
-    const germanTime = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
-
-    const day = germanTime.getDay();
-    const hours = germanTime.getHours();
-    const minutes = germanTime.getMinutes();
-    const currentTime = hours * 60 + minutes;
-
-    const openTime = 10 * 60;
-    const closeTime = 19 * 60;
-
-    const isOpen = day !== 0 && currentTime >= openTime && currentTime < closeTime;
-
-    if (isOpen) {
-      return { isOpen: true, message: t('status.openUntil', { time: '19:00' }) };
-    }
-
-    if (day !== 0 && currentTime < openTime) {
-      return { isOpen: false, message: t('status.opensToday', { time: '10:00' }) };
-    }
-
-    let nextDay = day;
-    do {
-      nextDay = (nextDay + 1) % 7;
-    } while (nextDay === 0);
-
-    const nextDayName = tDays(`short.${DAY_KEYS[nextDay]}`);
-    return { isOpen: false, message: t('status.opensOn', { day: nextDayName, time: '10:00' }) };
-  }, [t, tDays]);
-
-  useEffect(() => {
-    setStatus(getShopStatus());
-
-    const interval = setInterval(() => {
-      setStatus(getShopStatus());
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [getShopStatus]);
-
   return (
     <section className="relative h-screen w-full overflow-hidden">
-      {/* Dynamischer Hintergrund: Video oder Bild */}
+      {/* Video/Image Background */}
       {background.type === 'video' && youtubeEmbedUrl ? (
         <div
           className="absolute inset-0 pointer-events-none scale-150"
@@ -135,7 +83,6 @@ export function Hero() {
           }}
         />
       ) : (
-        // Fallback: Standard-Video
         <div className="absolute inset-0 pointer-events-none scale-150">
           <iframe
             src="https://www.youtube.com/embed/3vCGQvscX34?start=24&end=54&autoplay=1&mute=1&loop=1&playlist=3vCGQvscX34&controls=0&showinfo=0&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&playsinline=1"
@@ -147,124 +94,112 @@ export function Hero() {
         </div>
       )}
 
-      {/* Standard-Overlay für Lesbarkeit */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-black/70" />
-      <div className="absolute inset-0 bg-[#1a1510]/50" />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30" />
+      {/* Dark Overlay */}
+      <div className="absolute inset-0 bg-black/60" />
 
-      {/* Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-4">
-        {/* Titel */}
-        <h1 className="text-4xl md:text-6xl font-light text-white/85 tracking-[0.6em] mb-4">
-          {heroTitle.includes('2.0') ? (
-            <>
-              {heroTitle.replace('2.0', '').trim()} <span className="text-gold/85">2.0</span>
-            </>
-          ) : (
-            heroTitle
-          )}
-        </h1>
+      {/* Decorative Frame - Desktop only, starts below header */}
+      <div
+        className="fixed top-20 left-4 right-4 bottom-4 z-10 pointer-events-none hidden lg:block"
+        style={{
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+        }}
+      />
 
-        {/* Slogan */}
-        <p className="text-lg md:text-xl text-gray-300 font-light tracking-wide mb-12 whitespace-nowrap">
-          {heroSubtitle}
-        </p>
-
-        {/* Action Buttons - Footer Style */}
-        <div className="flex items-center gap-4">
-          {/* Telefon */}
-          <div className="relative group">
+      {/* Main Content */}
+      <main className="relative z-10 h-full flex flex-col justify-center px-4 sm:px-6 lg:px-8">
+        {/* Social Links - Left Side (Desktop only) - Absolute positioned */}
+        <div className="hidden lg:flex flex-col items-center space-y-6 absolute left-8 top-1/2 -translate-y-1/2">
             <a
-              href="#contact"
-              className="w-12 h-12 border border-white/40 rounded-sm flex items-center justify-center hover:border-gold transition-all"
-              aria-label={t('aria.contact')}
+              href={content.instagramUrl || 'https://instagram.com'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/40 hover:text-white transition-colors duration-300"
+              aria-label="Instagram"
             >
-              <svg className="w-5 h-5 text-white/70 group-hover:text-gold transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
               </svg>
             </a>
-            {/* Tooltip */}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-4 py-2 bg-black/50 border border-white/20 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-              <span className="text-xs font-light tracking-wide text-white/80">
-                {heroSettings.phone || '+49 214 123 4567'}
-              </span>
+
+            <div className="h-24 w-[1px] bg-white/20" />
+
+            <a
+              href={content.facebookUrl || 'https://facebook.com'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/40 hover:text-white transition-colors duration-300"
+              aria-label="Facebook"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+              </svg>
+            </a>
+        </div>
+
+        {/* Content Container */}
+        <div className="w-full mt-12">
+          {/* Center Content */}
+          <div className="space-y-8 text-center">
+            <div className="space-y-4">
+              {/* Badge */}
+              <p className="text-xs uppercase tracking-[0.5em] font-medium text-white/60 mb-6">
+                {content.badge}
+              </p>
+
+              {/* Headline */}
+              <h1
+                className="font-display text-3xl md:text-5xl lg:text-[2.75rem] xl:text-[3.25rem] text-white leading-tight"
+                style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
+              >
+                {content.headline.split('\n').map((line, i) => (
+                  <span key={i}>
+                    {line}
+                    {i < content.headline.split('\n').length - 1 && <br />}
+                  </span>
+                ))}
+              </h1>
             </div>
-          </div>
 
-          {/* Standort */}
-          <div className="relative group">
-            <a
-              href="#contact"
-              className="w-12 h-12 border border-white/40 rounded-sm flex items-center justify-center hover:border-gold transition-all"
-              aria-label={t('aria.location')}
-            >
-              <svg className="w-5 h-5 text-white/70 group-hover:text-gold transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </a>
-            {/* Tooltip */}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-4 py-2 bg-black/50 border border-white/20 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-              <span className="text-xs font-light tracking-wide text-white/80">
-                {t('tooltips.location')}
-              </span>
-            </div>
-          </div>
+            {/* Subtext */}
+            <p className="text-white/60 text-sm md:text-base font-light tracking-wide whitespace-nowrap">
+              {content.subtext}
+            </p>
 
-          {/* Öffnungszeiten */}
-          <div className="relative group">
-            <a
-              href="#contact"
-              className="w-12 h-12 border border-white/40 rounded-sm flex items-center justify-center hover:border-gold transition-all"
-              aria-label={status?.isOpen ? t('aria.open') : t('aria.closed')}
-            >
-              <svg className="w-5 h-5 text-white/70 group-hover:text-gold transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </a>
-
-            {/* Tooltip bei Hover */}
-            {status && (
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-4 py-2 bg-black/50 border border-white/20 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                <span className="text-xs font-light tracking-wide text-white/80">
-                  {status.message}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Termin buchen */}
-          <div className="relative group">
-            <button
-              onClick={() => openBooking()}
-              className="w-12 h-12 border border-white/40 rounded-sm flex items-center justify-center hover:border-gold transition-all"
-              aria-label={t('aria.bookAppointment')}
-            >
-              <svg className="w-5 h-5 text-white/70 group-hover:text-gold transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </button>
-
-            {/* Tooltip bei Hover */}
-            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 px-4 py-2 bg-black/50 border border-white/20 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-              <span className="text-xs font-light tracking-wide text-white/80">
-                {t('tooltips.slotsAvailable', { count: 5 })}
-              </span>
+            {/* CTA Button */}
+            <div className="pt-8">
+              <button
+                onClick={() => openBooking()}
+                className="inline-block px-10 py-3.5 border border-white/40 hover:border-white text-white text-xs uppercase tracking-[0.3em] font-medium rounded-full transition-all duration-300 hover:bg-white/10 backdrop-blur-sm"
+              >
+                {content.ctaText}
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Scroll Down Indicator */}
-        <a
-          href="#services"
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce"
-          aria-label={t('aria.scrollDown')}
-        >
-          <svg className="w-8 h-8 text-white/60 hover:text-gold transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-          </svg>
-        </a>
-      </div>
+        {/* Bottom Bar - aligned with frame */}
+        <div className="absolute bottom-8 left-8 right-8 z-20 hidden lg:flex justify-between items-end">
+          {/* Location - Left */}
+          <div className="flex flex-col space-y-1 text-left">
+            <span className="text-[10px] uppercase tracking-widest text-white/40">
+              {content.locationLabel}
+            </span>
+            <span className="text-xs tracking-wide text-white whitespace-nowrap">
+              {content.locationValue}
+            </span>
+          </div>
+
+          {/* Hours - Right */}
+          <div className="flex flex-col space-y-1 text-right">
+            <span className="text-[10px] uppercase tracking-widest text-white/40">
+              {content.hoursLabel}
+            </span>
+            <span className="text-xs tracking-wide text-white">
+              {content.hoursValue}
+            </span>
+          </div>
+        </div>
+      </main>
     </section>
   );
 }
