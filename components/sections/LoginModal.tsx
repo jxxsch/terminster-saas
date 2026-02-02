@@ -202,6 +202,58 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
         return;
       }
 
+      // Aktuellen User holen
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const fullName = `${firstName.trim()} ${lastName.trim()}`;
+
+        // Customer-Eintrag aktualisieren
+        await supabase
+          .from('customers')
+          .update({
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            name: fullName,
+            phone: phone.trim(),
+            birth_date: birthDate,
+          })
+          .eq('auth_id', user.id);
+
+        // Alle zukünftigen Termine mit neuen Kundendaten aktualisieren
+        const today = new Date().toISOString().split('T')[0];
+
+        // Hole customer_id
+        const { data: customer } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('auth_id', user.id)
+          .single();
+
+        if (customer) {
+          // Termine mit customer_id aktualisieren
+          await supabase
+            .from('appointments')
+            .update({
+              customer_name: fullName,
+              customer_phone: phone.trim(),
+            })
+            .eq('customer_id', customer.id)
+            .gte('date', today);
+
+          // Serien mit customer_email aktualisieren
+          if (user.email) {
+            await supabase
+              .from('series')
+              .update({
+                customer_name: fullName,
+                customer_phone: phone.trim(),
+              })
+              .eq('customer_email', user.email.toLowerCase());
+          }
+        }
+      }
+
       // Erfolg - CustomerPortal öffnen
       onSuccess?.();
     } catch (err) {
