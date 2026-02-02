@@ -845,33 +845,35 @@ export function AddAppointmentModal({
                   </div>
                 )}
 
-                {/* Service Selection */}
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1.5">
-                    Leistung
-                  </label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {services.map((service) => (
-                      <button
-                        key={service.id}
-                        type="button"
-                        onClick={() => setServiceId(service.id)}
-                        className={`px-3 py-2 rounded-lg text-left transition-all border ${
-                          serviceId === service.id
-                            ? 'border-gold bg-gold/5'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <span className={`block text-xs font-medium ${serviceId === service.id ? 'text-gold' : 'text-gray-800'}`}>
-                          {service.name}
-                        </span>
-                        <span className={`text-[10px] ${serviceId === service.id ? 'text-gold/80' : 'text-gray-500'}`}>
-                          {formatPrice(service.price)} · {formatDuration(service.duration)}
-                        </span>
-                      </button>
-                    ))}
+                {/* Service Selection - nur anzeigen wenn Services vorhanden */}
+                {services.length > 0 && (
+                  <div>
+                    <label className="block text-xs text-gray-500 mb-1.5">
+                      Leistung
+                    </label>
+                    <div className="grid grid-cols-4 gap-2">
+                      {services.map((service) => (
+                        <button
+                          key={service.id}
+                          type="button"
+                          onClick={() => setServiceId(service.id)}
+                          className={`px-3 py-2 rounded-lg text-left transition-all border ${
+                            serviceId === service.id
+                              ? 'border-gold bg-gold/5'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <span className={`block text-xs font-medium ${serviceId === service.id ? 'text-gold' : 'text-gray-800'}`}>
+                            {service.name}
+                          </span>
+                          <span className={`text-[10px] ${serviceId === service.id ? 'text-gold/80' : 'text-gray-500'}`}>
+                            {formatPrice(service.price)} · {formatDuration(service.duration)}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Series Toggle */}
                 <div className="border-t border-gray-100 pt-4">
