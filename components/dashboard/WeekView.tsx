@@ -932,7 +932,7 @@ export function WeekView({
                       >
                         <DroppableCell id={dropId} disabled={!!barberTimeOff || isClosed}>
                           {appointment && appointment.status === 'confirmed' ? (
-                            <DraggableSlot id={appointment.id} disabled={appointment.customer_name?.includes('Pause') || selectionMode}>
+                            <DraggableSlot id={appointment.id} disabled={selectionMode}>
                               <AppointmentSlot
                                 appointment={appointment}
                                 series={seriesItem}

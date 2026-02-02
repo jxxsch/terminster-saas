@@ -418,7 +418,7 @@ export function FullWeekView({ monday }: FullWeekViewProps) {
                                     <DroppableCell id={dropId} disabled={isDisabled}>
                                       {hasContent ? (
                                         appointment && appointment.status === 'confirmed' ? (
-                                          <DraggableSlot id={appointment.id} disabled={appointment.customer_name?.includes('Pause')}>
+                                          <DraggableSlot id={appointment.id} disabled={false}>
                                             <CompactSlot
                                               appointment={appointment}
                                               series={seriesItem}
@@ -485,9 +485,9 @@ interface CompactSlotProps {
 }
 
 function CompactSlot({ appointment, series, onClick }: CompactSlotProps) {
-  const isPause = appointment?.customer_name?.includes('Pause');
+  const isPause = appointment?.customer_name?.includes('Pause') || series?.customer_name?.includes('Pause');
   const isCancelled = appointment?.status === 'cancelled';
-  const isSeries = series && !appointment;
+  const isSeries = series && !appointment && !isPause;
   const isOnline = appointment?.source === 'online';
 
   if (isCancelled) {

@@ -269,6 +269,9 @@ export function AppointmentSlot({
 
   // Series slot (virtual appointment from series)
   if (series && !appointment) {
+    // Check if series is a Pause
+    const isSeriesPause = series.customer_name?.includes('Pause');
+
     const handleSeriesClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       if (!showDetails) {
@@ -378,30 +381,38 @@ export function AppointmentSlot({
               ? 'bg-red-100 ring-2 ring-red-400 ring-inset'
               : isPreview
               ? 'bg-orange-100 ring-2 ring-orange-400 ring-inset'
+              : isSeriesPause
+              ? 'bg-gray-200 hover:bg-gray-300'
               : 'bg-blue-50 hover:bg-blue-100'
+            : isSeriesPause
+            ? 'bg-gray-200 hover:bg-gray-300'
             : 'bg-blue-50 hover:bg-blue-100'
         }`}
       >
         <div className="flex items-center justify-between gap-1 h-full pl-1">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1">
-              <svg className={`w-2.5 h-2.5 flex-shrink-0 ${
-                selectionMode && isSelected
-                  ? 'text-red-500'
-                  : selectionMode && isPreview
-                  ? 'text-orange-500'
-                  : 'text-blue-500'
-              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
+              {!isSeriesPause && (
+                <svg className={`w-2.5 h-2.5 flex-shrink-0 ${
+                  selectionMode && isSelected
+                    ? 'text-red-500'
+                    : selectionMode && isPreview
+                    ? 'text-orange-500'
+                    : 'text-blue-500'
+                }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              )}
               <span className={`text-[13px] font-medium truncate ${
                 selectionMode && isSelected
                   ? 'text-red-700'
                   : selectionMode && isPreview
                   ? 'text-orange-700'
+                  : isSeriesPause
+                  ? 'text-gray-600'
                   : 'text-blue-700'
               }`}>
-                {formatName(series.customer_name)}
+                {isSeriesPause ? 'Pause' : formatName(series.customer_name)}
               </span>
             </div>
           </div>
@@ -764,16 +775,15 @@ export function AppointmentSlot({
     setShowPauseDeleteModal(false);
   };
 
-  // Pause slot - special styling
+  // Pause slot - special styling (same layout as regular appointments)
   if (isPause) {
     return (
-      <div className="relative p-1 h-full transition-colors select-none bg-gray-200 hover:bg-gray-300">
-        <div className="flex items-center justify-between gap-1 h-full">
-          <div className="flex items-center gap-1">
-            <svg className="w-3 h-3 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-[10px] font-medium text-gray-600">Pause</span>
+      <div className="relative p-1 h-full transition-colors select-none cursor-grab bg-gray-200 hover:bg-gray-300">
+        <div className="flex items-center justify-between gap-1 h-full pl-1">
+          <div className="flex-1 min-w-0">
+            <span className="text-[13px] font-medium text-gray-600 truncate block select-none">
+              Pause
+            </span>
           </div>
           {/* X zum Löschen */}
           <button

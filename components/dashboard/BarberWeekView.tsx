@@ -788,7 +788,7 @@ export function BarberWeekView({
                           <div className="absolute inset-0 overflow-visible">
                             <DroppableCell id={dropId} disabled={isDisabled}>
                               {appointment && appointment.status === 'confirmed' ? (
-                                <DraggableSlot id={appointment.id} disabled={appointment.customer_name?.includes('Pause') || selectionMode}>
+                                <DraggableSlot id={appointment.id} disabled={selectionMode}>
                                   <AppointmentSlot
                                     appointment={appointment}
                                     series={seriesItem}
