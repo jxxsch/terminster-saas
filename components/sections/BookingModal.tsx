@@ -1632,10 +1632,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
 
                             {isDayDisabled ? (
                               <div style={styles.noSlotsMsg}>
-                                {day.isClosed ? day.closedReason || t('closed') :
-                                 isBarberUnavailable ? t('barberUnavailable') :
-                                 day.isDisabled ? t('notAvailable') :
-                                 t('noSlotsAvailable')}
+                                Alle Termine ausgebucht
                               </div>
                             ) : (
                               <>
