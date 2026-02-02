@@ -20,23 +20,23 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient();
 
-    // Benutzer finden
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingAuthUser = existingUsers?.users?.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase()
-    );
+    // Benutzer über Customer-Tabelle finden (mit auth_id)
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('id, auth_id, name, first_name, last_name')
+      .eq('email', email.toLowerCase())
+      .single();
 
-    if (!existingAuthUser) {
+    if (!customer?.auth_id) {
       return NextResponse.json(
-        { error: 'Kein Benutzer mit dieser E-Mail gefunden' },
+        { error: 'Kein Benutzer mit dieser E-Mail gefunden oder kein Konto verknüpft' },
         { status: 404 }
       );
     }
 
-    // User Metadata auslesen
-    const metadata = existingAuthUser.user_metadata || {};
-    const firstName = metadata.first_name || 'Kunde';
-    const lastName = metadata.last_name || '';
+    // User Metadata aus Customer-Tabelle
+    const firstName = customer.first_name || customer.name?.split(' ')[0] || 'Kunde';
+    const lastName = customer.last_name || customer.name?.split(' ').slice(1).join(' ') || '';
 
     // Neuen Einladungs-Link generieren
     const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://terminster.com').trim();
