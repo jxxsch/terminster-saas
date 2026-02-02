@@ -99,9 +99,10 @@ export function Hero() {
 
       {/* Decorative Frame - Desktop only, only visible in Hero */}
       <div
-        className="absolute top-20 left-4 right-4 bottom-4 z-10 pointer-events-none hidden lg:block"
+        className="absolute top-20 left-4 right-4 bottom-4 z-10 pointer-events-none hidden lg:block animate-glow-pulse"
         style={{
-          border: '1px solid rgba(255, 255, 255, 0.12)',
+          border: '1px solid rgba(212, 168, 83, 0.4)',
+          boxShadow: '0 0 15px rgba(212, 168, 83, 0.15), 0 0 30px rgba(212, 168, 83, 0.1), inset 0 0 15px rgba(212, 168, 83, 0.05)',
         }}
       />
 
