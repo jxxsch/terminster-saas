@@ -23,8 +23,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false,
-    flowType: 'pkce',
+    detectSessionInUrl: true, // Enable automatic session detection from URL
+    flowType: 'implicit', // Use implicit flow for recovery/invite tokens
     storage: customStorage,
     storageKey: 'beban-auth',
     lock: async <R>(name: string, acquireTimeout: number, fn: () => Promise<R>): Promise<R> => {
