@@ -345,40 +345,14 @@ export default function ServicesPage() {
             <div>
               {isCreating && <div className="mb-4">{editFormContent}</div>}
 
-              {/* Header-Zeile mit Master-Toggles */}
+              {/* Header-Zeile */}
               <div className="grid grid-cols-[40px_minmax(120px,1fr)_80px_80px_60px_60px_72px] gap-4 px-4 py-2 text-[11px] font-medium text-slate-400 border-b border-slate-100">
                 <div></div>
                 <div>Name</div>
                 <div>Preis</div>
                 <div>Dauer</div>
-                <div className="flex flex-col items-center gap-1">
-                  <span>Webseite</span>
-                  <button
-                    onClick={handleToggleAllWebsite}
-                    className={`relative w-8 h-4 rounded-full transition-colors ${
-                      services.every(s => s.active) ? 'bg-emerald-500' : services.some(s => s.active) ? 'bg-emerald-300' : 'bg-slate-200'
-                    }`}
-                    title="Alle ein-/ausschalten"
-                  >
-                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${
-                      services.every(s => s.active) ? 'left-4' : 'left-0.5'
-                    }`} />
-                  </button>
-                </div>
-                <div className="flex flex-col items-center gap-1">
-                  <span>Kalender</span>
-                  <button
-                    onClick={handleToggleAllCalendar}
-                    className={`relative w-8 h-4 rounded-full transition-colors ${
-                      services.every(s => s.show_in_calendar) ? 'bg-blue-500' : services.some(s => s.show_in_calendar) ? 'bg-blue-300' : 'bg-slate-200'
-                    }`}
-                    title="Alle ein-/ausschalten"
-                  >
-                    <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-transform ${
-                      services.every(s => s.show_in_calendar) ? 'left-4' : 'left-0.5'
-                    }`} />
-                  </button>
-                </div>
+                <div className="text-center">Webseite</div>
+                <div className="text-center">Kalender</div>
                 <div></div>
               </div>
 
@@ -481,6 +455,53 @@ export default function ServicesPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Footer: Master-Toggles bündig mit Tabelle */}
+              {services.length > 0 && (
+                <div className="grid grid-cols-[40px_minmax(120px,1fr)_80px_80px_60px_60px_72px] gap-4 items-center px-4 py-3 bg-slate-50 border-t border-slate-200 rounded-b-lg">
+                  <div></div>
+                  <div className="text-xs font-medium text-slate-500">Alle ein/aus</div>
+                  <div></div>
+                  <div></div>
+                  {/* Master Toggle Webseite */}
+                  <div className="flex justify-center">
+                    <button
+                      onClick={handleToggleAllWebsite}
+                      className={`relative w-10 h-5 rounded-full transition-colors ring-2 ring-offset-1 ${
+                        services.every(s => s.active)
+                          ? 'bg-emerald-500 ring-emerald-300'
+                          : services.some(s => s.active)
+                            ? 'bg-emerald-300 ring-emerald-200'
+                            : 'bg-slate-300 ring-slate-200'
+                      }`}
+                      title="Alle Webseite ein-/ausschalten"
+                    >
+                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
+                        services.every(s => s.active) ? 'left-5' : 'left-0.5'
+                      }`} />
+                    </button>
+                  </div>
+                  {/* Master Toggle Kalender */}
+                  <div className="flex justify-center">
+                    <button
+                      onClick={handleToggleAllCalendar}
+                      className={`relative w-10 h-5 rounded-full transition-colors ring-2 ring-offset-1 ${
+                        services.every(s => s.show_in_calendar)
+                          ? 'bg-blue-500 ring-blue-300'
+                          : services.some(s => s.show_in_calendar)
+                            ? 'bg-blue-300 ring-blue-200'
+                            : 'bg-slate-300 ring-slate-200'
+                      }`}
+                      title="Alle Kalender ein-/ausschalten"
+                    >
+                      <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${
+                        services.every(s => s.show_in_calendar) ? 'left-5' : 'left-0.5'
+                      }`} />
+                    </button>
+                  </div>
+                  <div></div>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -62,23 +62,23 @@ export function Contact() {
               {/* Left: Contact Info */}
               <div className="lg:col-span-2 p-8 md:p-10 flex flex-col">
 
-                {/* Info Cards Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6 mb-8">
+                {/* Info Cards */}
+                <div className="space-y-4 mb-8">
 
                   {/* Adresse */}
                   <div className="group p-5 rounded-2xl bg-gray-50 hover:bg-gold/5 transition-all duration-300">
                     <div className="flex items-start gap-4">
-                      <div className="w-11 h-11 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 group-hover:shadow-md group-hover:scale-105 transition-all duration-300">
-                        <svg className="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 group-hover:shadow-md transition-all duration-300">
+                        <svg className="w-4.5 h-4.5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-[11px] font-semibold text-gold tracking-[0.15em] uppercase mb-2">{t('address.label')}</h3>
-                        <p className="text-sm text-gray-600 leading-relaxed">{t('address.building')}</p>
-                        <p className="text-sm text-gray-600 leading-relaxed">{t('address.street')}</p>
-                        <p className="text-sm text-gray-600 leading-relaxed">{t('address.city')}</p>
+                        <h3 className="text-[10px] font-medium text-gray-400 tracking-[0.1em] uppercase mb-1.5">{t('address.label')}</h3>
+                        <p className="text-sm text-gray-700 leading-relaxed">{t('address.building')}</p>
+                        <p className="text-sm text-gray-700 leading-relaxed">{t('address.street')}</p>
+                        <p className="text-sm text-gray-700 leading-relaxed">{t('address.city')}</p>
                       </div>
                     </div>
                   </div>
@@ -86,21 +86,21 @@ export function Contact() {
                   {/* Öffnungszeiten */}
                   <div className="group p-5 rounded-2xl bg-gray-50 hover:bg-gold/5 transition-all duration-300">
                     <div className="flex items-start gap-4">
-                      <div className="w-11 h-11 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 group-hover:shadow-md group-hover:scale-105 transition-all duration-300">
-                        <svg className="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 group-hover:shadow-md transition-all duration-300">
+                        <svg className="w-4.5 h-4.5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-[11px] font-semibold text-gold tracking-[0.15em] uppercase mb-2">{t('hours.label')}</h3>
-                        <div className="space-y-1.5">
+                        <h3 className="text-[10px] font-medium text-gray-400 tracking-[0.1em] uppercase mb-1.5">{t('hours.label')}</h3>
+                        <div className="space-y-1">
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-500">{t('hours.weekdays')}</span>
-                            <span className="text-gray-800 font-medium">{t('hours.weekdaysTime')}</span>
+                            <span className="text-gray-700 font-medium">{t('hours.weekdaysTime')}</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-500">{t('hours.saturday')}</span>
-                            <span className="text-gray-800 font-medium">{t('hours.saturdayTime')}</span>
+                            <span className="text-gray-700 font-medium">{t('hours.saturdayTime')}</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-500">{t('hours.sunday')}</span>
@@ -111,44 +111,44 @@ export function Contact() {
                     </div>
                   </div>
 
-                  {/* Telefon */}
+                  {/* Kontakt (Telefon & E-Mail kombiniert) */}
                   <div className="group p-5 rounded-2xl bg-gray-50 hover:bg-gold/5 transition-all duration-300">
                     <div className="flex items-start gap-4">
-                      <div className="w-11 h-11 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 group-hover:shadow-md group-hover:scale-105 transition-all duration-300">
-                        <svg className="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                        </svg>
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="text-[11px] font-semibold text-gold tracking-[0.15em] uppercase mb-2">{t('phone.label')}</h3>
-                        {contactSettings.phone ? (
-                          <a href={`tel:${contactSettings.phone.replace(/\s/g, '')}`} className="text-sm text-gray-800 hover:text-gold transition-colors font-medium">
-                            {contactSettings.phone}
-                          </a>
-                        ) : (
-                          <span className="text-sm text-gray-400">Nicht angegeben</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* E-Mail */}
-                  <div className="group p-5 rounded-2xl bg-gray-50 hover:bg-gold/5 transition-all duration-300">
-                    <div className="flex items-start gap-4">
-                      <div className="w-11 h-11 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 group-hover:shadow-md group-hover:scale-105 transition-all duration-300">
-                        <svg className="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0 group-hover:shadow-md transition-all duration-300">
+                        <svg className="w-4.5 h-4.5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
                       </div>
-                      <div className="min-w-0">
-                        <h3 className="text-[11px] font-semibold text-gold tracking-[0.15em] uppercase mb-2">{t('email.label')}</h3>
-                        {contactSettings.email ? (
-                          <a href={`mailto:${contactSettings.email}`} className="text-sm text-gray-800 hover:text-gold transition-colors font-medium break-all">
-                            {contactSettings.email}
-                          </a>
-                        ) : (
-                          <span className="text-sm text-gray-400">Nicht angegeben</span>
-                        )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-[10px] font-medium text-gray-400 tracking-[0.1em] uppercase mb-1.5">Kontakt</h3>
+                        <div className="space-y-2">
+                          {/* Telefon */}
+                          <div className="flex items-center gap-2">
+                            <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                            {contactSettings.phone ? (
+                              <a href={`tel:${contactSettings.phone.replace(/\s/g, '')}`} className="text-sm text-gray-700 hover:text-gold transition-colors">
+                                {contactSettings.phone}
+                              </a>
+                            ) : (
+                              <span className="text-sm text-gray-400">-</span>
+                            )}
+                          </div>
+                          {/* E-Mail */}
+                          <div className="flex items-center gap-2">
+                            <svg className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                            </svg>
+                            {contactSettings.email ? (
+                              <a href={`mailto:${contactSettings.email}`} className="text-sm text-gray-700 hover:text-gold transition-colors break-all">
+                                {contactSettings.email}
+                              </a>
+                            ) : (
+                              <span className="text-sm text-gray-400">-</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -195,11 +195,27 @@ export function Contact() {
                   />
                 </div>
 
+                {/* Custom Gold Marker Overlay */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-10">
+                  <div className="relative">
+                    {/* Marker Pin */}
+                    <div className="w-8 h-8 bg-gold rounded-full flex items-center justify-center shadow-lg shadow-gold/40">
+                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0 0L12 12" />
+                      </svg>
+                    </div>
+                    {/* Pin Tail */}
+                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-gold" />
+                    {/* Pulse Effect */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-gold/20 rounded-full animate-ping" />
+                  </div>
+                </div>
+
                 {/* Location Badge - Bottom Right */}
-                <div className="absolute bottom-6 right-6 bg-white/95 backdrop-blur-sm px-5 py-3 rounded-xl shadow-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
-                    <span className="text-xs font-medium text-gray-600 tracking-wide uppercase">{t('location')}</span>
+                <div className="absolute bottom-6 right-6 bg-white/95 backdrop-blur-sm px-4 py-2.5 rounded-xl shadow-lg">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-2 h-2 rounded-full bg-gold" />
+                    <span className="text-[10px] font-medium text-gray-500 tracking-wide uppercase">{t('location')}</span>
                   </div>
                 </div>
               </div>
