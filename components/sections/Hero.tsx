@@ -97,9 +97,9 @@ export function Hero() {
       {/* Dark Overlay */}
       <div className="absolute inset-0 bg-black/60" />
 
-      {/* Decorative Frame - Desktop only, starts below header */}
+      {/* Decorative Frame - Desktop only, only visible in Hero */}
       <div
-        className="fixed top-20 left-4 right-4 bottom-4 z-10 pointer-events-none hidden lg:block"
+        className="absolute top-20 left-4 right-4 bottom-4 z-10 pointer-events-none hidden lg:block"
         style={{
           border: '1px solid rgba(255, 255, 255, 0.12)',
         }}
@@ -110,7 +110,7 @@ export function Hero() {
         {/* Social Links - Left Side (Desktop only) - Absolute positioned */}
         <div className="hidden lg:flex flex-col items-center space-y-6 absolute left-8 top-1/2 -translate-y-1/2">
             <a
-              href={content.instagramUrl || 'https://instagram.com'}
+              href={content.instagramUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="text-white/40 hover:text-white transition-colors duration-300"
@@ -124,7 +124,7 @@ export function Hero() {
             <div className="h-24 w-[1px] bg-white/20" />
 
             <a
-              href={content.facebookUrl || 'https://facebook.com'}
+              href={content.facebookUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="text-white/40 hover:text-white transition-colors duration-300"
