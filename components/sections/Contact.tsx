@@ -116,7 +116,7 @@ export function Contact() {
                         </svg>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-[10px] font-normal text-gray-400 tracking-[0.05em] uppercase mb-1 origin-left scale-[0.7]">Kontakt</h3>
+                        <h3 className="text-[10px] font-normal text-gray-400 tracking-[0.05em] uppercase mb-1 origin-left scale-[0.7]">{t('badge')}</h3>
                         <div className="space-y-2">
                           {/* Telefon */}
                           <div className="flex items-center gap-2">

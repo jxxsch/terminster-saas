@@ -520,7 +520,7 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div style={styles.header}>
-          <span style={styles.title}>Mein Bereich</span>
+          <span style={styles.title}>{t('title')}</span>
           <div style={styles.headerButtons}>
             <button
               onClick={() => {
@@ -580,8 +580,8 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                   </svg>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1f2937', marginBottom: '0.25rem' }}>Verbindungsfehler</p>
-                  <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>Daten konnten nicht geladen werden</p>
+                  <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1f2937', marginBottom: '0.25rem' }}>{t('connectionError')}</p>
+                  <p style={{ fontSize: '0.8125rem', color: '#6b7280' }}>{t('dataLoadFailed')}</p>
                 </div>
                 <button
                   onClick={() => loadData()}
@@ -603,7 +603,7 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                   <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                  Erneut versuchen
+                  {tCommon('tryAgain')}
                 </button>
               </div>
             ) : (

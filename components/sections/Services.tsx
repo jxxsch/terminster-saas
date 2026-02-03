@@ -12,27 +12,27 @@ const SCISSORS_ICON = (
   </svg>
 );
 
-// Kurze Beschreibungen für Services
-const SERVICE_DESCRIPTIONS: Record<string, string> = {
-  haarschnitt: 'Modern & Klassisch',
-  bartrasur: 'Nassrasur & Hot Towel',
-  'haare & bart': 'Das Kombi-Paket',
-  kids: 'Kinderhaarschnitt',
-  augenbrauen: 'Präzise Formung',
-  clipper: 'Maschinenschnitt',
-  maschinenschnitt: 'Schnell & Sauber',
-  waschen: 'Mit Kopfmassage',
-  haarwäsche: 'Mit Kopfmassage',
-  komplett: 'Vollständiges Paket',
+// Mapping von Service-Namen zu i18n-Keys
+const SERVICE_KEY_MAP: Record<string, string> = {
+  haarschnitt: 'haircut',
+  bartrasur: 'shave',
+  'haare & bart': 'combo',
+  kids: 'kids',
+  augenbrauen: 'eyebrows',
+  clipper: 'clipper',
+  maschinenschnitt: 'clipper',
+  waschen: 'wash',
+  haarwäsche: 'wash',
+  komplett: 'complete',
 };
 
 function getIcon(): React.ReactNode {
   return SCISSORS_ICON;
 }
 
-function getDescription(serviceName: string): string {
+function getServiceKey(serviceName: string): string {
   const key = serviceName.toLowerCase();
-  return SERVICE_DESCRIPTIONS[key] || '';
+  return SERVICE_KEY_MAP[key] || '';
 }
 
 export function Services() {
@@ -144,7 +144,7 @@ export function Services() {
 
                   {/* Description */}
                   <p className="text-gray-400 text-[11px] mb-3 leading-tight transition-colors duration-300 group-hover:text-gray-500">
-                    {getDescription(service.name)}
+                    {getServiceKey(service.name) ? t(`items.${getServiceKey(service.name)}.description`) : ''}
                   </p>
 
                   {/* Price */}

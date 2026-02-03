@@ -159,6 +159,8 @@
     "bookButton": "Randevu Al",
     "messageButton": "Mesaj Gönder",
     "location": "Rathaus Galerie · Üst Kat",
+    "addressNotSet": "Adres belirtilmemiş",
+    "openingHoursShort": "Pzt-Cmt 10-19",
     "form": {
       "badge": "İletişim",
       "title": "Mesaj Gönder",
@@ -415,7 +417,9 @@
     "membership": "Üyelik",
     "memberSince": "Üyelik tarihi",
     "saveChanges": "Değişiklikleri kaydet",
-    "logoutConfirm": "Çıkış yapmak istediğinize emin misiniz?"
+    "logoutConfirm": "Çıkış yapmak istediğinize emin misiniz?",
+    "connectionError": "Bağlantı hatası",
+    "dataLoadFailed": "Veriler yüklenemedi"
   },
   "status": {
     "open": "Açık",

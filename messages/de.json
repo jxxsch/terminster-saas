@@ -159,6 +159,8 @@
     "bookButton": "Termin buchen",
     "messageButton": "Nachricht senden",
     "location": "Rathaus Galerie · Obergeschoss",
+    "addressNotSet": "Adresse nicht angegeben",
+    "openingHoursShort": "Mo-Sa 10-19 Uhr",
     "form": {
       "badge": "Kontakt",
       "title": "Nachricht senden",
@@ -415,7 +417,9 @@
     "membership": "Mitgliedschaft",
     "memberSince": "Mitglied seit",
     "saveChanges": "Änderungen speichern",
-    "logoutConfirm": "Möchtest du dich wirklich abmelden?"
+    "logoutConfirm": "Möchtest du dich wirklich abmelden?",
+    "connectionError": "Verbindungsfehler",
+    "dataLoadFailed": "Daten konnten nicht geladen werden"
   },
   "status": {
     "open": "Geöffnet",

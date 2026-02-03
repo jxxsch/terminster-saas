@@ -15,7 +15,7 @@ export function Footer() {
   const addressParts = [];
   if (contactSettings.address.street) addressParts.push(contactSettings.address.street);
   if (contactSettings.address.city) addressParts.push(contactSettings.address.city);
-  const addressDisplay = addressParts.join(', ') || 'Adresse nicht angegeben';
+  const addressDisplay = addressParts.join(', ') || t('addressNotSet');
 
   return (
     <footer className="py-4 bg-stone-50">
@@ -32,7 +32,7 @@ export function Footer() {
             <div className="flex items-center gap-4 text-xs text-gray-500">
               <span>{addressDisplay}</span>
               <span className="text-gray-300">·</span>
-              <span>Mo-Sa 10-19 Uhr</span>
+              <span>{t('openingHoursShort')}</span>
               {contactSettings.phone && (
                 <>
                   <span className="text-gray-300">·</span>

@@ -159,6 +159,8 @@
     "bookButton": "Book Appointment",
     "messageButton": "Send Message",
     "location": "Rathaus Galerie · Upper Floor",
+    "addressNotSet": "Address not specified",
+    "openingHoursShort": "Mon-Sat 10am-7pm",
     "form": {
       "badge": "Contact",
       "title": "Send Message",
@@ -415,7 +417,9 @@
     "membership": "Membership",
     "memberSince": "Member since",
     "saveChanges": "Save changes",
-    "logoutConfirm": "Do you really want to log out?"
+    "logoutConfirm": "Do you really want to log out?",
+    "connectionError": "Connection error",
+    "dataLoadFailed": "Data could not be loaded"
   },
   "status": {
     "open": "Open",
