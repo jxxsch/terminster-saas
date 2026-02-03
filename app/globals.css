@@ -291,36 +291,32 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   animation: glow-pulse 4s ease-in-out infinite;
 }
 
-/* Hero CTA Button - Heartbeat Pulse */
+/* Hero CTA Button - Gold Outline Glow */
 .hero-cta-btn {
-  padding: 16px 36px;
+  padding: 12px 28px;
   text-transform: uppercase;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 1.5px;
-  color: #000;
-  background: var(--color-gold);
+  letter-spacing: 1.2px;
+  color: rgba(212, 175, 55, 0.7);
+  text-shadow: none;
+  background: transparent;
   cursor: pointer;
-  border: none;
+  box-shadow: transparent;
+  border: 1px solid rgba(212, 175, 55, 0.7);
+  transition: 0.5s ease;
   user-select: none;
-  animation: heartbeat-pulse 1.5s ease-in-out infinite;
-  transition: transform 0.2s ease, background 0.3s ease;
-  transform-origin: center center;
 }
 
-@keyframes heartbeat-pulse {
-  0% { transform: scale(1); }
-  14% { transform: scale(1.04); }
-  28% { transform: scale(1); }
-  42% { transform: scale(1.06); }
-  70% { transform: scale(1); }
-}
-
-.hero-cta-btn:hover {
-  animation: none;
-  transform: scale(1.08);
-  background: var(--color-gold-light);
+.hero-cta-btn:hover,
+.hero-cta-btn:focus {
+  color: #ffffff;
+  background: var(--color-gold);
+  border: 1px solid var(--color-gold);
+  text-shadow: 0 0 5px #ffffff, 0 0 10px #ffffff, 0 0 20px #ffffff;
+  box-shadow: 0 0 5px var(--color-gold), 0 0 20px var(--color-gold), 0 0 50px var(--color-gold),
+    0 0 100px var(--color-gold);
 }
 
 .hero-cta-btn:active {
@@ -329,25 +325,21 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 /* Sticky Button - Basis-Styles mit smooth Transition */
 .sticky-btn-base {
-  padding: 16px 36px;
+  padding: 12px 28px;
   text-transform: uppercase;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
   cursor: pointer;
   user-select: none;
-  border: none;
-  animation: heartbeat-pulse 1.5s ease-in-out infinite;
-  transition: transform 0.2s ease, background 0.3s ease;
-  transform-origin: center center;
+  transition: background 0.5s ease, color 0.5s ease, border 0.5s ease, box-shadow 0.3s ease, transform 0.5s ease;
 }
 
 .sticky-btn-base:hover {
-  animation: none;
-  transform: scale(1.08) !important;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
 }
 
 .sticky-btn-base:active {
-  transform: scale(0.98) !important;
+  transform: scale(0.98);
 }
