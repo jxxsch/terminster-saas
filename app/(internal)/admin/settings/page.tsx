@@ -101,8 +101,8 @@ export default function SettingsPage() {
       {/* Floating Panel */}
       <div className="flex-1 bg-white rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-slate-200/50 overflow-hidden flex flex-col min-h-0">
         {/* Header */}
-        <div className="px-8 py-5 flex items-center gap-4 flex-shrink-0">
-          <div className="w-10 h-10 bg-gold/10 rounded-xl flex items-center justify-center">
+        <div className="px-4 md:px-8 py-4 md:py-5 flex items-center gap-3 md:gap-4 flex-shrink-0">
+          <div className="w-9 h-9 md:w-10 md:h-10 bg-gold/10 rounded-xl flex items-center justify-center">
             <svg className="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -118,20 +118,20 @@ export default function SettingsPage() {
         <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent flex-shrink-0" />
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6">
           {/* Settings List */}
           <div className="space-y-2">
             {/* Buchungssystem-Typ */}
-            <div className="flex items-center justify-between bg-slate-50 rounded-xl px-5 py-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50 rounded-xl px-4 md:px-5 py-4">
               <div>
                 <div className="text-sm font-medium text-slate-900">Buchungssystem</div>
                 <div className="text-xs text-slate-400">Standard oder kundenspezifische Variante</div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex bg-white border border-slate-200 rounded-lg p-1">
+                <div className="flex bg-white border border-slate-200 rounded-lg p-1 flex-1 md:flex-initial">
                   <button
                     onClick={() => setSettings(s => ({ ...s, booking_system_type: 'standard' }))}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                    className={`px-3 md:px-4 py-2 text-xs md:text-sm font-medium rounded-md transition-all flex-1 md:flex-initial ${
                       settings.booking_system_type === 'standard'
                         ? 'bg-gold text-white shadow-sm'
                         : 'text-slate-600 hover:text-slate-900'
@@ -141,7 +141,7 @@ export default function SettingsPage() {
                   </button>
                   <button
                     onClick={() => setSettings(s => ({ ...s, booking_system_type: 'custom' }))}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${
+                    className={`px-3 md:px-4 py-2 text-xs md:text-sm font-medium rounded-md transition-all flex-1 md:flex-initial ${
                       settings.booking_system_type === 'custom'
                         ? 'bg-gold text-white shadow-sm'
                         : 'text-slate-600 hover:text-slate-900'
@@ -159,7 +159,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Buchungszeitraum */}
-            <div className="flex items-center justify-between bg-slate-50 rounded-xl px-5 py-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50 rounded-xl px-4 md:px-5 py-4">
               <div>
                 <div className="text-sm font-medium text-slate-900">Buchungszeitraum</div>
                 <div className="text-xs text-slate-400">Wie weit im Voraus buchbar</div>
@@ -186,7 +186,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Stornierungsfrist */}
-            <div className="flex items-center justify-between bg-slate-50 rounded-xl px-5 py-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50 rounded-xl px-4 md:px-5 py-4">
               <div>
                 <div className="text-sm font-medium text-slate-900">Stornierungsfrist</div>
                 <div className="text-xs text-slate-400">Mindestens vorher absagen</div>
@@ -213,7 +213,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Max. Buchungen */}
-            <div className="flex items-center justify-between bg-slate-50 rounded-xl px-5 py-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50 rounded-xl px-4 md:px-5 py-4">
               <div>
                 <div className="text-sm font-medium text-slate-900">Max. Buchungen pro Tag</div>
                 <div className="text-xs text-slate-400">Pro Kunde (deaktivierbar)</div>
@@ -252,7 +252,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Bundesland */}
-            <div className="flex items-center justify-between bg-slate-50 rounded-xl px-5 py-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50 rounded-xl px-4 md:px-5 py-4">
               <div>
                 <div className="text-sm font-medium text-slate-900">Bundesland</div>
                 <div className="text-xs text-slate-400">Für Feiertagsberechnung</div>

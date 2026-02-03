@@ -182,15 +182,15 @@ export default function AdminDashboard() {
       {/* Floating Panel - alles in einem Container */}
       <div className="flex-1 bg-white rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-slate-200/50 overflow-hidden flex flex-col min-h-0">
         {/* Header */}
-        <div className="px-8 py-5 flex items-center gap-4 flex-shrink-0">
-          <div className="w-10 h-10 bg-gold/10 rounded-xl flex items-center justify-center">
-            <svg className="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="px-4 md:px-8 py-4 md:py-5 flex items-center gap-3 md:gap-4 flex-shrink-0">
+          <div className="w-9 h-9 md:w-10 md:h-10 bg-gold/10 rounded-xl flex items-center justify-center">
+            <svg className="w-4 h-4 md:w-5 md:h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
           <div>
             <h3 className="text-sm font-semibold text-slate-900">Statistiken</h3>
-            <p className="text-xs text-slate-400">Übersicht und Auswertungen</p>
+            <p className="text-xs text-slate-400 hidden md:block">Übersicht und Auswertungen</p>
           </div>
         </div>
 
@@ -198,7 +198,7 @@ export default function AdminDashboard() {
         <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent flex-shrink-0" />
 
         {/* Content Area - scrollbar hier */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6">
 
         {/* 3 separate Spalten - jede Spalte ist unabhängig */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

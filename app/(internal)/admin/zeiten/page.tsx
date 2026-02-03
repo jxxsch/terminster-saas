@@ -596,27 +596,28 @@ export default function ZeitenPage() {
       {/* Floating Panel - alles in einem Container */}
       <div className="flex-1 bg-white rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-slate-200/50 overflow-hidden flex flex-col min-h-0">
         {/* Header */}
-        <div className="px-8 py-5 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-gold/10 rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="px-4 md:px-8 py-4 md:py-5 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="w-9 h-9 md:w-10 md:h-10 bg-gold/10 rounded-xl flex items-center justify-center">
+              <svg className="w-4 h-4 md:w-5 md:h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div>
               <h3 className="text-sm font-semibold text-slate-900">Zeiten-Verwaltung</h3>
-              <p className="text-xs text-slate-400">Zeitslots, Öffnungszeiten und Sondertage</p>
+              <p className="text-xs text-slate-400 hidden md:block">Zeitslots, Öffnungszeiten und Sondertage</p>
             </div>
           </div>
           {activeTab === 'slots' && (
             <button
               onClick={() => setIsCreatingSlot(true)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gold text-black text-xs font-semibold rounded-xl hover:bg-gold/90 transition-colors"
+              className="flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 md:py-2.5 bg-gold text-black text-xs font-semibold rounded-xl hover:bg-gold/90 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Hinzufügen
+              <span className="hidden md:inline">Hinzufügen</span>
+              <span className="md:hidden">Neu</span>
             </button>
           )}
         </div>
@@ -625,12 +626,12 @@ export default function ZeitenPage() {
         <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent flex-shrink-0" />
 
         {/* Tabs */}
-        <div className="px-8 flex gap-6 border-b border-slate-100 flex-shrink-0">
+        <div className="px-4 md:px-8 flex gap-2 md:gap-6 border-b border-slate-100 flex-shrink-0 overflow-x-auto">
           {TABS.map(tab => (
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`py-3 text-sm font-medium transition-colors relative ${
+              className={`py-2.5 md:py-3 px-1 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'text-gold'
                   : 'text-slate-500 hover:text-slate-700'
@@ -647,8 +648,8 @@ export default function ZeitenPage() {
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto">
           {activeTab === 'slots' && (
-            <div className="px-8 py-6">
-            <div className="grid grid-cols-8 gap-2">
+            <div className="px-4 md:px-8 py-4 md:py-6">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
               {activeSlots.map((slot) => (
                 <div
                   key={slot.id}
@@ -678,14 +679,14 @@ export default function ZeitenPage() {
                 </div>
               ))}
               {activeSlots.length === 0 && (
-                <p className="text-sm text-slate-400 col-span-8">Keine aktiven Zeitslots</p>
+                <p className="text-sm text-slate-400 col-span-full">Keine aktiven Zeitslots</p>
               )}
             </div>
 
             {inactiveSlots.length > 0 && (
               <>
                 <h2 className="text-xs font-medium text-slate-500 mt-6 mb-4">Inaktive Zeitslots</h2>
-                <div className="grid grid-cols-8 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
                   {inactiveSlots.map((slot) => (
                     <div
                       key={slot.id}
@@ -801,15 +802,73 @@ export default function ZeitenPage() {
           )}
 
           {activeTab === 'hours' && (
-            <div className="px-8 py-6">
+            <div className="px-4 md:px-8 py-4 md:py-6">
           {/* Header */}
           <div className="mb-4">
             <h3 className="text-sm font-semibold text-slate-900">Öffnungszeiten</h3>
             <p className="text-xs text-slate-400 mt-0.5">Reguläre Öffnungszeiten pro Wochentag</p>
           </div>
 
-          {/* Tabelle im grauen Container */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
+          {/* Mobile: Karten-Layout */}
+          <div className="md:hidden space-y-2">
+            {[...hours].sort(sortDays).map((hour) => (
+              <div
+                key={hour.day_of_week}
+                className={`rounded-xl border p-3 ${hour.is_closed ? 'bg-slate-50 border-slate-200' : 'bg-white border-slate-200'} ${savingHour === hour.day_of_week ? 'opacity-50' : ''}`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-sm font-medium ${hour.is_closed ? 'text-slate-400' : 'text-slate-900'}`}>
+                    {DAY_NAMES[hour.day_of_week]}
+                  </span>
+                  <button
+                    onClick={() => handleToggleClosed(hour.day_of_week, !hour.is_closed)}
+                    disabled={savingHour === hour.day_of_week}
+                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                      hour.is_closed
+                        ? 'bg-red-50 text-red-600'
+                        : 'bg-emerald-50 text-emerald-600'
+                    }`}
+                  >
+                    {hour.is_closed ? 'Geschlossen' : 'Geöffnet'}
+                  </button>
+                </div>
+                {!hour.is_closed && (
+                  <div className="flex gap-2">
+                    <select
+                      value={hour.open_time?.slice(0, 5) || '10:00'}
+                      onChange={(e) => handleUpdateHours(hour.day_of_week, { open_time: e.target.value })}
+                      disabled={savingHour === hour.day_of_week}
+                      className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                    >
+                      {Array.from({ length: 29 }, (_, i) => {
+                        const h = Math.floor(i / 2) + 6;
+                        const minute = i % 2 === 0 ? '00' : '30';
+                        const time = `${h.toString().padStart(2, '0')}:${minute}`;
+                        return <option key={time} value={time}>{time}</option>;
+                      })}
+                    </select>
+                    <span className="text-slate-400 self-center">-</span>
+                    <select
+                      value={hour.close_time?.slice(0, 5) || '19:00'}
+                      onChange={(e) => handleUpdateHours(hour.day_of_week, { close_time: e.target.value })}
+                      disabled={savingHour === hour.day_of_week}
+                      className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                    >
+                      {Array.from({ length: 29 }, (_, i) => {
+                        const h = Math.floor(i / 2) + 6;
+                        const minute = i % 2 === 0 ? '00' : '30';
+                        const time = `${h.toString().padStart(2, '0')}:${minute}`;
+                        return <option key={time} value={time}>{time}</option>;
+                      })}
+                    </select>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: Tabelle im grauen Container */}
+          <div className="hidden md:block bg-slate-50 border border-slate-200 rounded-xl p-1">
             {/* Header-Zeile */}
             <div className="grid grid-cols-[1fr_120px_120px_120px] gap-4 px-4 py-3 text-[11px] font-medium text-slate-400 border-b border-slate-200">
               <div>Tag</div>
@@ -900,7 +959,7 @@ export default function ZeitenPage() {
           )}
 
           {activeTab === 'special' && (
-            <div className="px-8 py-6 space-y-8">
+            <div className="px-4 md:px-8 py-4 md:py-6 space-y-6 md:space-y-8">
           {/* Wöchentliche freie Tage */}
           <div>
             <div className="mb-4">
@@ -908,7 +967,43 @@ export default function ZeitenPage() {
               <p className="text-xs text-slate-400 mt-0.5">Fester freier Tag pro Barber (da samstags gearbeitet wird)</p>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-1">
+            {/* Mobile: Karten-Layout */}
+            <div className="md:hidden space-y-2">
+              {team.map(member => (
+                <div
+                  key={member.id}
+                  className={`bg-white rounded-xl border border-slate-200 p-3 ${
+                    savingFreeDay === member.id ? 'opacity-50' : ''
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium text-slate-900">{member.name}</span>
+                    <select
+                      value={member.free_day ?? ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        handleFreeDayChange(member.id, value === '' ? null : parseInt(value, 10));
+                      }}
+                      disabled={savingFreeDay === member.id}
+                      className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                    >
+                      <option value="">Kein freier Tag</option>
+                      <option value="1">Montag</option>
+                      <option value="2">Dienstag</option>
+                      <option value="3">Mittwoch</option>
+                      <option value="4">Donnerstag</option>
+                      <option value="5">Freitag</option>
+                    </select>
+                  </div>
+                </div>
+              ))}
+              {team.length === 0 && (
+                <p className="text-sm text-slate-400 text-center py-4">Keine aktiven Mitarbeiter</p>
+              )}
+            </div>
+
+            {/* Desktop: Tabelle */}
+            <div className="hidden md:block bg-slate-50 border border-slate-200 rounded-xl p-1">
               {/* Header-Zeile */}
               <div className="grid grid-cols-[1fr_200px] gap-4 px-4 py-2 text-[11px] font-medium text-slate-400 border-b border-slate-200">
                 <div>Mitarbeiter</div>

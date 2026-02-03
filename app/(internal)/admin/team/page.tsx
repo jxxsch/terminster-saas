@@ -697,23 +697,24 @@ export default function TeamPage() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-1 bg-white rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] border border-slate-200/50 overflow-hidden flex flex-col min-h-0">
-        <div className="px-8 py-5 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-gold/10 rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="px-4 md:px-8 py-4 md:py-5 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="w-9 h-9 md:w-10 md:h-10 bg-gold/10 rounded-xl flex items-center justify-center">
+              <svg className="w-4 h-4 md:w-5 md:h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">Team verwalten</h3>
-              <p className="text-xs text-slate-400">{team.length} Mitarbeiter registriert</p>
+              <h3 className="text-sm font-semibold text-slate-900">Team</h3>
+              <p className="text-xs text-slate-400 hidden md:block">{team.length} Mitarbeiter registriert</p>
             </div>
           </div>
-          <button onClick={openCreateForm} className="flex items-center gap-2 px-5 py-2.5 bg-gold text-black text-xs font-semibold rounded-xl hover:bg-gold/90 transition-colors shadow-sm">
+          <button onClick={openCreateForm} className="flex items-center gap-1.5 md:gap-2 px-3 md:px-5 py-2 md:py-2.5 bg-gold text-black text-xs font-semibold rounded-xl hover:bg-gold/90 transition-colors shadow-sm">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Neues Mitglied
+            <span className="hidden md:inline">Neues Mitglied</span>
+            <span className="md:hidden">Neu</span>
           </button>
         </div>
 
@@ -728,109 +729,170 @@ export default function TeamPage() {
               <p className="text-sm">Noch keine Teammitglieder vorhanden</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div>
               {isCreating && <div className="mb-4">{editFormContent}</div>}
 
-              {/* Mobile: min-width Container für horizontales Scrollen */}
-              <div className="min-w-[800px]">
-                {/* Header-Zeile */}
-                <div className="grid grid-cols-[48px_1.5fr_1.2fr_1fr_0.8fr_1fr_0.6fr_60px_80px] gap-6 px-4 py-2 text-[11px] font-medium text-slate-400 border-b border-slate-100">
-                  <div></div>
-                  <div>Name</div>
-                  <div>Telefon</div>
-                  <div>Geburtstag</div>
-                  <div>Urlaub</div>
-                  <div>Dabei seit</div>
-                  <div>Frei</div>
-                  <div>Status</div>
-                  <div></div>
-                </div>
-
-                {/* Team-Liste */}
-                <div className="divide-y divide-slate-50">
+              {/* Mobile: Karten-Layout */}
+              <div className="md:hidden space-y-3">
                 {team.map((member, index) => (
-                  <div key={member.id}>
-                    <div className={`grid grid-cols-[48px_1.5fr_1.2fr_1fr_0.8fr_1fr_0.6fr_60px_80px] gap-6 items-center px-4 py-3.5 transition-colors ${editingId === member.id ? 'bg-gold/5' : 'hover:bg-slate-50'}`}>
-                      {/* Bild */}
-                      <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
-                        {member.image ? (
-                          <img src={member.image} alt={member.name} className="w-full h-full object-cover" style={{ objectPosition: member.image_position || 'center', transform: `scale(${member.image_scale || 1})` }} />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center text-white font-bold text-sm">{member.name.charAt(0)}</div>
-                        )}
-                      </div>
-                      {/* Name */}
-                      <div className="font-medium text-slate-900">{member.name}</div>
-                      {/* Telefon */}
-                      <div className="text-sm text-slate-600">{member.phone || '–'}</div>
-                      {/* Geburtstag */}
-                      <div className="text-sm">
-                        {member.birthday ? (() => {
-                          const { days, label } = getDaysUntilBirthday(member.birthday);
-                          const isToday = days === 0;
-                          const isClose = days <= 7;
-                          return (
-                            <div className="flex flex-col gap-0.5">
-                              <span className={isToday ? 'text-amber-600 font-medium' : 'text-slate-700'}>
-                                {new Date(member.birthday).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
+                  <div key={member.id} className={`bg-white rounded-xl border ${editingId === member.id ? 'border-gold/50 bg-gold/5' : 'border-slate-200'} overflow-hidden`}>
+                    <div className="p-4">
+                      <div className="flex items-start gap-3">
+                        {/* Bild */}
+                        <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
+                          {member.image ? (
+                            <img src={member.image} alt={member.name} className="w-full h-full object-cover" style={{ objectPosition: member.image_position || 'center', transform: `scale(${member.image_scale || 1})` }} />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center text-white font-bold text-lg">{member.name.charAt(0)}</div>
+                          )}
+                        </div>
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-semibold text-slate-900 truncate">{member.name}</h4>
+                            <button onClick={() => handleToggleActive(member)} className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${member.active ? 'bg-emerald-500' : 'bg-slate-200'}`}>
+                              <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${member.active ? 'left-5' : 'left-0.5'}`} />
+                            </button>
+                          </div>
+                          {member.phone && <p className="text-sm text-slate-500 mt-0.5">{member.phone}</p>}
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-slate-500">
+                            {member.birthday && (
+                              <span className={getDaysUntilBirthday(member.birthday).days === 0 ? 'text-amber-600 font-medium' : ''}>
+                                🎂 {new Date(member.birthday).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
                               </span>
-                              <span className={`text-[10px] ${isToday ? 'text-amber-600' : isClose ? 'text-amber-500' : 'text-slate-400'}`}>
-                                {label}
-                              </span>
-                            </div>
-                          );
-                        })() : <span className="text-slate-400">–</span>}
-                      </div>
-                      {/* Urlaubstage */}
-                      <div className="text-sm">
-                        {(() => {
-                          const total = member.vacation_days || 0;
-                          const used = usedVacationDays[member.id] || 0;
-                          const remaining = total - used;
-                          return (
-                            <span className={remaining < 5 ? 'text-amber-600 font-medium' : 'text-slate-700'}>
-                              {remaining}<span className="text-slate-400">/{total}</span>
-                            </span>
-                          );
-                        })()}
-                      </div>
-                      {/* Dabei seit */}
-                      <div className="text-sm text-slate-600">
-                        {member.start_date ? new Date(member.start_date).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' }) : <span className="text-slate-400">–</span>}
-                      </div>
-                      {/* Freier Tag */}
-                      <div className="text-sm text-slate-600">
-                        {member.free_day !== null && member.free_day !== undefined ? (
-                          ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][member.free_day]
-                        ) : <span className="text-slate-400">–</span>}
-                      </div>
-                      {/* Status */}
-                      <div>
-                        <button onClick={() => handleToggleActive(member)} className={`relative w-11 h-6 rounded-full transition-colors ${member.active ? 'bg-emerald-500' : 'bg-slate-200'}`}>
-                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${member.active ? 'left-6' : 'left-1'}`} />
-                        </button>
+                            )}
+                            <span>🌴 {(member.vacation_days || 0) - (usedVacationDays[member.id] || 0)}/{member.vacation_days || 0}</span>
+                            {member.free_day !== null && member.free_day !== undefined && (
+                              <span>📅 {['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][member.free_day]} frei</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       {/* Aktionen */}
-                      <div className="flex items-center gap-1 justify-end">
-                        <button onClick={() => openEditForm(member)} className="p-1.5 rounded-lg transition-colors text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+                      <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-slate-100">
+                        <button onClick={() => handleMoveUp(index)} disabled={index === 0} className="p-2 text-slate-400 hover:text-slate-600 disabled:opacity-30">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+                        </button>
+                        <button onClick={() => handleMoveDown(index)} disabled={index === team.length - 1} className="p-2 text-slate-400 hover:text-slate-600 disabled:opacity-30">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div className="w-px h-5 bg-slate-200" />
+                        <button onClick={() => openEditForm(member)} className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                         </button>
-                        <button onClick={() => setDeleteTarget(member)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                        <button onClick={() => setDeleteTarget(member)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         </button>
-                        <div className="flex flex-col">
-                          <button onClick={() => handleMoveUp(index)} disabled={index === 0} className="p-0.5 text-slate-300 hover:text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
-                          </button>
-                          <button onClick={() => handleMoveDown(index)} disabled={index === team.length - 1} className="p-0.5 text-slate-300 hover:text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                          </button>
-                        </div>
                       </div>
                     </div>
                     {editingId === member.id && editFormContent}
                   </div>
                 ))}
+              </div>
+
+              {/* Desktop: Tabellen-Layout */}
+              <div className="hidden md:block overflow-x-auto">
+                <div className="min-w-[800px]">
+                  {/* Header-Zeile */}
+                  <div className="grid grid-cols-[48px_1.5fr_1.2fr_1fr_0.8fr_1fr_0.6fr_60px_80px] gap-6 px-4 py-2 text-[11px] font-medium text-slate-400 border-b border-slate-100">
+                    <div></div>
+                    <div>Name</div>
+                    <div>Telefon</div>
+                    <div>Geburtstag</div>
+                    <div>Urlaub</div>
+                    <div>Dabei seit</div>
+                    <div>Frei</div>
+                    <div>Status</div>
+                    <div></div>
+                  </div>
+
+                  {/* Team-Liste */}
+                  <div className="divide-y divide-slate-50">
+                  {team.map((member, index) => (
+                    <div key={member.id}>
+                      <div className={`grid grid-cols-[48px_1.5fr_1.2fr_1fr_0.8fr_1fr_0.6fr_60px_80px] gap-6 items-center px-4 py-3.5 transition-colors ${editingId === member.id ? 'bg-gold/5' : 'hover:bg-slate-50'}`}>
+                        {/* Bild */}
+                        <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
+                          {member.image ? (
+                            <img src={member.image} alt={member.name} className="w-full h-full object-cover" style={{ objectPosition: member.image_position || 'center', transform: `scale(${member.image_scale || 1})` }} />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center text-white font-bold text-sm">{member.name.charAt(0)}</div>
+                          )}
+                        </div>
+                        {/* Name */}
+                        <div className="font-medium text-slate-900">{member.name}</div>
+                        {/* Telefon */}
+                        <div className="text-sm text-slate-600">{member.phone || '–'}</div>
+                        {/* Geburtstag */}
+                        <div className="text-sm">
+                          {member.birthday ? (() => {
+                            const { days, label } = getDaysUntilBirthday(member.birthday);
+                            const isToday = days === 0;
+                            const isClose = days <= 7;
+                            return (
+                              <div className="flex flex-col gap-0.5">
+                                <span className={isToday ? 'text-amber-600 font-medium' : 'text-slate-700'}>
+                                  {new Date(member.birthday).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}
+                                </span>
+                                <span className={`text-[10px] ${isToday ? 'text-amber-600' : isClose ? 'text-amber-500' : 'text-slate-400'}`}>
+                                  {label}
+                                </span>
+                              </div>
+                            );
+                          })() : <span className="text-slate-400">–</span>}
+                        </div>
+                        {/* Urlaubstage */}
+                        <div className="text-sm">
+                          {(() => {
+                            const total = member.vacation_days || 0;
+                            const used = usedVacationDays[member.id] || 0;
+                            const remaining = total - used;
+                            return (
+                              <span className={remaining < 5 ? 'text-amber-600 font-medium' : 'text-slate-700'}>
+                                {remaining}<span className="text-slate-400">/{total}</span>
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        {/* Dabei seit */}
+                        <div className="text-sm text-slate-600">
+                          {member.start_date ? new Date(member.start_date).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' }) : <span className="text-slate-400">–</span>}
+                        </div>
+                        {/* Freier Tag */}
+                        <div className="text-sm text-slate-600">
+                          {member.free_day !== null && member.free_day !== undefined ? (
+                            ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][member.free_day]
+                          ) : <span className="text-slate-400">–</span>}
+                        </div>
+                        {/* Status */}
+                        <div>
+                          <button onClick={() => handleToggleActive(member)} className={`relative w-11 h-6 rounded-full transition-colors ${member.active ? 'bg-emerald-500' : 'bg-slate-200'}`}>
+                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${member.active ? 'left-6' : 'left-1'}`} />
+                          </button>
+                        </div>
+                        {/* Aktionen */}
+                        <div className="flex items-center gap-1 justify-end">
+                          <button onClick={() => openEditForm(member)} className="p-1.5 rounded-lg transition-colors text-slate-400 hover:text-slate-600 hover:bg-slate-100">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                          </button>
+                          <button onClick={() => setDeleteTarget(member)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                          <div className="flex flex-col">
+                            <button onClick={() => handleMoveUp(index)} disabled={index === 0} className="p-0.5 text-slate-300 hover:text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+                            </button>
+                            <button onClick={() => handleMoveDown(index)} disabled={index === team.length - 1} className="p-0.5 text-slate-300 hover:text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      {editingId === member.id && editFormContent}
+                    </div>
+                  ))}
+                </div>
+                </div>
               </div>
             </div>
           )}
