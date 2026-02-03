@@ -142,12 +142,10 @@ export function StickyBookingBar() {
       style={{
         top: position.top,
         left: '50%',
-        width: `${position.width}px`,
         transform: `translateX(-50%) scale(${position.scale})`,
         willChange: 'transform',
-        background: isInLightArea ? 'var(--color-gold)' : 'transparent',
-        color: isInLightArea ? '#ffffff' : 'rgba(212, 175, 55, 0.7)',
-        border: isInLightArea ? '1px solid var(--color-gold)' : '1px solid rgba(212, 175, 55, 0.7)',
+        background: 'var(--color-gold)',
+        color: '#ffffff',
       }}
     >
       {ctaText}

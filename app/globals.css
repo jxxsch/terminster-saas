@@ -293,20 +293,20 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 /* Hero CTA Button - Floating/Levitate */
 .hero-cta-btn {
-  padding: 14px 32px;
+  padding: 18px 44px;
   text-transform: uppercase;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 1.2px;
-  color: #000;
+  letter-spacing: 1.5px;
+  color: #ffffff;
   background: var(--color-gold);
   cursor: pointer;
   border: none;
   user-select: none;
   animation: float 3s ease-in-out infinite;
   box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
-  transition: box-shadow 0.3s ease;
+  transition: box-shadow 0.3s ease, background 0.3s ease;
   white-space: nowrap;
   display: inline-block;
 }
@@ -325,6 +325,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .hero-cta-btn:hover {
   animation-play-state: paused;
   box-shadow: 0 15px 35px rgba(212, 175, 55, 0.5);
+  background: var(--color-gold-light);
 }
 
 .hero-cta-btn:active {
@@ -333,17 +334,17 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 /* Sticky Button - Basis-Styles (no animation, controlled by JS) */
 .sticky-btn-base {
-  padding: 14px 32px;
+  padding: 18px 44px;
   text-transform: uppercase;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 1.2px;
+  letter-spacing: 1.5px;
   cursor: pointer;
   user-select: none;
   border: none;
   box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  transition: box-shadow 0.3s ease, transform 0.3s ease, background 0.3s ease;
   white-space: nowrap;
 }
 
