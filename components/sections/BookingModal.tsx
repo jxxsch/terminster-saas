@@ -1820,7 +1820,6 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                               </svg>
                               <span style={styles.choiceBtnTitle}>{t('bookAsGuest')}</span>
                             </div>
-                            <p style={styles.choiceBtnDesc}>{t('quickWithoutAccount')}</p>
                           </button>
                         </div>
                       )}
