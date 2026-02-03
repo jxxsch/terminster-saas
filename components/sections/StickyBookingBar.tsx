@@ -102,6 +102,17 @@ export function StickyBookingBar() {
       rafRef.current = requestAnimationFrame(updateButtonPosition);
     };
 
+    const handleResize = () => {
+      initialValues.current = null;
+      setIsReady(false);
+      const heroButton = document.querySelector('#hero .hero-cta-btn') as HTMLElement;
+      if (heroButton) heroButton.style.opacity = '1';
+      setTimeout(() => {
+        captureInitialPosition();
+        updateButtonPosition();
+      }, 100);
+    };
+
     // Erst Position erfassen, dann updaten
     const timeout = setTimeout(() => {
       captureInitialPosition();
@@ -109,20 +120,13 @@ export function StickyBookingBar() {
     }, 150);
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', () => {
-      initialValues.current = null;
-      const heroButton = document.querySelector('#hero .hero-cta-btn') as HTMLElement;
-      if (heroButton) heroButton.style.opacity = '1';
-      setTimeout(() => {
-        captureInitialPosition();
-        updateButtonPosition();
-      }, 50);
-    });
+    window.addEventListener('resize', handleResize);
 
     return () => {
       clearTimeout(timeout);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
 
       const heroButton = document.querySelector('#hero .hero-cta-btn') as HTMLElement;
       if (heroButton) heroButton.style.opacity = '1';
