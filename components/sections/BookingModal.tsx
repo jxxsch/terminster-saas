@@ -1812,8 +1812,8 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                             </div>
                             <p style={styles.choiceBtnDesc}>{t('manageAppointments')}</p>
                           </button>
-                          <button type="button" onClick={() => { setContactMode('guest'); scrollToSection('contact-form-guest'); }} style={{ ...styles.choiceBtn, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={styles.choiceBtnTitle}>{t('bookAsGuest')}</span>
+                          <button type="button" onClick={() => { setContactMode('guest'); scrollToSection('contact-form-guest'); }} style={{ ...styles.choiceBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%' }}>
+                            <span style={{ ...styles.choiceBtnTitle, textAlign: 'center' }}>{t('bookAsGuest')}</span>
                           </button>
                         </div>
                       )}
