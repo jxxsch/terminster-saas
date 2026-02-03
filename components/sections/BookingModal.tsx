@@ -1713,7 +1713,10 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                               </div>
                             ) : (
                               <>
-                                <div style={styles.slotsGrid}>
+                                <div style={{
+                                  ...styles.slotsGrid,
+                                  gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
+                                }}>
                                   {visibleSlots.map((slot) => (
                                     <button
                                       key={slot}
