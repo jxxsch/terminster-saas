@@ -359,6 +359,6 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 /* Mobile: Padding für Sticky CTA Button */
 @media (max-width: 767px) {
   #contact {
-    padding-bottom: 210px;
+    padding-bottom: 110px;
   }
 }
