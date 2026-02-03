@@ -530,7 +530,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   choiceGrid: {
     display: 'grid',
-    gridTemplateColumns: '5fr 3fr',
+    gridTemplateColumns: '3fr 1fr',
     gap: '0.75rem',
   },
   choiceBtn: {
