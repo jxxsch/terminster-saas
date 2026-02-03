@@ -313,12 +313,12 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 @keyframes float {
   0%, 100% {
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
     box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
   }
   50% {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(212, 175, 55, 0.4);
+    transform: translateY(-10px) scale(1.05);
+    box-shadow: 0 25px 50px rgba(212, 175, 55, 0.5);
   }
 }
 
