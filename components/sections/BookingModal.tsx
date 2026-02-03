@@ -288,7 +288,7 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
   },
   header: {
-    padding: '1.25rem 1.5rem',
+    padding: '1.25rem 10px',
     borderBottom: '1px solid #f1f5f9',
     display: 'flex',
     justifyContent: 'space-between',
@@ -318,7 +318,7 @@ const styles: Record<string, React.CSSProperties> = {
   progressContainer: {
     display: 'flex',
     gap: '0.5rem',
-    padding: '0.75rem 1.5rem',
+    padding: '0.75rem 10px',
     borderBottom: '1px solid #f1f5f9',
     flexShrink: 0,
   },
@@ -349,7 +349,7 @@ const styles: Record<string, React.CSSProperties> = {
   content: {
     flex: 1,
     overflowY: 'auto',
-    padding: '1rem 1.5rem',
+    padding: '1rem 10px',
   },
   section: {
     marginBottom: '1.5rem',
@@ -660,7 +660,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#22c55e',
   },
   footer: {
-    padding: '1rem 1.5rem',
+    padding: '1rem 10px',
     borderTop: '1px solid #f1f5f9',
     flexShrink: 0,
   },
