@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { useBooking } from '@/context/BookingContext';
 import { getTeam, TeamMember } from '@/lib/supabase';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useSectionSettings } from '@/hooks/useSiteSettings';
 
 export function Team() {
@@ -13,11 +13,12 @@ export function Team() {
   const sectionRef = useRef<HTMLElement>(null);
   const { openBooking } = useBooking();
   const t = useTranslations('team');
+  const locale = useLocale();
   const { title, subtitle } = useSectionSettings('team');
 
-  // Use settings if available, fallback to i18n
-  const sectionTitle = title || t('headline');
-  const sectionBadge = subtitle || t('badge');
+  // Use i18n for non-German locales, DB values only for German
+  const sectionTitle = locale === 'de' ? (title || t('headline')) : t('headline');
+  const sectionBadge = locale === 'de' ? (subtitle || t('badge')) : t('badge');
 
   // Team-Daten aus Supabase laden (Single Source of Truth)
   useEffect(() => {

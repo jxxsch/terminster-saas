@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { useBooking } from '@/context/BookingContext';
 import { useHeroSettings, useHeroContent } from '@/hooks/useSiteSettings';
+import { useTranslations, useLocale } from 'next-intl';
 
 // Filter-CSS-Mappings
 const FILTER_CSS: Record<string, (intensity: number) => string> = {
@@ -15,8 +16,30 @@ const FILTER_CSS: Record<string, (intensity: number) => string> = {
 export function Hero() {
   const { openBooking } = useBooking();
   const { settings: heroSettings } = useHeroSettings();
-  const { content } = useHeroContent();
+  const { content: dbContent } = useHeroContent();
   const { background } = heroSettings;
+  const t = useTranslations('hero');
+  const tFooter = useTranslations('footer');
+  const locale = useLocale();
+
+  // Use i18n for non-German locales, DB values only for German
+  const content = useMemo(() => {
+    if (locale === 'de') {
+      return dbContent;
+    }
+    return {
+      badge: dbContent.badge, // Brand name stays the same
+      headline: t('slogan'),
+      subtext: t('subtitle'),
+      ctaText: t('cta'),
+      locationLabel: tFooter('address.label'),
+      locationValue: dbContent.locationValue, // Address stays the same
+      hoursLabel: tFooter('hours.label'),
+      hoursValue: `${tFooter('hours.weekdays')} ${tFooter('hours.weekdaysTime')}`,
+      instagramUrl: dbContent.instagramUrl,
+      facebookUrl: dbContent.facebookUrl,
+    };
+  }, [locale, dbContent, t, tFooter]);
 
   // Build YouTube embed URL
   const youtubeEmbedUrl = useMemo(() => {

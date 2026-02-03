@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useSectionSettings } from '@/hooks/useSiteSettings';
 import { getServices, Service, formatPrice } from '@/lib/supabase';
 
@@ -40,11 +40,12 @@ export function Services() {
   const [services, setServices] = useState<Service[]>([]);
   const sectionRef = useRef<HTMLElement>(null);
   const t = useTranslations('services');
+  const locale = useLocale();
   const { title, subtitle } = useSectionSettings('services');
 
-  // Use settings if available, fallback to i18n
-  const sectionTitle = title || t('headline');
-  const sectionBadge = subtitle || t('badge');
+  // Use i18n for non-German locales, DB values only for German
+  const sectionTitle = locale === 'de' ? (title || t('headline')) : t('headline');
+  const sectionBadge = locale === 'de' ? (subtitle || t('badge')) : t('badge');
 
   // Services aus Supabase laden
   useEffect(() => {
@@ -139,7 +140,9 @@ export function Services() {
                     className="font-semibold uppercase tracking-wider mb-1 text-gray-700 transition-colors duration-300 group-hover:text-gray-900"
                     style={{ fontSize: '11px' }}
                   >
-                    {service.name}
+                    {locale === 'de' || !getServiceKey(service.name)
+                      ? service.name
+                      : t(`items.${getServiceKey(service.name)}.name`)}
                   </div>
 
                   {/* Description */}

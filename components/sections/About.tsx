@@ -1,8 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { useTranslations } from 'next-intl';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { useSectionSettings } from '@/hooks/useSiteSettings';
 import { useGoogleRating } from '@/hooks/useGoogleRating';
 import { useReviews } from '@/hooks/useReviews';
@@ -12,6 +12,7 @@ export function About() {
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const sectionRef = useRef<HTMLElement>(null);
   const t = useTranslations('about');
+  const locale = useLocale();
   const { title, subtitle, aboutText, getLocalizedText } = useSectionSettings('about');
   const { data: googleRating } = useGoogleRating();
   const { reviews } = useReviews();
@@ -29,10 +30,22 @@ export function About() {
     return () => clearInterval(interval);
   }, [nextReview, reviews.length]);
 
-  // Use settings if available, fallback to i18n
-  const sectionTitle = title || t('headline');
-  const sectionBadge = subtitle || t('badge');
-  const aboutContent = getLocalizedText(aboutText);
+  // Use i18n for non-German locales, DB values only for German
+  const { sectionTitle, sectionBadge, aboutContent } = useMemo(() => {
+    if (locale === 'de') {
+      return {
+        sectionTitle: title || t('headline'),
+        sectionBadge: subtitle || t('badge'),
+        aboutContent: getLocalizedText(aboutText),
+      };
+    }
+    // For non-German locales, always use i18n
+    return {
+      sectionTitle: t('headline'),
+      sectionBadge: t('badge'),
+      aboutContent: null, // Use i18n paragraphs instead
+    };
+  }, [locale, title, subtitle, aboutText, getLocalizedText, t]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

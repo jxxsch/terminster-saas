@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useSectionSettings } from '@/hooks/useSiteSettings';
 
 const IMAGES = [
@@ -20,11 +20,12 @@ export function Gallery() {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const t = useTranslations('gallery');
+  const locale = useLocale();
   const { title, subtitle } = useSectionSettings('gallery');
 
-  // Use settings if available, fallback to i18n
-  const sectionTitle = title || t('headline');
-  const sectionBadge = subtitle || t('badge');
+  // Use i18n for non-German locales, DB values only for German
+  const sectionTitle = locale === 'de' ? (title || t('headline')) : t('headline');
+  const sectionBadge = locale === 'de' ? (subtitle || t('badge')) : t('badge');
 
   useEffect(() => {
     const observer = new IntersectionObserver(

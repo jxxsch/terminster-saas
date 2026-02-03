@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { Product, getProducts, productCategories } from '@/lib/supabase';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
+import { Product, getProducts } from '@/lib/supabase';
 import { ProductCarousel } from '@/components/ui/ProductCarousel';
 
 type CategoryKey = 'bart' | 'haare' | 'rasur';
@@ -14,6 +14,14 @@ export function Products() {
   const [products, setProducts] = useState<Product[]>([]);
   const sectionRef = useRef<HTMLElement>(null);
   const t = useTranslations('products');
+  const locale = useLocale();
+
+  // Localized category names
+  const categoryNames = useMemo(() => ({
+    bart: t('categories.bart'),
+    haare: t('categories.haare'),
+    rasur: t('categories.rasur'),
+  }), [t]);
 
   // Produkte aus Supabase laden
   useEffect(() => {
@@ -70,7 +78,7 @@ export function Products() {
               <ProductCarousel
                 key={`${category}-${productsByCategory[category].length}`}
                 products={productsByCategory[category]}
-                categoryTitle={productCategories[category]}
+                categoryTitle={categoryNames[category]}
                 fullWidth={true}
                 autoplay={true}
                 autoplayDelay={{ bart: 8000, haare: 11000, rasur: 9500 }[category]}

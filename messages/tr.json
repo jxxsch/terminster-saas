@@ -44,16 +44,16 @@
     "duration": "{minutes} dk",
     "from": "başlayan",
     "badge": "Hizmetlerimiz",
-    "headline": "Hassasiyet, Ustalık & Stil",
+    "headline": "Hassasiyet, Ustalık ve Stil",
     "items": {
-      "haircut": { "name": "Saç Kesimi", "description": "Modern & Klasik" },
-      "shave": { "name": "Sakal Tıraşı", "description": "Islak Tıraş & Sıcak Havlu" },
-      "combo": { "name": "Saç & Sakal", "description": "Kombi Paket" },
-      "eyebrows": { "name": "Kaş", "description": "Hassas Şekillendirme" },
-      "clipper": { "name": "Makine", "description": "Makine ile Kesim" },
-      "wash": { "name": "Yıkama", "description": "Kafa Masajı ile" },
-      "complete": { "name": "Komple", "description": "Yıkama, Kesim, Tıraş, Kaş" },
-      "kids": { "name": "Çocuk", "description": "Çocuk Saç Kesimi" }
+      "haircut": { "name": "Saç Kesimi", "description": "Modern ve Klasik Kesimler" },
+      "shave": { "name": "Sakal Tıraşı", "description": "Islak Tıraş ve Sıcak Havlu" },
+      "combo": { "name": "Saç ve Sakal", "description": "Kombin Paketi" },
+      "eyebrows": { "name": "Kaş Düzeltme", "description": "Hassas Şekillendirme" },
+      "clipper": { "name": "Makine Kesimi", "description": "Makine ile Saç Kesimi" },
+      "wash": { "name": "Saç Yıkama", "description": "Baş Masajı Dahil" },
+      "complete": { "name": "Komple Bakım", "description": "Yıkama, Kesim, Tıraş, Kaş" },
+      "kids": { "name": "Çocuk Kesimi", "description": "Çocuklar için Saç Kesimi" }
     }
   },
   "about": {

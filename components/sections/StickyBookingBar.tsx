@@ -1,15 +1,26 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useBooking } from '@/context/BookingContext';
 import { useHeroContent } from '@/hooks/useSiteSettings';
+import { useTranslations, useLocale } from 'next-intl';
 
 export function StickyBookingBar() {
   const [position, setPosition] = useState({ top: 0, left: 0, width: 0, scale: 1 });
   const [isReady, setIsReady] = useState(false);
   const [isInLightArea, setIsInLightArea] = useState(false);
   const { openBooking } = useBooking();
-  const { content } = useHeroContent();
+  const { content: dbContent } = useHeroContent();
+  const t = useTranslations('hero');
+  const locale = useLocale();
+
+  // Use i18n for non-German locales
+  const ctaText = useMemo(() => {
+    if (locale === 'de') {
+      return dbContent.ctaText;
+    }
+    return t('cta');
+  }, [locale, dbContent.ctaText, t]);
   const rafRef = useRef<number | null>(null);
 
   // Speichere initiale Werte
@@ -135,7 +146,7 @@ export function StickyBookingBar() {
         border: isInLightArea ? '1px solid var(--color-gold)' : '1px solid rgba(212, 175, 55, 0.7)',
       }}
     >
-      {content.ctaText}
+      {ctaText}
     </button>
   );
 }
