@@ -137,7 +137,7 @@ export function StickyBookingBar() {
 
   return (
     <div
-      className="fixed z-50"
+      className="fixed z-30"
       style={{
         top: position.top,
         left: '50%',

@@ -25,7 +25,7 @@ export function StickyBookingButton() {
     <button
       onClick={() => openBooking()}
       className={`
-        fixed z-40 transition-all duration-300
+        fixed z-30 transition-all duration-300
         bg-gold text-black font-medium tracking-wider uppercase text-sm
         shadow-[0_-4px_20px_rgba(0,0,0,0.15)]
         hover:bg-gold/90
