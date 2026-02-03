@@ -13,15 +13,18 @@ export function StickyBookingButton() {
     const handleScroll = () => {
       const scrolledPastHero = window.scrollY > window.innerHeight * 0.8;
 
-      // Hide button when footer/contact section is visible
+      // Hide button when footer area would be covered
       const contactSection = document.getElementById('contact');
       let isNearFooter = false;
 
       if (contactSection) {
         const contactRect = contactSection.getBoundingClientRect();
-        // Hide when contact section footer area is visible (bottom 150px of contact)
-        const footerThreshold = window.innerHeight - 80; // Button height + some margin
-        isNearFooter = contactRect.bottom - 150 < footerThreshold;
+        // Footer content (logo, social links, impressum) is in the last ~250px of contact
+        // Button covers bottom ~60px of viewport on mobile
+        // Hide when footer content area enters the button zone
+        const footerContentTop = contactRect.bottom - 250;
+        const buttonZoneTop = window.innerHeight - 60;
+        isNearFooter = footerContentTop < buttonZoneTop;
       }
 
       setIsVisible(scrolledPastHero && !isNearFooter);
