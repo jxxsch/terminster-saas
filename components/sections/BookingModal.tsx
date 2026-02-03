@@ -1803,14 +1803,14 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                     <>
                       {contactMode === 'choice' && (
                         <div style={styles.choiceGrid}>
-                          <button type="button" onClick={() => { setContactMode('auth'); scrollToSection('contact-form-auth'); }} style={styles.choiceBtn}>
-                            <div style={styles.choiceBtnHeader}>
+                          <button type="button" onClick={() => { setContactMode('auth'); scrollToSection('contact-form-auth'); }} style={{ ...styles.choiceBtn, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%' }}>
+                            <div style={{ ...styles.choiceBtnHeader, justifyContent: 'center' }}>
                               <svg width="18" height="18" fill="none" stroke="#94a3b8" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                               </svg>
                               <span style={styles.choiceBtnTitle}>{tAuth('login')}</span>
                             </div>
-                            <p style={styles.choiceBtnDesc}>{t('manageAppointments')}</p>
+                            <p style={{ ...styles.choiceBtnDesc, textAlign: 'center' }}>{t('manageAppointments')}</p>
                           </button>
                           <button type="button" onClick={() => { setContactMode('guest'); scrollToSection('contact-form-guest'); }} style={{ ...styles.choiceBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%' }}>
                             <span style={{ ...styles.choiceBtnTitle, textAlign: 'center' }}>{t('bookAsGuest')}</span>
