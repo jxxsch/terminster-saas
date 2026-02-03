@@ -24,13 +24,17 @@ export default function InternalLayout({
   return (
     <NextIntlClientProvider messages={messages} locale="de" timeZone="Europe/Berlin">
       <div className="h-screen flex overflow-hidden bg-white">
-        {/* Gemeinsame Sidebar - volle Höhe mit gleichmäßigen Rändern */}
-        <div className="py-5 pl-5 pr-2 flex">
+        {/* Gemeinsame Sidebar - auf Mobile versteckt (erscheint als Drawer via AppSidebar selbst) */}
+        <div className="hidden md:flex py-5 pl-5 pr-2">
+          <AppSidebar onLogout={handleLogout} />
+        </div>
+        {/* Mobile Sidebar - wird als fixed overlay gerendert */}
+        <div className="md:hidden">
           <AppSidebar onLogout={handleLogout} />
         </div>
 
         {/* Main Content Area */}
-        <main className="flex-1 py-5 pr-5 overflow-hidden">
+        <main className="flex-1 p-2 md:py-5 md:pr-5 md:pl-0 overflow-hidden">
           {children}
         </main>
       </div>

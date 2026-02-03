@@ -715,7 +715,14 @@ export function BarberWeekView({
         {/* Week Grid */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm flex-1 min-h-0 overflow-hidden relative">
           <div className="absolute inset-0 overflow-auto">
-            <table className="w-full h-full border-collapse" style={{ tableLayout: 'fixed' }}>
+            {/* Mobile: min-width damit horizontal gescrollt werden kann */}
+            <table
+              className="w-full h-full border-collapse"
+              style={{
+                tableLayout: 'fixed',
+                minWidth: '550px' // 45px Zeit + 7 Tage × ~70px
+              }}
+            >
             {/* Day Headers - kompakt */}
             <thead className="bg-gray-50">
               <tr className="h-[28px]">

@@ -11,6 +11,31 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
+interface AppSidebarProps {
+  onLogout?: () => void;
+}
+
+// Mobile Menu Button - exportiert für Layout-Komponenten
+export function MobileMenuButton({ onClick, isOpen }: { onClick: () => void; isOpen: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      className="md:hidden fixed top-3 left-3 z-[60] p-2.5 bg-white rounded-xl shadow-lg border border-slate-200"
+      aria-label={isOpen ? 'Menü schließen' : 'Menü öffnen'}
+    >
+      {isOpen ? (
+        <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      ) : (
+        <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
 // Hauptmenü - nur Kalender
 const mainNavItems: NavItem[] = [
   {
@@ -112,16 +137,13 @@ const verwaltungItems: NavItem[] = [
 
 // PIN wird über API validiert (Umgebungsvariable ADMIN_PIN)
 
-interface AppSidebarProps {
-  onLogout?: () => void;
-}
-
 export function AppSidebar({ onLogout }: AppSidebarProps) {
   const pathname = usePathname();
   const logoUrl = useLogoUrl();
 
   // States initial auf false setzen (SSR-kompatibel)
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [verwaltungOpen, setVerwaltungOpen] = useState(false);
   const [isPinUnlocked, setIsPinUnlocked] = useState(false);
   const [showPinInput, setShowPinInput] = useState(false);
@@ -132,6 +154,23 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
   const [hasMounted, setHasMounted] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const previousPathRef = useRef<string>(pathname);
+
+  // Mobile Menu schließen bei Pfadwechsel
+  useEffect(() => {
+    setIsMobileOpen(false);
+  }, [pathname]);
+
+  // Body-Scroll sperren wenn Mobile-Menü offen
+  useEffect(() => {
+    if (isMobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileOpen]);
 
   // LocalStorage-Werte nach dem Mount laden (client-side only)
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -293,8 +332,301 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
     setResetEmail('');
   };
 
+  // Gemeinsamer Sidebar-Content (für Desktop und Mobile)
+  const sidebarContent = (isMobile: boolean) => (
+    <>
+      {/* Logo */}
+      <div className={`flex justify-center ${isMobile ? 'mb-6' : 'mb-4'}`}>
+        <Link
+          href="/dashboard"
+          className={`flex items-center justify-center flex-shrink-0 ${isMobile ? 'w-12 h-12' : 'w-9 h-9'}`}
+          onClick={() => isMobile && setIsMobileOpen(false)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={logoUrl}
+            alt="Beban"
+            width={isMobile ? 36 : 28}
+            height={isMobile ? 36 : 28}
+            className="object-contain"
+          />
+        </Link>
+      </div>
+
+      {/* Navigation */}
+      <nav className={`flex-1 space-y-0.5 overflow-y-auto ${isMobile ? 'px-2' : ''}`}>
+        {/* Hauptmenü Items */}
+        {mainNavItems.map((item) => {
+          const active = isActive(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              title={!isExpanded && !isMobile ? item.label : undefined}
+              onClick={() => isMobile && setIsMobileOpen(false)}
+              className={`
+                flex items-center py-2 rounded-lg transition-all group no-underline
+                ${(isExpanded || isMobile) ? 'px-3 gap-2.5' : 'justify-center'}
+                ${active
+                  ? 'bg-white text-slate-900 font-medium shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900 hover:bg-white/60'
+                }
+              `}
+            >
+              <span className={`flex-shrink-0 ${active ? 'text-gold' : 'text-slate-400 group-hover:text-slate-600'}`}>
+                {item.icon}
+              </span>
+              {(isExpanded || isMobile) && (
+                <span className={`whitespace-nowrap ${isMobile ? 'text-sm' : 'text-[13px]'}`}>
+                  {item.label}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+
+        {/* Verwaltung - PIN-geschützte Gruppe */}
+        <div className="pt-3">
+          {/* Verwaltung Header (klickbar zum Ausklappen/PIN eingeben) */}
+          <button
+            onClick={handleVerwaltungClick}
+            title={!isExpanded && !isMobile ? 'Verwaltung' : undefined}
+            className={`
+              w-full flex items-center py-2 rounded-lg transition-all group
+              ${(isExpanded || isMobile) ? 'px-3 gap-2.5' : 'justify-center'}
+              ${isVerwaltungActive && !verwaltungOpen
+                ? 'bg-white text-slate-900 font-medium shadow-sm'
+                : 'text-slate-500 hover:text-slate-900 hover:bg-white/60'
+              }
+            `}
+          >
+            <span className={`flex-shrink-0 ${isVerwaltungActive ? 'text-gold' : 'text-slate-400 group-hover:text-slate-600'}`}>
+              {isPinUnlocked ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              )}
+            </span>
+            {(isExpanded || isMobile) && (
+              <>
+                <span className={`whitespace-nowrap flex-1 text-left ${isMobile ? 'text-sm' : 'text-[13px]'}`}>
+                  Verwaltung
+                </span>
+                {isPinUnlocked ? (
+                  <svg
+                    className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${verwaltungOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                ) : (
+                  <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                )}
+              </>
+            )}
+          </button>
+
+          {/* Inline PIN-Eingabe (nur sichtbar wenn nicht entsperrt und showPinInput aktiv) */}
+          <div
+            className={`
+              overflow-hidden transition-all duration-200 ease-in-out
+              ${showPinInput && (isExpanded || isMobile) && !isPinUnlocked ? 'max-h-[140px] opacity-100 mt-1.5' : 'max-h-0 opacity-0'}
+            `}
+          >
+            <div className="px-2 py-2">
+              {showForgotPin ? (
+                /* PIN vergessen Ansicht - inline */
+                <div className="space-y-2">
+                  <input
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    placeholder="E-Mail-Adresse"
+                    className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gold/50 focus:border-gold bg-white"
+                  />
+                  <div className="flex gap-1">
+                    <button
+                      onClick={handleForgotPin}
+                      className="flex-1 py-1.5 bg-gold text-black text-xs font-medium rounded-lg hover:bg-gold/90 transition-colors"
+                    >
+                      Senden
+                    </button>
+                    <button
+                      onClick={() => setShowForgotPin(false)}
+                      className="px-2 py-1.5 text-slate-400 text-xs hover:text-slate-600 transition-colors"
+                    >
+                      Zurück
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* PIN Eingabe - inline */
+                <div className="space-y-2">
+                  <div className="flex justify-center gap-1.5">
+                    {[0, 1, 2, 3].map((index) => (
+                      <input
+                        key={index}
+                        ref={(el) => { inputRefs.current[index] = el; }}
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={pin[index]}
+                        onChange={(e) => handlePinChange(index, e.target.value)}
+                        onKeyDown={(e) => handlePinKeyDown(index, e)}
+                        className={`
+                          w-10 h-10 text-center text-lg font-bold rounded-lg border-2
+                          focus:outline-none focus:ring-1 focus:ring-gold/50 transition-all
+                          ${pinError
+                            ? 'border-red-300 bg-red-50 text-red-600 animate-shake'
+                            : 'border-slate-200 bg-white text-slate-900 focus:border-gold'
+                          }
+                        `}
+                        style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
+                      />
+                    ))}
+                  </div>
+                  {pinError && (
+                    <p className="text-[10px] text-red-500 text-center">Falsche PIN</p>
+                  )}
+                  <button
+                    onClick={() => setShowForgotPin(true)}
+                    className="w-full text-[10px] text-slate-400 hover:text-gold transition-colors"
+                  >
+                    PIN vergessen?
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Verwaltung Unterpunkte (nur sichtbar wenn PIN eingegeben und ausgeklappt) */}
+          <div
+            className={`
+              overflow-hidden transition-all duration-200 ease-in-out
+              ${verwaltungOpen && (isExpanded || isMobile) && isPinUnlocked ? 'max-h-[500px] opacity-100 mt-0.5' : 'max-h-0 opacity-0'}
+            `}
+          >
+            {verwaltungItems.map((item) => {
+              const active = isActive(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => isMobile && setIsMobileOpen(false)}
+                  className={`
+                    flex items-center py-1.5 rounded-lg transition-all group no-underline ml-3
+                    ${(isExpanded || isMobile) ? 'px-3 gap-2.5' : 'justify-center'}
+                    ${active
+                      ? 'bg-white text-slate-900 font-medium shadow-sm'
+                      : 'text-slate-500 hover:text-slate-900 hover:bg-white/60'
+                    }
+                  `}
+                >
+                  <span className={`flex-shrink-0 ${active ? 'text-gold' : 'text-slate-400 group-hover:text-slate-600'}`}>
+                    {item.icon}
+                  </span>
+                  <span className={`whitespace-nowrap ${isMobile ? 'text-sm' : 'text-[13px]'}`}>
+                    {item.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
+
+      {/* Footer Links */}
+      <div className={`mt-auto pt-3 border-t border-slate-200/60 ${isMobile ? 'px-2' : ''}`}>
+        <Link
+          href="/"
+          title={!isExpanded && !isMobile ? 'Zur Website' : undefined}
+          onClick={() => isMobile && setIsMobileOpen(false)}
+          className={`
+            flex items-center py-2 rounded-lg transition-all group no-underline
+            text-slate-500 hover:text-slate-900 hover:bg-white/60
+            ${(isExpanded || isMobile) ? 'px-3 gap-2.5' : 'justify-center'}
+          `}
+        >
+          <svg className="w-5 h-5 flex-shrink-0 text-slate-400 group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+          {(isExpanded || isMobile) && (
+            <span className={`whitespace-nowrap ${isMobile ? 'text-sm' : 'text-[13px]'}`}>
+              Zur Website
+            </span>
+          )}
+        </Link>
+
+        {onLogout && (
+          <button
+            onClick={() => {
+              if (isMobile) setIsMobileOpen(false);
+              onLogout();
+            }}
+            title={!isExpanded && !isMobile ? 'Abmelden' : undefined}
+            className={`
+              flex items-center py-2 text-slate-400 hover:text-red-500 transition-colors w-full rounded-lg
+              ${(isExpanded || isMobile) ? 'px-3 gap-2.5' : 'justify-center'}
+            `}
+          >
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            {(isExpanded || isMobile) && (
+              <span className={`font-medium whitespace-nowrap ${isMobile ? 'text-sm' : 'text-[13px]'}`}>
+                Abmelden
+              </span>
+            )}
+          </button>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <>
+      {/* Mobile Menu Button */}
+      <MobileMenuButton onClick={() => setIsMobileOpen(!isMobileOpen)} isOpen={isMobileOpen} />
+
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-[55]"
+          onClick={() => setIsMobileOpen(false)}
+        />
+      )}
+
+      {/* Mobile Drawer */}
+      <aside
+        className={`
+          md:hidden fixed top-0 left-0 h-full w-64 bg-slate-50 z-[56]
+          flex flex-col py-4 px-3
+          shadow-xl border-r border-slate-200
+          transform transition-transform duration-300 ease-in-out
+          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
+        {/* Close Button oben rechts im Drawer */}
+        <button
+          onClick={() => setIsMobileOpen(false)}
+          className="absolute top-3 right-3 p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        {sidebarContent(true)}
+      </aside>
+
+      {/* Desktop Sidebar */}
       <aside
         onMouseEnter={() => setIsExpanded(true)}
         onMouseLeave={() => {
@@ -305,256 +637,15 @@ export function AppSidebar({ onLogout }: AppSidebarProps) {
           }
         }}
         className={`
-          h-full bg-slate-50 flex flex-col py-4 rounded-3xl
+          hidden md:flex
+          h-full bg-slate-50 flex-col py-4 rounded-3xl
           shadow-[0_10px_30px_-10px_rgba(0,0,0,0.04)] border border-slate-200/50
           shrink-0 overflow-hidden
           transition-all duration-300 ease-in-out
           ${isExpanded ? 'w-56 px-3' : 'w-[64px] px-2'}
         `}
       >
-        {/* Logo */}
-        <div className="flex justify-center mb-4">
-          <Link href="/dashboard" className="w-9 h-9 flex items-center justify-center flex-shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={logoUrl}
-              alt="Beban"
-              width={28}
-              height={28}
-              className="object-contain"
-            />
-          </Link>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 space-y-0.5 overflow-y-auto">
-          {/* Hauptmenü Items */}
-          {mainNavItems.map((item) => {
-            const active = isActive(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={!isExpanded ? item.label : undefined}
-                className={`
-                  flex items-center py-2 rounded-lg transition-all group no-underline
-                  ${isExpanded ? 'px-3 gap-2.5' : 'justify-center'}
-                  ${active
-                    ? 'bg-white text-slate-900 font-medium shadow-sm'
-                    : 'text-slate-500 hover:text-slate-900 hover:bg-white/60'
-                  }
-                `}
-              >
-                <span className={`flex-shrink-0 ${active ? 'text-gold' : 'text-slate-400 group-hover:text-slate-600'}`}>
-                  {item.icon}
-                </span>
-                {isExpanded && (
-                  <span className="text-[13px] whitespace-nowrap">
-                    {item.label}
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-
-          {/* Verwaltung - PIN-geschützte Gruppe */}
-          <div className="pt-3">
-            {/* Verwaltung Header (klickbar zum Ausklappen/PIN eingeben) */}
-            <button
-              onClick={handleVerwaltungClick}
-              title={!isExpanded ? 'Verwaltung' : undefined}
-              className={`
-                w-full flex items-center py-2 rounded-lg transition-all group
-                ${isExpanded ? 'px-3 gap-2.5' : 'justify-center'}
-                ${isVerwaltungActive && !verwaltungOpen
-                  ? 'bg-white text-slate-900 font-medium shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900 hover:bg-white/60'
-                }
-              `}
-            >
-              <span className={`flex-shrink-0 ${isVerwaltungActive ? 'text-gold' : 'text-slate-400 group-hover:text-slate-600'}`}>
-                {isPinUnlocked ? (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                )}
-              </span>
-              {isExpanded && (
-                <>
-                  <span className="text-[13px] whitespace-nowrap flex-1 text-left">
-                    Verwaltung
-                  </span>
-                  {isPinUnlocked ? (
-                    <svg
-                      className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${verwaltungOpen ? 'rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  ) : (
-                    <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                  )}
-                </>
-              )}
-            </button>
-
-            {/* Inline PIN-Eingabe (nur sichtbar wenn nicht entsperrt und showPinInput aktiv) */}
-            <div
-              className={`
-                overflow-hidden transition-all duration-200 ease-in-out
-                ${showPinInput && isExpanded && !isPinUnlocked ? 'max-h-[140px] opacity-100 mt-1.5' : 'max-h-0 opacity-0'}
-              `}
-            >
-              <div className="px-2 py-2">
-                {showForgotPin ? (
-                  /* PIN vergessen Ansicht - inline */
-                  <div className="space-y-2">
-                    <input
-                      type="email"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      placeholder="E-Mail-Adresse"
-                      className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-gold/50 focus:border-gold bg-white"
-                    />
-                    <div className="flex gap-1">
-                      <button
-                        onClick={handleForgotPin}
-                        className="flex-1 py-1.5 bg-gold text-black text-xs font-medium rounded-lg hover:bg-gold/90 transition-colors"
-                      >
-                        Senden
-                      </button>
-                      <button
-                        onClick={() => setShowForgotPin(false)}
-                        className="px-2 py-1.5 text-slate-400 text-xs hover:text-slate-600 transition-colors"
-                      >
-                        Zurück
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  /* PIN Eingabe - inline */
-                  <div className="space-y-2">
-                    <div className="flex justify-center gap-1.5">
-                      {[0, 1, 2, 3].map((index) => (
-                        <input
-                          key={index}
-                          ref={(el) => { inputRefs.current[index] = el; }}
-                          type="password"
-                          inputMode="numeric"
-                          maxLength={1}
-                          value={pin[index]}
-                          onChange={(e) => handlePinChange(index, e.target.value)}
-                          onKeyDown={(e) => handlePinKeyDown(index, e)}
-                          className={`
-                            w-10 h-10 text-center text-lg font-bold rounded-lg border-2
-                            focus:outline-none focus:ring-1 focus:ring-gold/50 transition-all
-                            ${pinError
-                              ? 'border-red-300 bg-red-50 text-red-600 animate-shake'
-                              : 'border-slate-200 bg-white text-slate-900 focus:border-gold'
-                            }
-                          `}
-                          style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
-                        />
-                      ))}
-                    </div>
-                    {pinError && (
-                      <p className="text-[10px] text-red-500 text-center">Falsche PIN</p>
-                    )}
-                    <button
-                      onClick={() => setShowForgotPin(true)}
-                      className="w-full text-[10px] text-slate-400 hover:text-gold transition-colors"
-                    >
-                      PIN vergessen?
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Verwaltung Unterpunkte (nur sichtbar wenn PIN eingegeben und ausgeklappt) */}
-            <div
-              className={`
-                overflow-hidden transition-all duration-200 ease-in-out
-                ${verwaltungOpen && isExpanded && isPinUnlocked ? 'max-h-[500px] opacity-100 mt-0.5' : 'max-h-0 opacity-0'}
-              `}
-            >
-              {verwaltungItems.map((item) => {
-                const active = isActive(item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`
-                      flex items-center py-1.5 rounded-lg transition-all group no-underline ml-3
-                      ${isExpanded ? 'px-3 gap-2.5' : 'justify-center'}
-                      ${active
-                        ? 'bg-white text-slate-900 font-medium shadow-sm'
-                        : 'text-slate-500 hover:text-slate-900 hover:bg-white/60'
-                      }
-                    `}
-                  >
-                    <span className={`flex-shrink-0 ${active ? 'text-gold' : 'text-slate-400 group-hover:text-slate-600'}`}>
-                      {item.icon}
-                    </span>
-                    <span className="text-[13px] whitespace-nowrap">
-                      {item.label}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        </nav>
-
-        {/* Footer Links */}
-        <div className="mt-auto pt-3 border-t border-slate-200/60">
-          <Link
-            href="/"
-            title={!isExpanded ? 'Zur Website' : undefined}
-            className={`
-              flex items-center py-2 rounded-lg transition-all group no-underline
-              text-slate-500 hover:text-slate-900 hover:bg-white/60
-              ${isExpanded ? 'px-3 gap-2.5' : 'justify-center'}
-            `}
-          >
-            <svg className="w-5 h-5 flex-shrink-0 text-slate-400 group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-            {isExpanded && (
-              <span className="text-[13px] whitespace-nowrap">
-                Zur Website
-              </span>
-            )}
-          </Link>
-
-          {onLogout && (
-            <button
-              onClick={onLogout}
-              title={!isExpanded ? 'Abmelden' : undefined}
-              className={`
-                flex items-center py-2 text-slate-400 hover:text-red-500 transition-colors w-full rounded-lg
-                ${isExpanded ? 'px-3 gap-2.5' : 'justify-center'}
-              `}
-            >
-              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              {isExpanded && (
-                <span className="text-[13px] font-medium whitespace-nowrap">
-                  Abmelden
-                </span>
-              )}
-            </button>
-          )}
-        </div>
+        {sidebarContent(false)}
       </aside>
 
       <style jsx>{`

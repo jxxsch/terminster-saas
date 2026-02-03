@@ -784,7 +784,14 @@ export function WeekView({
         {/* Schedule Grid - Table-Layout für durchgehende Linien */}
         <div className={`bg-white rounded-lg border border-gray-200 shadow-sm flex-1 min-h-0 overflow-hidden relative ${isClosed ? 'grayscale opacity-40' : ''}`}>
           <div className="absolute inset-0 overflow-auto">
-            <table className="w-full h-full border-collapse select-none" style={{ tableLayout: 'fixed' }}>
+            {/* Mobile: min-width basierend auf Barber-Anzahl, damit horizontal gescrollt werden kann */}
+            <table
+              className="w-full h-full border-collapse select-none"
+              style={{
+                tableLayout: 'fixed',
+                minWidth: `${60 + team.length * 100}px` // 60px Zeit-Spalte + 100px pro Barber
+              }}
+            >
             {/* Header mit Datum und Barber */}
             <thead>
               <tr className="bg-gray-50">

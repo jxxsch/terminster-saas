@@ -728,24 +728,26 @@ export default function TeamPage() {
               <p className="text-sm">Noch keine Teammitglieder vorhanden</p>
             </div>
           ) : (
-            <div>
+            <div className="overflow-x-auto">
               {isCreating && <div className="mb-4">{editFormContent}</div>}
 
-              {/* Header-Zeile */}
-              <div className="grid grid-cols-[48px_1.5fr_1.2fr_1fr_0.8fr_1fr_0.6fr_60px_80px] gap-6 px-4 py-2 text-[11px] font-medium text-slate-400 border-b border-slate-100">
-                <div></div>
-                <div>Name</div>
-                <div>Telefon</div>
-                <div>Geburtstag</div>
-                <div>Urlaub</div>
-                <div>Dabei seit</div>
-                <div>Frei</div>
-                <div>Status</div>
-                <div></div>
-              </div>
+              {/* Mobile: min-width Container für horizontales Scrollen */}
+              <div className="min-w-[800px]">
+                {/* Header-Zeile */}
+                <div className="grid grid-cols-[48px_1.5fr_1.2fr_1fr_0.8fr_1fr_0.6fr_60px_80px] gap-6 px-4 py-2 text-[11px] font-medium text-slate-400 border-b border-slate-100">
+                  <div></div>
+                  <div>Name</div>
+                  <div>Telefon</div>
+                  <div>Geburtstag</div>
+                  <div>Urlaub</div>
+                  <div>Dabei seit</div>
+                  <div>Frei</div>
+                  <div>Status</div>
+                  <div></div>
+                </div>
 
-              {/* Team-Liste */}
-              <div className="divide-y divide-slate-50">
+                {/* Team-Liste */}
+                <div className="divide-y divide-slate-50">
                 {team.map((member, index) => (
                   <div key={member.id}>
                     <div className={`grid grid-cols-[48px_1.5fr_1.2fr_1fr_0.8fr_1fr_0.6fr_60px_80px] gap-6 items-center px-4 py-3.5 transition-colors ${editingId === member.id ? 'bg-gold/5' : 'hover:bg-slate-50'}`}>

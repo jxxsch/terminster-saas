@@ -48,8 +48,8 @@ export default function AdminLayout({
 
   // Admin Content (Sidebar kommt aus dem übergeordneten Layout)
   return (
-    <div className="h-[calc(100vh-40px)] bg-slate-50 rounded-3xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.04)] border border-slate-200/50 flex flex-col overflow-auto">
-      <div className="p-4 flex-1 flex flex-col">
+    <div className="h-full md:h-[calc(100vh-40px)] bg-slate-50 rounded-2xl md:rounded-3xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.04)] border border-slate-200/50 flex flex-col overflow-auto pt-14 md:pt-0">
+      <div className="p-3 md:p-4 flex-1 flex flex-col">
         {children}
       </div>
     </div>
