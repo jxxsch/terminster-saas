@@ -357,7 +357,7 @@
     "sendResetLink": "Link gönder",
     "email": "E-posta",
     "password": "Şifre",
-    "passwordMinLength": "En az 6 karakter",
+    "passwordMinLength": "Şifre",
     "confirmPassword": "Şifreyi onayla",
     "firstName": "Ad",
     "lastName": "Soyad",

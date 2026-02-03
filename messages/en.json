@@ -357,7 +357,7 @@
     "sendResetLink": "Send link",
     "email": "Email",
     "password": "Password",
-    "passwordMinLength": "At least 6 characters",
+    "passwordMinLength": "Password",
     "confirmPassword": "Confirm password",
     "firstName": "First name",
     "lastName": "Last name",
