@@ -1118,10 +1118,6 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     e.preventDefault();
     setAuthError('');
 
-    if (authPassword !== authConfirmPassword) {
-      setAuthError(tAuth('passwordsNotMatch'));
-      return;
-    }
     if (authPassword.length < 6) {
       setAuthError(tAuth('passwordTooShort'));
       return;
@@ -1924,9 +1920,6 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                               <div style={{ ...styles.inputGridTwo, marginBottom: '0.5rem' }}>
                                 <input type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder={tAuth('email')} autoComplete="email" style={styles.input} required />
                                 <input type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder={tAuth('passwordMinLength')} autoComplete="new-password" style={styles.input} required minLength={6} />
-                              </div>
-                              <div style={{ marginBottom: '0.5rem' }}>
-                                <input type="password" value={authConfirmPassword} onChange={(e) => setAuthConfirmPassword(e.target.value)} placeholder={tAuth('confirmPassword')} autoComplete="new-password" style={{ ...styles.input, width: '100%' }} required minLength={6} />
                               </div>
                               <button type="submit" disabled={authSubmitting} style={{ ...styles.submitBtn, width: '100%', justifyContent: 'center', opacity: authSubmitting ? 0.5 : 1 }}>
                                 {authSubmitting ? tAuth('registering') : tAuth('register')}
