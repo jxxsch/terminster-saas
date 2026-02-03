@@ -905,6 +905,8 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
 
       if (preselectedBarber && teamData.some(b => b.id === preselectedBarber)) {
         setSelectedBarber(preselectedBarber);
+      } else if (teamData.length > 0) {
+        setSelectedBarber(teamData[0].id);
       }
 
       return true;
