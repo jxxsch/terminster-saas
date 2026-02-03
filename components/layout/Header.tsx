@@ -28,6 +28,7 @@ export function Header() {
   const { isAuthenticated } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolledPastHero, setIsScrolledPastHero] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('');
   const logoUrl = useLogoUrl();
 
   // Check if on legal pages (always light mode)
@@ -38,6 +39,26 @@ export function Header() {
       // Farbwechsel exakt wenn Hero-Bereich verlassen wird (100% viewport height)
       const heroHeight = window.innerHeight;
       setIsScrolledPastHero(window.scrollY >= heroHeight);
+
+      // Determine active section
+      const sections = ['about', 'services', 'team', 'products', 'gallery', 'contact'];
+      const scrollPosition = window.scrollY + 150; // Offset for header
+
+      for (const section of sections) {
+        const element = document.getElementById(section);
+        if (element) {
+          const { offsetTop, offsetHeight } = element;
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+            setActiveSection(`#${section}`);
+            return;
+          }
+        }
+      }
+
+      // If at top, no active section
+      if (window.scrollY < heroHeight) {
+        setActiveSection('');
+      }
     };
 
     // Initial check
@@ -215,88 +236,94 @@ export function Header() {
             </button>
           </div>
         </nav>
+      </header>
 
-        {/* Mobile Menu */}
-        <div
-          className={cn(
-            'lg:hidden fixed inset-x-0 top-14 bottom-0 z-40 transition-all duration-300',
-            isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
-          )}
-        >
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setIsMobileMenuOpen(false)}
-          />
+      {/* Mobile Menu - Fullscreen (outside header) */}
+      <div
+        className={cn(
+          'lg:hidden fixed inset-0 z-[100] bg-black transition-all duration-300',
+          isMobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'
+        )}
+      >
+          {/* Header Bar - same positioning as main header */}
+          <div className="flex items-center justify-between px-4 sm:px-6 h-14">
+            {/* Logo */}
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                setIsMobileMenuOpen(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="flex-shrink-0"
+            >
+              <div className="relative w-10 h-10 [filter:drop-shadow(0_0_8px_rgba(212,175,55,0.5))]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={logoUrl}
+                  alt="Beban Barber Shop Logo"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            </a>
+
+            {/* Close Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-gold p-2"
+              aria-label="Close menu"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
           {/* Menu Content */}
-          <div
-            className={cn(
-              'relative mx-4 mt-4 rounded-lg overflow-hidden',
-              isLightMode
-                ? 'bg-white/95 backdrop-blur-md border border-gray-200'
-                : 'bg-black/90 backdrop-blur-md border border-white/10'
-            )}
-          >
-            <nav className="p-6 flex flex-col gap-2">
-              {/* Navigation Links */}
+          <nav className="flex flex-col justify-between h-[calc(100%-3.5rem)] px-12 pb-6">
+            {/* Navigation Links - Left aligned, vertically centered */}
+            <div className="flex flex-col justify-center flex-1">
               {navItems.map((item) => (
                 <a
                   key={item.href}
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
-                    'py-3 text-center text-sm tracking-[0.15em] uppercase transition-colors',
-                    isLightMode ? 'text-gray-700 hover:text-gold' : 'text-white hover:text-gold'
+                    'py-2 text-left text-4xl font-light tracking-wide transition-colors',
+                    activeSection === item.href ? 'text-white' : 'text-white/40 hover:text-white'
                   )}
                 >
                   {item.label}
                 </a>
               ))}
+            </div>
 
-              {/* Divider */}
-              <div className={cn('h-px my-3', isLightMode ? 'bg-gray-200' : 'bg-white/20')} />
-
-              {/* CTA Button */}
-              <button
-                onClick={() => {
-                  openBooking();
-                  setIsMobileMenuOpen(false);
-                }}
-                className="py-3 bg-gold text-black text-sm font-medium tracking-[0.15em] uppercase rounded"
-              >
-                {t('bookNow')}
-              </button>
-
-              {/* User Button */}
+            {/* Bottom Buttons */}
+            <div className="flex border-t border-gold">
+              {/* Login Button */}
               <button
                 onClick={() => {
                   isAuthenticated ? openCustomerPortal() : openLogin();
                   setIsMobileMenuOpen(false);
                 }}
-                className={cn(
-                  'py-3 text-sm tracking-[0.15em] uppercase border rounded transition-colors flex items-center justify-center gap-2',
-                  isAuthenticated
-                    ? 'text-gold border-gold/50'
-                    : isLightMode
-                      ? 'text-gray-700 border-gray-300 hover:border-gold hover:text-gold'
-                      : 'text-gray-300 border-white/30 hover:border-gold hover:text-gold'
-                )}
+                className="flex-1 py-4 text-white text-sm tracking-[0.15em] uppercase border-r border-gold transition-colors hover:text-gold"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
                 {isAuthenticated ? t('myArea') : t('login')}
               </button>
 
-              {/* Language Switcher */}
-              <div className="flex justify-center pt-3">
-                <LanguageSwitcher variant="vertical" />
-              </div>
-            </nav>
-          </div>
-        </div>
-      </header>
+              {/* Book Button */}
+              <button
+                onClick={() => {
+                  openBooking();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex-1 py-4 text-white text-sm tracking-[0.15em] uppercase transition-colors hover:text-gold"
+              >
+                {t('bookNow')}
+              </button>
+            </div>
+          </nav>
+      </div>
 
       {/* Customer Portal Modal */}
       {showCustomerPortal && (

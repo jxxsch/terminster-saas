@@ -92,17 +92,17 @@ export function Services() {
         {/* Services Grid - 3D Karten mit Perspektive */}
         <div
           className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-          style={{ perspective: '1000px' }}
+          style={{ perspective: '1000px', gridAutoRows: '1fr' }}
         >
 
           {services.map((service) => (
             <div
               key={service.id}
-              className="group"
+              className="group h-full"
               style={{ perspective: '1000px' }}
             >
               <div
-                className="relative bg-white p-5 flex flex-col items-center text-center rounded-2xl border border-gray-100 overflow-hidden transition-all duration-500 ease-out cursor-pointer
+                className="relative bg-white p-5 flex flex-col items-center text-center rounded-2xl border border-gray-100 overflow-hidden transition-all duration-500 ease-out cursor-pointer h-full
                   shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)]
                   group-hover:shadow-[0_15px_35px_-5px_rgba(201,168,108,0.25),0_10px_20px_-5px_rgba(201,168,108,0.1)]
                   group-hover:border-gold/30"
@@ -129,7 +129,7 @@ export function Services() {
                 />
 
                 {/* Content */}
-                <div className="relative z-10 w-full flex flex-col items-center" style={{ transform: 'translateZ(20px)' }}>
+                <div className="relative z-10 w-full flex flex-col items-center h-full" style={{ transform: 'translateZ(20px)' }}>
                   {/* Icon Container */}
                   <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gold/10 text-gold mb-3 transition-all duration-300 group-hover:bg-gold group-hover:text-white group-hover:scale-110 group-hover:shadow-lg">
                     {getIcon()}
@@ -146,12 +146,12 @@ export function Services() {
                   </div>
 
                   {/* Description */}
-                  <p className="text-gray-400 text-[11px] mb-3 leading-tight transition-colors duration-300 group-hover:text-gray-500">
+                  <p className="text-gray-400 text-[11px] mb-3 leading-tight transition-colors duration-300 group-hover:text-gray-500 flex-grow">
                     {getServiceKey(service.name) ? t(`items.${getServiceKey(service.name)}.description`) : ''}
                   </p>
 
                   {/* Price */}
-                  <div className="text-gold font-semibold text-lg transition-transform duration-300 group-hover:scale-105">
+                  <div className="text-gold font-semibold text-lg transition-transform duration-300 group-hover:scale-105 mt-auto">
                     {formatPrice(service.price)}
                   </div>
                 </div>
