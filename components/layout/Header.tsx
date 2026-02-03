@@ -79,8 +79,8 @@ export function Header() {
   const headerClass = cn(
     'fixed top-0 left-0 right-0 z-50 header-transition',
     isLightMode
-      ? 'header-glass-light border-b border-gray-200/50'
-      : 'header-glass-dark border-b border-white/10'
+      ? 'header-glass-light'
+      : 'header-glass-dark'
   );
 
   const navLinkClass = cn(
