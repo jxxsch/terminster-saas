@@ -291,55 +291,65 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   animation: glow-pulse 4s ease-in-out infinite;
 }
 
-/* Hero CTA Button - Gold Outline Glow */
+/* Hero CTA Button - Floating/Levitate */
 .hero-cta-btn {
-  padding: 12px 28px;
+  padding: 16px 40px;
   text-transform: uppercase;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 1.2px;
-  color: rgba(212, 175, 55, 0.7);
-  text-shadow: none;
-  background: transparent;
+  letter-spacing: 1.5px;
+  color: #000;
+  background: var(--color-gold);
   cursor: pointer;
-  box-shadow: transparent;
-  border: 1px solid rgba(212, 175, 55, 0.7);
-  transition: 0.5s ease;
+  border: none;
   user-select: none;
+  animation: float 3s ease-in-out infinite;
+  box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
+  transition: box-shadow 0.3s ease;
 }
 
-.hero-cta-btn:hover,
-.hero-cta-btn:focus {
-  color: #ffffff;
-  background: var(--color-gold);
-  border: 1px solid var(--color-gold);
-  text-shadow: 0 0 5px #ffffff, 0 0 10px #ffffff, 0 0 20px #ffffff;
-  box-shadow: 0 0 5px var(--color-gold), 0 0 20px var(--color-gold), 0 0 50px var(--color-gold),
-    0 0 100px var(--color-gold);
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+    box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
+  }
+  50% {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(212, 175, 55, 0.4);
+  }
+}
+
+.hero-cta-btn:hover {
+  animation-play-state: paused;
+  box-shadow: 0 15px 35px rgba(212, 175, 55, 0.5);
 }
 
 .hero-cta-btn:active {
-  transform: scale(0.98);
+  transform: translateY(0) scale(0.98);
 }
 
 /* Sticky Button - Basis-Styles mit smooth Transition */
 .sticky-btn-base {
-  padding: 12px 28px;
+  padding: 16px 40px;
   text-transform: uppercase;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 1.2px;
+  letter-spacing: 1.5px;
   cursor: pointer;
   user-select: none;
-  transition: background 0.5s ease, color 0.5s ease, border 0.5s ease, box-shadow 0.3s ease, transform 0.5s ease;
+  border: none;
+  animation: float 3s ease-in-out infinite;
+  box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
+  transition: box-shadow 0.3s ease;
 }
 
 .sticky-btn-base:hover {
-  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+  animation-play-state: paused;
+  box-shadow: 0 15px 35px rgba(212, 175, 55, 0.5);
 }
 
 .sticky-btn-base:active {
-  transform: scale(0.98);
+  transform: translateY(0) scale(0.98);
 }
