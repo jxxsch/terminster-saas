@@ -1307,7 +1307,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
       <div
         style={{
           ...styles.overlay,
-          padding: isMobile ? 0 : '1rem',
+          padding: isMobile ? 0 : '10px',
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? 'auto' : 'none',
           transition: 'opacity 0.2s ease',
