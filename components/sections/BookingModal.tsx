@@ -1837,7 +1837,10 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                             </svg>
                             {t('back')}
                           </button>
-                          <div style={styles.inputGrid}>
+                          <div style={{
+                            ...styles.inputGrid,
+                            gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+                          }}>
                             <input type="text" placeholder={t('name')} value={customerName} onChange={(e) => setCustomerName(e.target.value)} style={styles.input} />
                             <input type="email" placeholder={t('email')} value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)} style={styles.input} />
                             <input
