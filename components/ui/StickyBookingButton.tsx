@@ -7,27 +7,30 @@ import { useTranslations } from 'next-intl';
 export function StickyBookingButton() {
   const { openBooking } = useBooking();
   const [isVisible, setIsVisible] = useState(false);
+  const [bottomOffset, setBottomOffset] = useState(0);
   const t = useTranslations('nav');
 
   useEffect(() => {
     const handleScroll = () => {
       const scrolledPastHero = window.scrollY > window.innerHeight * 0.8;
+      setIsVisible(scrolledPastHero);
 
-      // Hide button when footer area would be covered
+      // Calculate bottom offset to avoid covering footer
       const contactSection = document.getElementById('contact');
-      let isNearFooter = false;
-
       if (contactSection) {
         const contactRect = contactSection.getBoundingClientRect();
-        // Footer content (logo, social links, impressum) is in the last ~250px of contact
-        // Button covers bottom ~60px of viewport on mobile
-        // Hide when footer content area enters the button zone
-        const footerContentTop = contactRect.bottom - 250;
-        const buttonZoneTop = window.innerHeight - 60;
-        isNearFooter = footerContentTop < buttonZoneTop;
-      }
+        // Footer links area is approximately the last 120px of contact section
+        const footerLinksTop = contactRect.bottom - 120;
+        const viewportBottom = window.innerHeight;
 
-      setIsVisible(scrolledPastHero && !isNearFooter);
+        // If footer links would be covered by button, push button up
+        if (footerLinksTop < viewportBottom) {
+          const overlap = viewportBottom - footerLinksTop;
+          setBottomOffset(overlap);
+        } else {
+          setBottomOffset(0);
+        }
+      }
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -40,14 +43,16 @@ export function StickyBookingButton() {
   return (
     <button
       onClick={() => openBooking()}
+      style={{ bottom: bottomOffset > 0 ? `${bottomOffset}px` : undefined }}
       className={`
-        fixed z-30 transition-all duration-300
+        fixed z-30 transition-all duration-150
         bg-gold text-black font-medium tracking-wider uppercase text-sm
         shadow-[0_-4px_20px_rgba(0,0,0,0.15)]
         hover:bg-gold/90
 
         /* Mobile: Full width at bottom */
-        bottom-0 left-0 right-0 py-4
+        left-0 right-0 py-4
+        ${bottomOffset === 0 ? 'bottom-0' : ''}
 
         /* Desktop: Centered pill button */
         md:bottom-6 md:left-1/2 md:-translate-x-1/2
