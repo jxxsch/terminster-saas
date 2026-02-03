@@ -138,29 +138,19 @@ export function StickyBookingBar() {
   return (
     <button
       onClick={() => openBooking()}
-      className="hero-cta-btn fixed z-50"
+      className="sticky-btn-base fixed z-50"
       style={{
         top: position.top,
         left: '50%',
+        width: `${position.width}px`,
         transform: `translateX(-50%) scale(${position.scale})`,
         willChange: 'transform',
+        background: isInLightArea ? 'var(--color-gold)' : 'transparent',
+        color: isInLightArea ? '#ffffff' : 'rgba(212, 175, 55, 0.7)',
+        border: isInLightArea ? '1px solid var(--color-gold)' : '1px solid rgba(212, 175, 55, 0.7)',
       }}
     >
-      <span className="shadow" />
-      <span className="btn-fill" />
-      <span className="orbit-dots">
-        <span /><span /><span /><span />
-      </span>
-      <span className="corners">
-        <span /><span /><span /><span />
-      </span>
-      <span className="btn-text">
-        {ctaText.split('').map((char, i) => (
-          <span key={i} style={{ '--i': i } as React.CSSProperties}>
-            {char === ' ' ? '\u00A0' : char}
-          </span>
-        ))}
-      </span>
+      {ctaText}
     </button>
   );
 }
