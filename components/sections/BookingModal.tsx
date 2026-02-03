@@ -755,6 +755,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const [selectedBarber, setSelectedBarber] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -796,6 +797,10 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
 
   useEffect(() => {
     setMounted(true);
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
   useEffect(() => {
@@ -1302,6 +1307,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
       <div
         style={{
           ...styles.overlay,
+          padding: isMobile ? 0 : '1rem',
           opacity: isOpen ? 1 : 0,
           pointerEvents: isOpen ? 'auto' : 'none',
           transition: 'opacity 0.2s ease',
@@ -1311,7 +1317,10 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
         <div
           style={{
             ...styles.modal,
-            maxWidth: bookingSuccess ? '500px' : '1100px',
+            maxWidth: isMobile ? '100%' : (bookingSuccess ? '500px' : '1100px'),
+            maxHeight: isMobile ? '100dvh' : '90vh',
+            height: isMobile ? '100dvh' : 'auto',
+            borderRadius: isMobile ? 0 : '1.5rem',
             transform: isOpen ? 'scale(1)' : 'scale(0.95)',
             transition: 'all 0.3s ease',
           }}
@@ -1554,6 +1563,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                             src={barber.image || '/team/placeholder.jpg'}
                             alt={barber.name}
                             fill
+                            sizes="80px"
                             style={{
                               objectFit: 'cover',
                               objectPosition: barber.image_position,
