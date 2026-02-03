@@ -2010,7 +2010,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                   </div>
                 )}
                 <div style={styles.footerActions}>
-                  <div style={styles.footerSummary}>
+                  <div style={{ ...styles.footerSummary, ...(isMobile ? { fontSize: '14px' } : {}) }}>
                     {selectedBarberData && selectedDayData && selectedSlot ? (
                       <span>
                         {t('at')} <span style={styles.gold}>{selectedBarberData.name}</span> {t('on')}{' '}
