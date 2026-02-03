@@ -1812,7 +1812,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                             </div>
                             <p style={{ ...styles.choiceBtnDesc, textAlign: 'center' }}>{t('manageAppointments')}</p>
                           </button>
-                          <button type="button" onClick={() => { setContactMode('guest'); scrollToSection('contact-form-guest'); }} style={{ ...styles.choiceBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%' }}>
+                          <button type="button" onClick={() => { setContactMode('guest'); scrollToSection('contact-form-guest'); }} style={{ ...styles.choiceBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%', border: '1px solid rgb(15, 23, 42)' }}>
                             <span style={{ ...styles.choiceBtnTitle, textAlign: 'center' }}>{t('bookAsGuest')}</span>
                           </button>
                         </div>
