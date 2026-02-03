@@ -136,19 +136,25 @@ export function StickyBookingBar() {
   if (!isReady) return null;
 
   return (
-    <button
-      onClick={() => openBooking()}
-      className="sticky-btn-base fixed z-50"
+    <div
+      className="fixed z-50"
       style={{
         top: position.top,
         left: '50%',
         transform: `translateX(-50%) scale(${position.scale})`,
         willChange: 'transform',
-        background: 'var(--color-gold)',
-        color: '#ffffff',
       }}
     >
-      {ctaText}
-    </button>
+      <button
+        onClick={() => openBooking()}
+        className="hero-cta-btn"
+        style={{
+          background: 'var(--color-gold)',
+          color: '#ffffff',
+        }}
+      >
+        {ctaText}
+      </button>
+    </div>
   );
 }
