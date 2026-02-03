@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import {
   getTeam,
@@ -1800,9 +1801,16 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                       </div>
                     </div>
                   ) : (
-                    <>
+                    <AnimatePresence mode="wait">
                       {contactMode === 'choice' && (
-                        <div style={styles.choiceGrid}>
+                        <motion.div
+                          key="choice"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                          style={styles.choiceGrid}
+                        >
                           <button type="button" onClick={() => { setContactMode('auth'); scrollToSection('contact-form-auth'); }} style={{ ...styles.choiceBtn, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%', border: '1px solid rgb(15, 23, 42)' }}>
                             <div style={{ ...styles.choiceBtnHeader, justifyContent: 'center' }}>
                               <svg width="18" height="18" fill="none" stroke="rgb(15, 23, 42)" viewBox="0 0 24 24">
@@ -1815,11 +1823,18 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                           <button type="button" onClick={() => { setContactMode('guest'); scrollToSection('contact-form-guest'); }} style={{ ...styles.choiceBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%' }}>
                             <span style={{ ...styles.choiceBtnTitle, textAlign: 'center' }}>{t('bookAsGuest')}</span>
                           </button>
-                        </div>
+                        </motion.div>
                       )}
 
                       {contactMode === 'guest' && (
-                        <div id="contact-form-guest">
+                        <motion.div
+                          key="guest"
+                          id="contact-form-guest"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          transition={{ duration: 0.25 }}
+                        >
                           <button type="button" onClick={() => setContactMode('choice')} style={styles.backBtn}>
                             <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -1844,11 +1859,18 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                               maxLength={20}
                             />
                           </div>
-                        </div>
+                        </motion.div>
                       )}
 
                       {contactMode === 'auth' && (
-                        <div id="contact-form-auth">
+                        <motion.div
+                          key="auth"
+                          id="contact-form-auth"
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -20 }}
+                          transition={{ duration: 0.25 }}
+                        >
                           <button type="button" onClick={() => setContactMode('choice')} style={styles.backBtn}>
                             <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -1983,9 +2005,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                               {tAuth('goToLogin')}
                             </button>
                           )}
-                        </div>
+                        </motion.div>
                       )}
-                    </>
+                    </AnimatePresence>
                   )}
                 </div>
               </div>
