@@ -85,14 +85,14 @@ export function Hero() {
       {/* Video/Image Background */}
       {background.type === 'video' && youtubeEmbedUrl ? (
         <div
-          className="absolute inset-0 pointer-events-none scale-150"
+          className="absolute inset-0 pointer-events-none"
           style={{ filter: filterStyle || undefined }}
         >
           <iframe
             src={youtubeEmbedUrl}
             allow="autoplay; encrypted-media"
             allowFullScreen
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300vw] h-[300vh] md:w-[200vw] md:h-[200vh]"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400vw] h-[400vh] md:w-[200vw] md:h-[200vh]"
             style={{ border: 'none' }}
           />
         </div>
@@ -106,12 +106,12 @@ export function Hero() {
           }}
         />
       ) : (
-        <div className="absolute inset-0 pointer-events-none scale-150">
+        <div className="absolute inset-0 pointer-events-none">
           <iframe
             src="https://www.youtube.com/embed/3vCGQvscX34?start=24&end=54&autoplay=1&mute=1&loop=1&playlist=3vCGQvscX34&controls=0&showinfo=0&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&playsinline=1"
             allow="autoplay; encrypted-media"
             allowFullScreen
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300vw] h-[300vh] md:w-[200vw] md:h-[200vh]"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400vw] h-[400vh] md:w-[200vw] md:h-[200vh]"
             style={{ border: 'none' }}
           />
         </div>
