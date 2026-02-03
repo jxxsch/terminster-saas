@@ -11,11 +11,24 @@ export function StickyBookingButton() {
 
   useEffect(() => {
     const handleScroll = () => {
-      // Show button after scrolling past 80% of viewport height
-      setIsVisible(window.scrollY > window.innerHeight * 0.8);
+      const scrolledPastHero = window.scrollY > window.innerHeight * 0.8;
+
+      // Hide button when footer/contact section is visible
+      const contactSection = document.getElementById('contact');
+      let isNearFooter = false;
+
+      if (contactSection) {
+        const contactRect = contactSection.getBoundingClientRect();
+        // Hide when contact section footer area is visible (bottom 150px of contact)
+        const footerThreshold = window.innerHeight - 80; // Button height + some margin
+        isNearFooter = contactRect.bottom - 150 < footerThreshold;
+      }
+
+      setIsVisible(scrolledPastHero && !isNearFooter);
     };
 
     window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Initial check
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
