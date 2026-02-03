@@ -2027,6 +2027,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                     style={{
                       ...styles.submitBtn,
                       ...(!canSubmit || isSubmitting ? styles.submitBtnDisabled : {}),
+                      ...(isMobile ? { fontSize: '1rem', padding: '1rem 1.5rem' } : {}),
                     }}
                   >
                     {isSubmitting ? (
