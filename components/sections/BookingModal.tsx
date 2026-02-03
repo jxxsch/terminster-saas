@@ -2013,9 +2013,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                   <div style={{ ...styles.footerSummary, ...(isMobile ? { fontSize: '14px' } : {}) }}>
                     {selectedBarberData && selectedDayData && selectedSlot ? (
                       <span>
-                        {t('at')} <span style={styles.gold}>{selectedBarberData.name}</span> {t('on')}{' '}
-                        <span style={styles.gold}>{selectedDayData.dayNameLong},<br />{selectedDayData.dayNumFullDate}</span> {t('atTime')}{' '}
-                        <span style={styles.gold}>{selectedSlot} {tCommon('oclock')}</span>
+                        {t('at')} <span style={{ color: '#000', fontWeight: 500 }}>{selectedBarberData.name}</span> {t('on')}{' '}
+                        <span style={{ color: '#000', fontWeight: 500 }}>{selectedDayData.dayNameLong},<br /><u>{selectedDayData.dayNumFullDate}</u></span> {t('atTime')}{' '}
+                        <span style={{ color: '#000', fontWeight: 500 }}><u>{selectedSlot} {tCommon('oclock')}</u></span>
                       </span>
                     ) : (
                       <span>{t('fillAllFields')}</span>
