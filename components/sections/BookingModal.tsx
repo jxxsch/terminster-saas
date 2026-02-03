@@ -799,12 +799,12 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated && customer) {
+    if (isOpen && isAuthenticated && customer) {
       setCustomerName(customer.name);
       setCustomerEmail(customer.email);
       setCustomerPhone(customer.phone || '');
     }
-  }, [isAuthenticated, customer]);
+  }, [isOpen, isAuthenticated, customer]);
 
   // Password Setup Mode: Vorausfüllen der Daten wenn von Einladungslink kommend
   useEffect(() => {
