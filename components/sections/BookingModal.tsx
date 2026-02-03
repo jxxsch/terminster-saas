@@ -1808,7 +1808,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                               <svg width="18" height="18" fill="none" stroke="rgb(15, 23, 42)" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                               </svg>
-                              <span style={{ ...styles.choiceBtnTitle, fontSize: '1rem' }}>{tAuth('login')}</span>
+                              <span style={{ ...styles.choiceBtnTitle, fontSize: '1rem', color: 'rgb(15, 23, 42)' }}>{tAuth('login')}</span>
                             </div>
                             <p style={{ ...styles.choiceBtnDesc, textAlign: 'center' }}>{t('manageAppointments')}</p>
                           </button>
