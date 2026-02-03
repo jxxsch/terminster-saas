@@ -81,7 +81,7 @@ export function Hero() {
   }, [background.filters]);
 
   return (
-    <section id="hero" className="relative h-screen w-full overflow-hidden">
+    <section id="hero" className="relative w-full overflow-hidden" style={{ height: '100dvh', minHeight: '100dvh' }}>
       {/* Video/Image Background */}
       {background.type === 'video' && youtubeEmbedUrl ? (
         <div
