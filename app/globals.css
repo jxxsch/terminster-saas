@@ -331,7 +331,7 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   transform: translateY(0) scale(0.98);
 }
 
-/* Sticky Button - Basis-Styles mit smooth Transition */
+/* Sticky Button - Basis-Styles (no animation, controlled by JS) */
 .sticky-btn-base {
   padding: 14px 32px;
   text-transform: uppercase;
@@ -342,17 +342,15 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   cursor: pointer;
   user-select: none;
   border: none;
-  animation: float 3s ease-in-out infinite;
   box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
-  transition: box-shadow 0.3s ease;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
   white-space: nowrap;
 }
 
 .sticky-btn-base:hover {
-  animation-play-state: paused;
   box-shadow: 0 15px 35px rgba(212, 175, 55, 0.5);
 }
 
 .sticky-btn-base:active {
-  transform: translateY(0) scale(0.98);
+  transform: translateX(-50%) scale(0.98) !important;
 }
