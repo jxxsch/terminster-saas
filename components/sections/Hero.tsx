@@ -180,13 +180,27 @@ export function Hero() {
               {content.subtext}
             </p>
 
-            {/* CTA Button */}
+            {/* CTA Button - Morph Style */}
             <div className="pt-8">
               <button
                 onClick={() => openBooking()}
                 className="hero-cta-btn"
               >
-                {content.ctaText}
+                <span className="shadow" />
+                <span className="btn-fill" />
+                <span className="orbit-dots">
+                  <span /><span /><span /><span />
+                </span>
+                <span className="corners">
+                  <span /><span /><span /><span />
+                </span>
+                <span className="btn-text">
+                  {content.ctaText.split('').map((char, i) => (
+                    <span key={i} style={{ '--i': i } as React.CSSProperties}>
+                      {char === ' ' ? '\u00A0' : char}
+                    </span>
+                  ))}
+                </span>
               </button>
             </div>
           </div>
