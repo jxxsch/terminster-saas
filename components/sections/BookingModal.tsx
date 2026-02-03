@@ -1611,7 +1611,10 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                   </div>
 
                   {selectedBarber ? (
-                    <div style={styles.weekDaysContainer}>
+                    <div style={{
+                      ...styles.weekDaysContainer,
+                      gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(auto-fit, minmax(80px, 1fr))',
+                    }}>
                       {days.map((day) => {
                         const barberData = team.find(b => b.id === selectedBarber);
                         const dayOfWeek = new Date(day.dateStr).getDay();
