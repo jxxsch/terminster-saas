@@ -1,65 +1,86 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useBooking } from '@/context/BookingContext';
 import { useTranslations } from 'next-intl';
 
 export function StickyBookingButton() {
   const { openBooking } = useBooking();
   const [isVisible, setIsVisible] = useState(false);
-  const [bottomOffset, setBottomOffset] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const [bottomPx, setBottomPx] = useState(0);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const t = useTranslations('nav');
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
       const scrolledPastHero = window.scrollY > window.innerHeight * 0.8;
       setIsVisible(scrolledPastHero);
 
-      // Calculate bottom offset to avoid covering footer
-      const contactSection = document.getElementById('contact');
-      if (contactSection) {
-        const contactRect = contactSection.getBoundingClientRect();
-        // Footer links area is approximately the last 120px of contact section
-        const footerLinksTop = contactRect.bottom - 120;
-        const viewportBottom = window.innerHeight;
+      // Only apply footer logic on mobile
+      if (!isMobile) {
+        setBottomPx(24); // md:bottom-6 = 24px
+        return;
+      }
 
-        // If footer links would be covered by button, push button up
-        if (footerLinksTop < viewportBottom) {
-          const overlap = viewportBottom - footerLinksTop;
-          setBottomOffset(overlap);
+      // Calculate bottom offset to avoid covering footer on mobile
+      const contactSection = document.getElementById('contact');
+      if (contactSection && buttonRef.current) {
+        const contactRect = contactSection.getBoundingClientRect();
+        const buttonHeight = buttonRef.current.offsetHeight || 56;
+
+        // Footer links (Impressum, Datenschutz) are in the last ~100px
+        const footerLinksStart = contactRect.bottom - 100;
+
+        // Button should stop when its bottom edge reaches footer links
+        const maxBottom = window.innerHeight - footerLinksStart;
+
+        if (maxBottom > 0) {
+          // Footer is visible, push button up
+          setBottomPx(maxBottom);
         } else {
-          setBottomOffset(0);
+          // Footer not visible, button at bottom
+          setBottomPx(0);
         }
+      } else {
+        setBottomPx(0);
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    handleScroll(); // Initial check
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [isMobile]);
 
   if (!isVisible) return null;
 
   return (
     <button
+      ref={buttonRef}
       onClick={() => openBooking()}
-      style={{ bottom: bottomOffset > 0 ? `${bottomOffset}px` : undefined }}
+      style={{ bottom: `${bottomPx}px` }}
       className={`
-        fixed z-30 transition-all duration-150
+        fixed z-30 transition-[bottom] duration-100 ease-out
         bg-gold text-black font-medium tracking-wider uppercase text-sm
         shadow-[0_-4px_20px_rgba(0,0,0,0.15)]
         hover:bg-gold/90
 
-        /* Mobile: Full width at bottom */
+        /* Mobile: Full width */
         left-0 right-0 py-4
-        ${bottomOffset === 0 ? 'bottom-0' : ''}
 
         /* Desktop: Centered pill button */
-        md:bottom-6 md:left-1/2 md:-translate-x-1/2
+        md:left-1/2 md:-translate-x-1/2
         md:w-auto md:px-10 md:py-3.5 md:rounded-full
         md:shadow-lg
 
-        ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}
+        ${isVisible ? 'opacity-100' : 'opacity-0'}
       `}
     >
       <span className="flex items-center justify-center gap-2">
