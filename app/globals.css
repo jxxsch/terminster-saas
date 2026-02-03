@@ -293,12 +293,12 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 /* Hero CTA Button - Floating/Levitate */
 .hero-cta-btn {
-  padding: 16px 40px;
+  padding: 14px 32px;
   text-transform: uppercase;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
   color: #000;
   background: var(--color-gold);
   cursor: pointer;
@@ -307,6 +307,8 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   animation: float 3s ease-in-out infinite;
   box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
   transition: box-shadow 0.3s ease;
+  white-space: nowrap;
+  display: inline-block;
 }
 
 @keyframes float {
@@ -331,18 +333,19 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 /* Sticky Button - Basis-Styles mit smooth Transition */
 .sticky-btn-base {
-  padding: 16px 40px;
+  padding: 14px 32px;
   text-transform: uppercase;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
   cursor: pointer;
   user-select: none;
   border: none;
   animation: float 3s ease-in-out infinite;
   box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
   transition: box-shadow 0.3s ease;
+  white-space: nowrap;
 }
 
 .sticky-btn-base:hover {
