@@ -1803,7 +1803,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                     <>
                       {contactMode === 'choice' && (
                         <div style={styles.choiceGrid}>
-                          <button type="button" onClick={() => { setContactMode('auth'); scrollToSection('contact-form-auth'); }} style={{ ...styles.choiceBtn, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%' }}>
+                          <button type="button" onClick={() => { setContactMode('auth'); scrollToSection('contact-form-auth'); }} style={{ ...styles.choiceBtn, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%', border: '1px solid rgb(15, 23, 42)' }}>
                             <div style={{ ...styles.choiceBtnHeader, justifyContent: 'center' }}>
                               <svg width="18" height="18" fill="none" stroke="#94a3b8" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
