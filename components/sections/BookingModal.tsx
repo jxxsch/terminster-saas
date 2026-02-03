@@ -1805,10 +1805,15 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                       {contactMode === 'choice' && (
                         <motion.div
                           key="choice"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          transition={{ duration: 0.2 }}
+                          initial={{ opacity: 0, scale: 0.96, y: 8 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.98, y: -4 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                            opacity: { duration: 0.2 }
+                          }}
                           style={styles.choiceGrid}
                         >
                           <button type="button" onClick={() => { setContactMode('auth'); scrollToSection('booking-section-contact', 300); }} style={{ ...styles.choiceBtn, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%', border: '1px solid rgb(15, 23, 42)' }}>
@@ -1830,10 +1835,15 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                         <motion.div
                           key="guest"
                           id="contact-form-guest"
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -20 }}
-                          transition={{ duration: 0.25 }}
+                          initial={{ opacity: 0, scale: 0.96, x: 12 }}
+                          animate={{ opacity: 1, scale: 1, x: 0 }}
+                          exit={{ opacity: 0, scale: 0.98, x: -8 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                            opacity: { duration: 0.25 }
+                          }}
                         >
                           <button type="button" onClick={() => setContactMode('choice')} style={styles.backBtn}>
                             <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1866,10 +1876,15 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                         <motion.div
                           key="auth"
                           id="contact-form-auth"
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -20 }}
-                          transition={{ duration: 0.25 }}
+                          initial={{ opacity: 0, scale: 0.96, x: 12 }}
+                          animate={{ opacity: 1, scale: 1, x: 0 }}
+                          exit={{ opacity: 0, scale: 0.98, x: -8 }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                            opacity: { duration: 0.25 }
+                          }}
                         >
                           <button type="button" onClick={() => setContactMode('choice')} style={styles.backBtn}>
                             <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
