@@ -23,7 +23,7 @@ export function ScrollToTop() {
   return (
     <button
       onClick={scrollToTop}
-      className="fixed bottom-6 right-6 z-40 w-12 h-12 bg-transparent border-2 border-gold rounded-full flex items-center justify-center transition-opacity duration-300"
+      className="fixed bottom-6 right-6 z-40 w-12 h-12 bg-transparent border-2 border-gold rounded-full hidden md:flex items-center justify-center transition-opacity duration-300"
       aria-label="Nach oben scrollen"
     >
       <svg className="w-5 h-5 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
