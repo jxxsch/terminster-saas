@@ -1843,7 +1843,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                             </div>
                             <p style={{ ...styles.choiceBtnDesc, textAlign: 'center' }}>{t('manageAppointments')}</p>
                           </button>
-                          <button type="button" onClick={() => { setContactMode('guest'); scrollToBottom(300); }} style={{ ...styles.choiceBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%' }}>
+                          <button type="button" onClick={() => setContactMode('guest')} style={{ ...styles.choiceBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%' }}>
                             <span style={{ ...styles.choiceBtnTitle, textAlign: 'center' }}>{t('bookAsGuest')}</span>
                           </button>
                         </motion.div>
