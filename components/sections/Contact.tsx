@@ -12,10 +12,18 @@ export function Contact() {
   const { settings: contactSettings } = useContactSettings();
   const [isVisible, setIsVisible] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const { openBooking } = useBooking();
   const t = useTranslations('footer');
   const currentYear = new Date().getFullYear();
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -279,7 +287,7 @@ export function Contact() {
 
       {/* Kontaktformular Modal */}
       {isFormOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className={`fixed inset-0 z-50 flex items-center justify-center ${isMobile ? 'p-0' : 'p-4'}`}>
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -287,9 +295,13 @@ export function Contact() {
           />
 
           {/* Modal */}
-          <div className="relative bg-white w-[90vw] sm:w-[480px] max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+          <div className={`relative bg-white overflow-y-auto shadow-2xl ${
+            isMobile
+              ? 'w-full h-[100dvh] rounded-none'
+              : 'w-[90vw] sm:w-[480px] max-h-[90vh] rounded-2xl'
+          }`}>
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-5 flex items-center justify-between z-10 rounded-t-2xl">
+            <div className={`sticky top-0 bg-white border-b border-gray-100 px-6 py-5 flex items-center justify-between z-10 ${isMobile ? 'rounded-none' : 'rounded-t-2xl'}`}>
               <div>
                 <span className="text-[10px] font-semibold text-gold tracking-[0.2em] uppercase">{t('form.badge')}</span>
                 <h2 className="text-lg font-medium text-gray-900 mt-1">{t('form.title')}</h2>
@@ -309,7 +321,7 @@ export function Contact() {
                   <input
                     type="text"
                     required
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:border-gold focus:bg-white focus:outline-none transition-all"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base focus:border-gold focus:bg-white focus:outline-none transition-all"
                     placeholder={t('form.namePlaceholder')}
                   />
                 </div>
@@ -318,7 +330,7 @@ export function Contact() {
                   <input
                     type="email"
                     required
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:border-gold focus:bg-white focus:outline-none transition-all"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base focus:border-gold focus:bg-white focus:outline-none transition-all"
                     placeholder={t('form.emailPlaceholder')}
                   />
                 </div>
@@ -326,7 +338,7 @@ export function Contact() {
                   <label className="block text-xs font-medium text-gray-500 mb-2">{t('form.phoneLabel')}</label>
                   <input
                     type="tel"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:border-gold focus:bg-white focus:outline-none transition-all"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base focus:border-gold focus:bg-white focus:outline-none transition-all"
                     placeholder={t('form.phonePlaceholder')}
                   />
                 </div>
@@ -335,7 +347,7 @@ export function Contact() {
                   <textarea
                     required
                     rows={4}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:border-gold focus:bg-white focus:outline-none transition-all resize-none"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base focus:border-gold focus:bg-white focus:outline-none transition-all resize-none"
                     placeholder={t('form.messagePlaceholder')}
                   />
                 </div>

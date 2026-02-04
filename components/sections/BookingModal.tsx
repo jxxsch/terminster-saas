@@ -932,6 +932,20 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     }
   }, [isOpen]);
 
+  // Scroll zum Login-Formular wenn contactMode wechselt
+  useEffect(() => {
+    if (contactMode === 'auth' || contactMode === 'guest') {
+      const timer = setTimeout(() => {
+        const container = contentRef.current;
+        if (container) {
+          const maxScroll = container.scrollHeight - container.clientHeight;
+          container.scrollTo({ top: maxScroll, behavior: 'smooth' });
+        }
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [contactMode]);
+
   const refreshAppointments = useCallback(async () => {
     const today = new Date();
     const startDate = formatDateLocal(today);
@@ -1271,6 +1285,18 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
       const element = document.getElementById(sectionId);
       if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, delay);
+  };
+
+  const scrollToBottom = (delay: number = 50) => {
+    setTimeout(() => {
+      const container = contentRef.current;
+      if (container) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth'
+        });
       }
     }, delay);
   };
@@ -1816,7 +1842,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                           }}
                           style={styles.choiceGrid}
                         >
-                          <button type="button" onClick={() => { setContactMode('auth'); scrollToSection('contact-form-auth', 150); }} style={{ ...styles.choiceBtn, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%', border: '1px solid rgb(15, 23, 42)' }}>
+                          <button type="button" onClick={() => setContactMode('auth')} style={{ ...styles.choiceBtn, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%', border: '1px solid rgb(15, 23, 42)' }}>
                             <div style={{ ...styles.choiceBtnHeader, justifyContent: 'center' }}>
                               <svg width="18" height="18" fill="none" stroke="rgb(15, 23, 42)" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -1825,7 +1851,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                             </div>
                             <p style={{ ...styles.choiceBtnDesc, textAlign: 'center' }}>{t('manageAppointments')}</p>
                           </button>
-                          <button type="button" onClick={() => { setContactMode('guest'); scrollToSection('contact-form-guest', 150); }} style={{ ...styles.choiceBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%' }}>
+                          <button type="button" onClick={() => { setContactMode('guest'); scrollToBottom(300); }} style={{ ...styles.choiceBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%' }}>
                             <span style={{ ...styles.choiceBtnTitle, textAlign: 'center' }}>{t('bookAsGuest')}</span>
                           </button>
                         </motion.div>
@@ -1914,7 +1940,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                           {authSuccess && <div style={styles.successMsg}><span>{authSuccess}</span></div>}
 
                           {authTab === 'login' && !authSuccess && (
-                            <form onSubmit={handleLogin}>
+                            <form id="auth-form-login" onSubmit={handleLogin}>
                               <input type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder={tAuth('email')} autoComplete="email" style={{ ...styles.input, width: '100%', marginBottom: '0.5rem' }} required />
                               <input type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder={tAuth('password')} autoComplete="current-password" style={{ ...styles.input, width: '100%', marginBottom: '0.5rem' }} required />
                               <button type="submit" disabled={authSubmitting} style={{ ...styles.submitBtn, width: '100%', justifyContent: 'center', opacity: authSubmitting ? 0.5 : 1 }}>
@@ -1923,6 +1949,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                               <button type="button" onClick={() => { setAuthTab('forgot'); resetAuthForm(); }} style={{ ...styles.backBtn, width: '100%', justifyContent: 'center', marginTop: '0.5rem', marginBottom: 0 }}>
                                 {tAuth('forgotPassword')}
                               </button>
+                              <div id="login-form-end" style={{ height: '1px' }} />
                             </form>
                           )}
 
