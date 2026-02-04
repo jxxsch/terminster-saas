@@ -932,14 +932,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     }
   }, [isOpen]);
 
-  // Scroll zum Formular wenn contactMode wechselt
-  useEffect(() => {
-    if (contactMode === 'auth') {
-      scrollToSection('auth-form-login', 500);
-    } else if (contactMode === 'guest') {
-      scrollToSection('contact-form-guest', 500);
-    }
-  }, [contactMode]);
+  // Scroll wird jetzt via onAnimationComplete auf den motion.div Elementen gesteuert
 
   const refreshAppointments = useCallback(async () => {
     const today = new Date();
@@ -1857,6 +1850,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                             damping: 30,
                             opacity: { duration: 0.25 }
                           }}
+                          onAnimationComplete={() => scrollToSection('contact-form-guest')}
                         >
                           <button type="button" onClick={() => setContactMode('choice')} style={styles.backBtn}>
                             <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1898,6 +1892,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                             damping: 30,
                             opacity: { duration: 0.25 }
                           }}
+                          onAnimationComplete={() => scrollToSection(authTab === 'login' ? 'auth-form-login' : 'auth-form-register')}
                         >
                           <button type="button" onClick={() => setContactMode('choice')} style={styles.backBtn}>
                             <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1909,14 +1904,14 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                           <div style={styles.authTabs}>
                             <button
                               type="button"
-                              onClick={() => { setAuthTab('login'); resetAuthForm(); scrollToSection('auth-form-login', 100); }}
+                              onClick={() => { setAuthTab('login'); resetAuthForm(); scrollToSection('auth-form-login', 200); }}
                               style={{ ...styles.authTab, ...(authTab === 'login' ? styles.authTabActive : {}) }}
                             >
                               {tAuth('login')}
                             </button>
                             <button
                               type="button"
-                              onClick={() => { setAuthTab('register'); resetAuthForm(); scrollToSection('auth-form-register'); }}
+                              onClick={() => { setAuthTab('register'); resetAuthForm(); scrollToSection('auth-form-register', 200); }}
                               style={{ ...styles.authTab, ...(authTab === 'register' ? styles.authTabActive : {}) }}
                             >
                               {tAuth('register')}
