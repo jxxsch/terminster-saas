@@ -1283,20 +1283,12 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
   const scrollToSection = (sectionId: string, delay: number = 50) => {
     setTimeout(() => {
       const element = document.getElementById(sectionId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, delay);
-  };
-
-  const scrollToBottom = (delay: number = 50) => {
-    setTimeout(() => {
       const container = contentRef.current;
-      if (container) {
-        container.scrollTo({
-          top: container.scrollHeight,
-          behavior: 'smooth'
-        });
+      if (element && container) {
+        const containerRect = container.getBoundingClientRect();
+        const elementRect = element.getBoundingClientRect();
+        const scrollTop = container.scrollTop + (elementRect.top - containerRect.top) - 10;
+        container.scrollTo({ top: Math.max(0, scrollTop), behavior: 'smooth' });
       }
     }, delay);
   };
@@ -1316,13 +1308,13 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
 
   const handleBarberSelect = (barberId: string) => {
     setSelectedBarber(barberId);
-    scrollToSection('booking-section-time');
+    scrollToSection('booking-section-time', 100);
   };
 
   const handleSlotSelect = (dateStr: string, slot: string) => {
     setSelectedDay(dateStr);
     setSelectedSlot(slot);
-    scrollToSection('booking-section-contact');
+    scrollToSection('booking-section-contact', 100);
   };
 
   if (!mounted) return null;
