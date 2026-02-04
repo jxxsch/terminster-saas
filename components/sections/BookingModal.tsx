@@ -932,17 +932,12 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     }
   }, [isOpen]);
 
-  // Scroll zum Login-Formular wenn contactMode wechselt
+  // Scroll zum Formular wenn contactMode wechselt
   useEffect(() => {
-    if (contactMode === 'auth' || contactMode === 'guest') {
-      const timer = setTimeout(() => {
-        const container = contentRef.current;
-        if (container) {
-          const maxScroll = container.scrollHeight - container.clientHeight;
-          container.scrollTo({ top: maxScroll, behavior: 'smooth' });
-        }
-      }, 500);
-      return () => clearTimeout(timer);
+    if (contactMode === 'auth') {
+      scrollToSection('auth-form-login', 500);
+    } else if (contactMode === 'guest') {
+      scrollToSection('contact-form-guest', 500);
     }
   }, [contactMode]);
 
@@ -1914,7 +1909,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                           <div style={styles.authTabs}>
                             <button
                               type="button"
-                              onClick={() => { setAuthTab('login'); resetAuthForm(); }}
+                              onClick={() => { setAuthTab('login'); resetAuthForm(); scrollToSection('auth-form-login', 100); }}
                               style={{ ...styles.authTab, ...(authTab === 'login' ? styles.authTabActive : {}) }}
                             >
                               {tAuth('login')}
