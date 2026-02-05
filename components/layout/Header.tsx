@@ -111,13 +111,6 @@ export function Header() {
       : 'text-gray-300 hover:text-gold'
   );
 
-  const ctaButtonClass = cn(
-    'h-9 px-4 text-xs font-medium tracking-[0.1em] uppercase rounded-sm transition-all duration-300 flex items-center justify-center border',
-    isLightMode
-      ? 'bg-black/10 text-gray-800 border-black/30 hover:bg-gold hover:text-black hover:border-gold'
-      : 'bg-white/10 text-white border-white/30 hover:bg-gold hover:text-black hover:border-gold'
-  );
-
   const userIconClass = cn(
     'h-9 w-9 rounded-sm border transition-all duration-300 flex items-center justify-center',
     isLightMode
@@ -178,21 +171,10 @@ export function Header() {
               </div>
             </div>
 
-            {/* Right: Language + CTA + Separator + Auth */}
+            {/* Right: Language + Auth */}
             <div className="hidden lg:flex items-center gap-3">
               {/* Language Switcher */}
               <LanguageSwitcher variant="vertical" isDark={!isLightMode} />
-
-              {/* CTA Button */}
-              <button
-                onClick={() => openBooking()}
-                className={ctaButtonClass}
-              >
-                {t('bookNow')}
-              </button>
-
-              {/* Separator */}
-              <div className={separatorClass} />
 
               {/* User Icon */}
               <button
