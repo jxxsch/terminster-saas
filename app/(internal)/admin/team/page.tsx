@@ -227,17 +227,19 @@ export default function TeamPage() {
   }
 
   // Update image position via DOM directly
+  // Verwende translate statt object-position für zuverlässiges Verschieben in alle Richtungen
   const updateImageDOM = useCallback((format: ImageFormat, x: number, y: number, scale: number) => {
-    const pos = `${x}% ${y}%`;
+    const translateX = (50 - x) * 0.5;
+    const translateY = (50 - y) * 0.5;
+    const transform = `scale(${scale}) translate(${translateX}%, ${translateY}%)`;
+
     if (format === 'square') {
       if (squareImageRef.current) {
-        squareImageRef.current.style.objectPosition = pos;
-        squareImageRef.current.style.transform = `scale(${scale})`;
+        squareImageRef.current.style.transform = transform;
       }
     } else {
       if (portraitImageRef.current) {
-        portraitImageRef.current.style.objectPosition = pos;
-        portraitImageRef.current.style.transform = `scale(${scale})`;
+        portraitImageRef.current.style.transform = transform;
       }
     }
   }, []);
@@ -499,7 +501,14 @@ export default function TeamPage() {
                 src={formData.image}
                 alt={formData.name || 'Preview'}
                 className="absolute w-full h-full object-cover pointer-events-none select-none"
-                style={{ objectPosition: position, transform: `scale(${scale})` }}
+                style={{
+                  transform: (() => {
+                    const pos = parsePosition(position);
+                    const translateX = (50 - pos.x) * 0.5;
+                    const translateY = (50 - pos.y) * 0.5;
+                    return `scale(${scale}) translate(${translateX}%, ${translateY}%)`;
+                  })()
+                }}
                 draggable={false}
               />
               <div
@@ -741,7 +750,7 @@ export default function TeamPage() {
                         {/* Bild */}
                         <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
                           {member.image ? (
-                            <img src={member.image} alt={member.name} className="w-full h-full object-cover" style={{ objectPosition: member.image_position || 'center', transform: `scale(${member.image_scale || 1})` }} />
+                            <img src={member.image} alt={member.name} className="w-full h-full object-cover" style={{ transform: (() => { const pos = parsePosition(member.image_position || '50% 50%'); const s = member.image_scale || 1; return `scale(${s}) translate(${(50 - pos.x) * 0.5}%, ${(50 - pos.y) * 0.5}%)`; })() }} />
                           ) : (
                             <div className="w-full h-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center text-white font-bold text-lg">{member.name.charAt(0)}</div>
                           )}
@@ -814,7 +823,7 @@ export default function TeamPage() {
                         {/* Bild */}
                         <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
                           {member.image ? (
-                            <img src={member.image} alt={member.name} className="w-full h-full object-cover" style={{ objectPosition: member.image_position || 'center', transform: `scale(${member.image_scale || 1})` }} />
+                            <img src={member.image} alt={member.name} className="w-full h-full object-cover" style={{ transform: (() => { const pos = parsePosition(member.image_position || '50% 50%'); const s = member.image_scale || 1; return `scale(${s}) translate(${(50 - pos.x) * 0.5}%, ${(50 - pos.y) * 0.5}%)`; })() }} />
                           ) : (
                             <div className="w-full h-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center text-white font-bold text-sm">{member.name.charAt(0)}</div>
                           )}

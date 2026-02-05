@@ -5,6 +5,7 @@ import {
   Appointment,
   Series,
   Service,
+  Customer,
   deleteAppointment,
   cancelAppointmentAdmin,
   updateAppointment,
@@ -12,7 +13,6 @@ import {
   updateSeries,
   getCustomerById,
   updateCustomer,
-  Customer
 } from '@/lib/supabase';
 
 interface AppointmentSlotProps {
@@ -288,14 +288,12 @@ export function AppointmentSlot({
 
     const handleDeleteSeries = async (e: React.MouseEvent) => {
       e.stopPropagation();
-      if (confirm('Gesamte Serie löschen? Alle zukünftigen Termine dieser Serie werden entfernt.')) {
-        const { deleteSeries } = await import('@/lib/supabase');
-        const success = await deleteSeries(series.id);
-        if (success && onSeriesDelete) {
-          onSeriesDelete(series.id);
-        }
-        setShowDetails(false);
+      const { deleteSeries } = await import('@/lib/supabase');
+      const success = await deleteSeries(series.id);
+      if (success && onSeriesDelete) {
+        onSeriesDelete(series.id);
       }
+      setShowDetails(false);
     };
 
     const handleSaveSeriesContact = async (e: React.MouseEvent) => {
@@ -750,15 +748,13 @@ export function AppointmentSlot({
                 {/* Gesamte Serie löschen */}
                 <button
                   onClick={async () => {
-                    if (confirm('Gesamte Serie löschen? Alle zukünftigen Termine dieser Serie werden entfernt.')) {
-                      const { deleteSeries } = await import('@/lib/supabase');
-                      const success = await deleteSeries(series.id);
-                      if (success && onSeriesDelete) {
-                        onSeriesDelete(series.id);
-                      }
-                      setShowSeriesCancelModal(false);
-                      setShowDetails(false);
+                    const { deleteSeries } = await import('@/lib/supabase');
+                    const success = await deleteSeries(series.id);
+                    if (success && onSeriesDelete) {
+                      onSeriesDelete(series.id);
                     }
+                    setShowSeriesCancelModal(false);
+                    setShowDetails(false);
                   }}
                   className="w-full py-3 px-4 text-sm text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
@@ -788,16 +784,52 @@ export function AppointmentSlot({
   const isPause = appointment?.customer_name?.includes('Pause');
   const isCancelled = appointment?.status === 'cancelled';
 
-  // Handler für Pause-Löschen
+  // Handler für Pause-Löschen (einzeln)
   const handleDeletePause = async () => {
     if (!appointment) return;
     setIsDeletingPause(true);
-    const success = await deleteAppointment(appointment.id);
-    if (success) {
-      onDelete(appointment.id, appointment);
+
+    if (appointment.series_id) {
+      // Teil einer Serie: Status auf 'cancelled' setzen statt zu löschen
+      // Das verhindert, dass die Serie den Termin wieder anzeigt
+      const success = await cancelAppointmentAdmin(appointment.id);
+      if (success) {
+        // Update den lokalen State mit dem stornierten Termin
+        const cancelledAppointment: Appointment = {
+          ...appointment,
+          status: 'cancelled',
+        };
+        if (onUpdate) {
+          onUpdate(cancelledAppointment);
+        }
+      }
+    } else {
+      // Keine Serie: Komplett löschen
+      const success = await deleteAppointment(appointment.id);
+      if (success) {
+        onDelete(appointment.id, appointment);
+      }
     }
+
+    setShowPauseDeleteModal(false);
+    setShowDetails(false);
+    setIsDeletingPause(false);
+  };
+
+  // Handler für Pause-Serie löschen
+  const handleDeletePauseSeries = async () => {
+    if (!appointment?.series_id) return;
+    setIsDeletingPause(true);
+    const { deleteSeries } = await import('@/lib/supabase');
+    const success = await deleteSeries(appointment.series_id);
+    if (success && onSeriesDelete) {
+      onSeriesDelete(appointment.series_id);
+    }
+    // Auch den einzelnen Termin-Eintrag aus der UI entfernen
+    onDelete(appointment.id, appointment);
     setIsDeletingPause(false);
     setShowPauseDeleteModal(false);
+    setShowDetails(false);
   };
 
   // Pause slot - special styling (same layout as regular appointments)
@@ -834,7 +866,7 @@ export function AppointmentSlot({
               onClick={() => setShowPauseDeleteModal(false)}
             />
             {/* Modal */}
-            <div className="relative bg-white rounded-lg shadow-xl p-6 mx-4 text-center">
+            <div className="relative bg-white rounded-2xl shadow-xl p-6 mx-4 text-center" style={{ minWidth: '320px', maxWidth: '400px' }}>
               {/* Icon */}
               <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -842,23 +874,18 @@ export function AppointmentSlot({
                 </svg>
               </div>
 
-              <h3 className="text-lg font-medium text-gray-900 mb-1">Pause löschen?</h3>
-              <p className="text-sm text-gray-500">
-                <span>{appointment?.time_slot} Uhr</span>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">Pause löschen</h3>
+              <p className="text-sm text-gray-500 mb-5 whitespace-nowrap">
+                {date} · {appointment?.time_slot} Uhr
               </p>
 
               {/* Buttons */}
-              <div className="flex gap-3 mt-5 justify-center">
-                <button
-                  onClick={() => setShowPauseDeleteModal(false)}
-                  className="py-2 px-5 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  Abbrechen
-                </button>
+              <div className="flex flex-col gap-3">
+                {/* Nur diese Pause löschen */}
                 <button
                   onClick={handleDeletePause}
                   disabled={isDeletingPause}
-                  className="py-2 px-5 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 text-sm text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
                 >
                   {isDeletingPause ? (
                     <>
@@ -869,8 +896,35 @@ export function AppointmentSlot({
                       Löschen...
                     </>
                   ) : (
-                    'Ja, löschen'
+                    <>
+                      <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Pause löschen
+                    </>
                   )}
+                </button>
+
+                {/* Gesamte Pause-Serie löschen - nur anzeigen wenn series_id existiert */}
+                {appointment?.series_id && (
+                  <button
+                    onClick={handleDeletePauseSeries}
+                    disabled={isDeletingPause}
+                    className="w-full py-3 px-4 text-sm text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Gesamte Serie löschen
+                  </button>
+                )}
+
+                {/* Abbrechen */}
+                <button
+                  onClick={() => setShowPauseDeleteModal(false)}
+                  className="w-full py-2 px-4 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Abbrechen
                 </button>
               </div>
             </div>

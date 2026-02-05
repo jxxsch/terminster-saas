@@ -271,7 +271,8 @@ export async function getTimeSlotsArray(): Promise<string[]> {
 // ============================================
 
 export async function getAppointments(startDate: string, endDate: string): Promise<Appointment[]> {
-  const { data, error } = await supabase
+  // Abfrage 1: Alle nicht-stornierten Termine
+  const { data: activeData, error: activeError } = await supabase
     .from('appointments')
     .select('*')
     .gte('date', startDate)
@@ -280,12 +281,42 @@ export async function getAppointments(startDate: string, endDate: string): Promi
     .order('date')
     .order('time_slot');
 
-  if (error) {
-    console.error('Error fetching appointments:', error);
+  if (activeError) {
+    console.error('Error fetching appointments:', activeError);
     return [];
   }
 
-  return data || [];
+  // Abfrage 2: Stornierte Termine MIT series_id (Serien-Ausnahmen)
+  // Diese werden benötigt, damit die Serie für diesen Tag nicht angezeigt wird
+  const { data: cancelledSeriesData, error: cancelledError } = await supabase
+    .from('appointments')
+    .select('*')
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .eq('status', 'cancelled')
+    .not('series_id', 'is', null);
+
+  if (cancelledError) {
+    console.error('Error fetching cancelled series appointments:', cancelledError);
+    // Gib trotzdem die aktiven Termine zurück
+    return activeData || [];
+  }
+
+  // Kombiniere beide Ergebnisse (ohne Duplikate)
+  const allAppointments = [...(activeData || [])];
+  const existingIds = new Set(allAppointments.map(a => a.id));
+
+  for (const apt of (cancelledSeriesData || [])) {
+    if (!existingIds.has(apt.id)) {
+      allAppointments.push(apt);
+    }
+  }
+
+  // Sortiere nach Datum und Zeit
+  return allAppointments.sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    return a.time_slot.localeCompare(b.time_slot);
+  });
 }
 
 export async function createAppointment(appointment: Omit<Appointment, 'id' | 'created_at'>): Promise<{
@@ -2417,6 +2448,8 @@ export interface Product {
   price: number; // in Cent
   category: 'bart' | 'haare' | 'rasur' | 'pflege';
   image: string | null;
+  image_position: string;
+  image_scale: number;
   sort_order: number;
   active: boolean;
   created_at: string;

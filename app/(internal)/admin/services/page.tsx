@@ -199,7 +199,7 @@ export default function ServicesPage() {
       <div className="bg-white">
         <div className="p-4">
           <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-4 gap-3 mb-3">
+            <div className="grid grid-cols-3 gap-3 mb-3">
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">Name</label>
                 <input
@@ -234,32 +234,6 @@ export default function ServicesPage() {
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
                   required
                 />
-              </div>
-              <div className="flex items-end gap-4 pb-1">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <div className={`relative w-9 h-5 rounded-full transition-colors ${formData.active ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${formData.active ? 'left-4' : 'left-0.5'}`} />
-                    <input
-                      type="checkbox"
-                      checked={formData.active}
-                      onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                      className="sr-only"
-                    />
-                  </div>
-                  <span className="text-xs text-slate-600">Webseite</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <div className={`relative w-9 h-5 rounded-full transition-colors ${formData.show_in_calendar ? 'bg-blue-500' : 'bg-slate-300'}`}>
-                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${formData.show_in_calendar ? 'left-4' : 'left-0.5'}`} />
-                    <input
-                      type="checkbox"
-                      checked={formData.show_in_calendar}
-                      onChange={(e) => setFormData({ ...formData, show_in_calendar: e.target.checked })}
-                      className="sr-only"
-                    />
-                  </div>
-                  <span className="text-xs text-slate-600">Kalender</span>
-                </label>
               </div>
             </div>
           </form>

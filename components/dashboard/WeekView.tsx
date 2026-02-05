@@ -966,6 +966,34 @@ export function WeekView({
                             </DraggableSlot>
                           ) : (
                             (() => {
+                              // Wenn ein stornierter Termin existiert, der zur Serie gehört,
+                              // dann die Serie für diesen Tag NICHT anzeigen (Ausnahme)
+                              // Stattdessen einen leeren, klickbaren Slot rendern
+                              if (appointment?.status === 'cancelled' && appointment?.series_id && seriesItem) {
+                                return (
+                                  <AppointmentSlot
+                                    appointment={undefined}
+                                    series={undefined}
+                                    barberId={barber.id}
+                                    date={currentDay.dateStr}
+                                    timeSlot={slot}
+                                    servicesMap={servicesMap}
+                                    onClick={() => handleSlotClick(barber.id, currentDay.dateStr, slot)}
+                                    onDelete={handleAppointmentDeleted}
+                                    onUpdate={handleAppointmentUpdated}
+                                    onSeriesDelete={handleSeriesDeleted}
+                                    onSeriesUpdate={handleSeriesUpdated}
+                                    onAppointmentCreated={handleNewAppointmentFromSeries}
+                                    onSeriesSingleCancelled={handleSeriesSingleCancelled}
+                                    isDisabled={!!barberTimeOff}
+                                    disabledReason={barberTimeOff?.reason || undefined}
+                                    selectionMode={selectionMode}
+                                    isSelected={false}
+                                    formatName={formatName}
+                                  />
+                                );
+                              }
+
                               // Für Serientermine: seriesKey berechnen
                               const seriesKey = seriesItem ? `series_${seriesItem.id}_${currentDay.dateStr}` : null;
                               // Für Pause-Serien: DraggableSlot verwenden
