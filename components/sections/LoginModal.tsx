@@ -37,7 +37,6 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
   const [lastName, setLastName] = useState(passwordSetupData?.lastName || '');
   const [phone, setPhone] = useState(passwordSetupData?.phone || '');
   const [birthDate, setBirthDate] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -106,10 +105,6 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
       setError(t('errors.passwordTooShort'));
       return;
     }
-    if (password !== confirmPassword) {
-      setError('Die Passwörter stimmen nicht überein.');
-      return;
-    }
 
     setIsSubmitting(true);
 
@@ -175,10 +170,6 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
     }
     if (password.length < 6) {
       setError(t('errors.passwordTooShort'));
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Die Passwörter stimmen nicht überein.');
       return;
     }
 
@@ -625,26 +616,42 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
                 </div>
               </div>
 
-              {/* Zeile 2: E-Mail (volle Breite) */}
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>E-Mail</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => !isPasswordSetupMode && setEmail(e.target.value)}
-                  placeholder="deine@email.de"
-                  className="login-input"
-                  style={{
-                    ...styles.input,
-                    ...(isPasswordSetupMode ? {
-                      backgroundColor: '#f1f5f9',
-                      color: '#64748b',
-                      cursor: 'not-allowed',
-                    } : {}),
-                  }}
-                  readOnly={isPasswordSetupMode}
-                  required
-                />
+              {/* Zeile 2: E-Mail, Passwort */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={styles.label}>E-Mail</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => !isPasswordSetupMode && setEmail(e.target.value)}
+                    placeholder="deine@email.de"
+                    className="login-input"
+                    style={{
+                      ...styles.input,
+                      ...(isPasswordSetupMode ? {
+                        backgroundColor: '#f1f5f9',
+                        color: '#64748b',
+                        cursor: 'not-allowed',
+                      } : {}),
+                    }}
+                    readOnly={isPasswordSetupMode}
+                    required
+                  />
+                </div>
+                <div>
+                  <label style={styles.label}>Passwort</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Min. 6 Zeichen"
+                    className="login-input"
+                    style={styles.input}
+                    autoComplete="new-password"
+                    required
+                    minLength={6}
+                  />
+                </div>
               </div>
 
               {/* Zeile 3: Telefon, Geburtstag */}
@@ -674,42 +681,10 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
                 </div>
               </div>
 
-              {/* Zeile 4: Passwort, Passwort bestätigen */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
-                <div>
-                  <label style={styles.label}>Passwort</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Min. 6 Zeichen"
-                    className="login-input"
-                    style={styles.input}
-                    autoComplete="new-password"
-                    required
-                    minLength={6}
-                  />
-                </div>
-                <div>
-                  <label style={styles.label}>Passwort bestätigen</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder={t('confirmPassword')}
-                    className="login-input"
-                    style={styles.input}
-                    autoComplete="new-password"
-                    required
-                    minLength={6}
-                  />
-                </div>
-              </div>
-
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
                 <button
                   type="submit"
-                  disabled={isSubmitting || !firstName || !lastName || !birthDate || !phone || !email || !password || password.length < 6 || !confirmPassword}
+                  disabled={isSubmitting || !firstName || !lastName || !birthDate || !phone || !email || !password || password.length < 6}
                   className="primary-btn"
                   style={styles.primaryButton}
                 >
