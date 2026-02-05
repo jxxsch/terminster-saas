@@ -275,6 +275,64 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 }
 
 
+/* Hero Content Animations - Immediate on page load */
+@keyframes hero-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-hero-fade-in {
+  opacity: 0;
+  animation: hero-fade-in 0.8s ease-out forwards;
+}
+
+.animate-hero-fade-up {
+  opacity: 0;
+  animation: hero-fade-up 0.8s ease-out forwards;
+}
+
+.animate-hero-scale-in {
+  opacity: 0;
+  animation: hero-scale-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-fade-in,
+  .animate-hero-fade-up,
+  .animate-hero-scale-in {
+    opacity: 1;
+    animation: none;
+    transform: none;
+  }
+}
+
 /* Hero Frame Glow Animation */
 @keyframes glow-pulse {
   0%, 100% {
