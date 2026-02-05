@@ -616,7 +616,7 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
                 </div>
               </div>
 
-              {/* Zeile 2: E-Mail, Passwort */}
+              {/* Zeile 2: E-Mail, Telefon */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
                 <div>
                   <label style={styles.label}>E-Mail</label>
@@ -639,24 +639,6 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
                   />
                 </div>
                 <div>
-                  <label style={styles.label}>Passwort</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Min. 6 Zeichen"
-                    className="login-input"
-                    style={styles.input}
-                    autoComplete="new-password"
-                    required
-                    minLength={6}
-                  />
-                </div>
-              </div>
-
-              {/* Zeile 3: Telefon, Geburtstag */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
-                <div>
                   <label style={styles.label}>Telefon</label>
                   <input
                     type="tel"
@@ -668,6 +650,10 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
                     required
                   />
                 </div>
+              </div>
+
+              {/* Zeile 3: Geburtstag, Passwort */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
                 <div>
                   <label style={styles.label}>Geburtstag</label>
                   <DatePicker
@@ -677,6 +663,20 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
                     required
                     max={new Date().toISOString().split('T')[0]}
                     min="1920-01-01"
+                  />
+                </div>
+                <div>
+                  <label style={styles.label}>Passwort</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Min. 6 Zeichen"
+                    className="login-input"
+                    style={styles.input}
+                    autoComplete="new-password"
+                    required
+                    minLength={6}
                   />
                 </div>
               </div>
