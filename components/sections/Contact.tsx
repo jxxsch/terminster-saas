@@ -27,6 +27,7 @@ export function Contact() {
   });
   const [formStatus, setFormStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [formError, setFormError] = useState('');
+  const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -73,12 +74,20 @@ export function Contact() {
 
       setFormStatus('success');
       setFormData({ name: '', email: '', phone: '', message: '' });
+      setCountdown(5);
 
-      // Nach 3 Sekunden Modal schließen
-      setTimeout(() => {
-        setIsFormOpen(false);
-        setFormStatus('idle');
-      }, 3000);
+      // Countdown starten
+      const countdownInterval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(countdownInterval);
+            setIsFormOpen(false);
+            setFormStatus('idle');
+            return 5;
+          }
+          return prev - 1;
+        });
+      }, 1000);
 
     } catch (error) {
       setFormStatus('error');
@@ -351,22 +360,31 @@ export function Contact() {
               ? 'w-full h-[100dvh] rounded-none'
               : 'w-[90vw] sm:w-[480px] max-h-[90vh] rounded-2xl'
           }`}>
-            {/* Header */}
-            <div className={`sticky top-0 bg-white border-b border-gray-100 px-6 py-5 flex items-center justify-between z-10 ${isMobile ? 'rounded-none' : 'rounded-t-2xl'}`}>
-              <div>
-                <span className="text-[10px] font-semibold text-gold tracking-[0.2em] uppercase">{t('form.badge')}</span>
-                <h2 className="text-lg font-medium text-gray-900 mt-1">{t('form.title')}</h2>
+            {/* Header - nur im Formular-Modus anzeigen */}
+            {formStatus !== 'success' && (
+              <div className={`sticky top-0 bg-white border-b border-gray-100 px-6 py-5 flex items-center justify-between z-10 ${isMobile ? 'rounded-none' : 'rounded-t-2xl'}`}>
+                <div>
+                  <span className="text-[10px] font-semibold text-gold tracking-[0.2em] uppercase">{t('form.badge')}</span>
+                  <h2 className="text-lg font-medium text-gray-900 mt-1">{t('form.title')}</h2>
+                </div>
+                <button onClick={closeContactForm} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <button onClick={closeContactForm} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+            )}
 
             {/* Success State */}
             {formStatus === 'success' ? (
-              <div className="p-8 text-center">
+              <div className="p-8 text-center relative">
+                {/* Countdown Timer in der Ecke */}
+                <div className="absolute top-4 right-4 flex items-center gap-1.5 text-gray-400">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-xs font-medium tabular-nums">{countdown}s</span>
+                </div>
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-100 flex items-center justify-center">
                   <svg className="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -387,7 +405,7 @@ export function Contact() {
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       disabled={formStatus === 'loading'}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base focus:border-gold focus:bg-white focus:outline-none transition-all disabled:opacity-50"
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 focus:border-gold focus:bg-white focus:outline-none transition-all disabled:opacity-50"
                       placeholder={t('form.namePlaceholder')}
                     />
                   </div>
@@ -399,7 +417,7 @@ export function Contact() {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       disabled={formStatus === 'loading'}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base focus:border-gold focus:bg-white focus:outline-none transition-all disabled:opacity-50"
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 focus:border-gold focus:bg-white focus:outline-none transition-all disabled:opacity-50"
                       placeholder={t('form.emailPlaceholder')}
                     />
                   </div>
@@ -410,7 +428,7 @@ export function Contact() {
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       disabled={formStatus === 'loading'}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base focus:border-gold focus:bg-white focus:outline-none transition-all disabled:opacity-50"
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 focus:border-gold focus:bg-white focus:outline-none transition-all disabled:opacity-50"
                       placeholder={t('form.phonePlaceholder')}
                     />
                   </div>
@@ -422,7 +440,7 @@ export function Contact() {
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                       disabled={formStatus === 'loading'}
                     rows={4}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base focus:border-gold focus:bg-white focus:outline-none transition-all resize-none"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 focus:border-gold focus:bg-white focus:outline-none transition-all resize-none"
                     placeholder={t('form.messagePlaceholder')}
                   />
                 </div>

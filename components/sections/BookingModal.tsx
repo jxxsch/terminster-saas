@@ -1568,7 +1568,8 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                             src={barber.image || '/team/placeholder.jpg'}
                             alt={barber.name}
                             fill
-                            sizes="80px"
+                            sizes="(max-width: 768px) 40vw, 280px"
+                            quality={85}
                             style={{
                               objectFit: 'cover',
                               objectPosition: barber.image_position,
