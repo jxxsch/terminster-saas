@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { locales } from '@/i18n/config';
 import { BookingProvider } from '@/context/BookingContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { ScrollAnimationProvider } from '@/components/ScrollAnimationProvider';
 
 type Props = {
   children: React.ReactNode;
@@ -33,7 +34,9 @@ export default async function LocaleLayout({ children, params }: Props) {
     <NextIntlClientProvider locale={locale} messages={messages}>
       <AuthProvider>
         <BookingProvider>
-          {children}
+          <ScrollAnimationProvider>
+            {children}
+          </ScrollAnimationProvider>
         </BookingProvider>
       </AuthProvider>
     </NextIntlClientProvider>

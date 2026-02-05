@@ -63,29 +63,29 @@ export function Gallery() {
         {/* Fullwidth Abwechselnd */}
         <div className={`space-y-4 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
           {/* Große Zeile */}
-          <div className="aspect-[21/9] relative bg-gray-100 overflow-hidden group">
-            <Image src={IMAGES[0]} alt="Gallery 1" fill sizes="100vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
+          <div className="aspect-[21/9] relative bg-gray-100 overflow-hidden group img-zoom card-hover-subtle rounded-lg">
+            <Image src={IMAGES[0]} alt="Gallery 1" fill sizes="100vw" className="object-cover transition-transform duration-500" />
           </div>
 
-          {/* 3er Zeile */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* 3er Zeile - Staggered */}
+          <div className="grid grid-cols-3 gap-4" data-stagger="scale">
             {IMAGES.slice(1, 4).map((src, i) => (
-              <div key={`row1-${i}`} className="aspect-square relative bg-gray-100 overflow-hidden group">
-                <Image src={src} alt={`Gallery ${i + 2}`} fill sizes="33vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
+              <div key={`row1-${i}`} className="aspect-square relative bg-gray-100 overflow-hidden group img-zoom card-hover-subtle rounded-lg">
+                <Image src={src} alt={`Gallery ${i + 2}`} fill sizes="33vw" className="object-cover transition-transform duration-500" />
               </div>
             ))}
           </div>
 
           {/* Große Zeile */}
-          <div className="aspect-[21/9] relative bg-gray-100 overflow-hidden group">
-            <Image src={IMAGES[4]} alt="Gallery 5" fill sizes="100vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
+          <div className="aspect-[21/9] relative bg-gray-100 overflow-hidden group img-zoom card-hover-subtle rounded-lg" data-animate="fade-up" data-delay="100">
+            <Image src={IMAGES[4]} alt="Gallery 5" fill sizes="100vw" className="object-cover transition-transform duration-500" />
           </div>
 
-          {/* 3er Zeile */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* 3er Zeile - Staggered */}
+          <div className="grid grid-cols-3 gap-4" data-stagger="scale">
             {IMAGES.slice(5, 8).map((src, i) => (
-              <div key={`row2-${i}`} className="aspect-square relative bg-gray-100 overflow-hidden group">
-                <Image src={src} alt={`Gallery ${i + 6}`} fill sizes="33vw" className="object-cover group-hover:scale-105 transition-transform duration-500" />
+              <div key={`row2-${i}`} className="aspect-square relative bg-gray-100 overflow-hidden group img-zoom card-hover-subtle rounded-lg">
+                <Image src={src} alt={`Gallery ${i + 6}`} fill sizes="33vw" className="object-cover transition-transform duration-500" />
               </div>
             ))}
           </div>

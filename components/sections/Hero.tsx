@@ -165,7 +165,11 @@ export function Hero() {
           <div className="space-y-8 text-center">
             <div className="space-y-4">
               {/* Badge */}
-              <p className="text-xs uppercase tracking-[0.5em] font-medium text-white/60 mb-6">
+              <p
+                className="text-xs uppercase tracking-[0.5em] font-medium text-white/60 mb-6"
+                data-animate="fade"
+                data-delay="300"
+              >
                 {content.badge}
               </p>
 
@@ -173,6 +177,9 @@ export function Hero() {
               <h1
                 className="font-display text-3xl md:text-5xl lg:text-[2.75rem] xl:text-[3.25rem] text-white leading-tight"
                 style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
+                data-animate="fade-up"
+                data-delay="400"
+                data-duration="slow"
               >
                 {content.headline.split('\n').map((line, i) => (
                   <span key={i}>
@@ -184,12 +191,16 @@ export function Hero() {
             </div>
 
             {/* Subtext */}
-            <p className="text-white/60 text-sm md:text-base font-light tracking-wide whitespace-nowrap">
+            <p
+              className="text-white/60 text-sm md:text-base font-light tracking-wide whitespace-nowrap"
+              data-animate="fade-up"
+              data-delay="500"
+            >
               {content.subtext}
             </p>
 
             {/* CTA Button */}
-            <div className="pt-8">
+            <div className="pt-8" data-animate="scale-up" data-delay="700" data-easing="spring">
               <button
                 onClick={() => openBooking()}
                 className="hero-cta-btn"

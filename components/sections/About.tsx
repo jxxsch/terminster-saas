@@ -114,8 +114,11 @@ export function About() {
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
         </div>
 
-        {/* Statistiken */}
-        <div className={`grid grid-cols-2 md:grid-cols-4 gap-8 mb-20 transition-all duration-700 delay-400 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        {/* Statistiken - Staggered */}
+        <div
+          className={`grid grid-cols-2 md:grid-cols-4 gap-8 mb-20 transition-all duration-700 delay-400 ${isVisible ? 'opacity-100 translate-y-0 is-visible' : 'opacity-0 translate-y-4'}`}
+          data-stagger="fade-up"
+        >
           <div className="text-center">
             <span className="block text-4xl md:text-5xl font-extralight text-black mb-2">8+</span>
             <span className="text-xs font-light tracking-[0.2em] text-gray-500 uppercase">{t('stats.yearsExperience')}</span>
@@ -141,30 +144,40 @@ export function About() {
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
         </div>
 
-        {/* Bilder Grid */}
-        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20 transition-all duration-700 delay-600 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        {/* Bilder Grid - Staggered Slide */}
+        <div
+          className={`grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20 transition-all duration-700 delay-600 ${isVisible ? 'opacity-100 translate-y-0 is-visible' : 'opacity-0 translate-y-4'}`}
+        >
           {/* Linkes Bild */}
-          <div className="aspect-[4/3] bg-gray-100 overflow-hidden group">
+          <div
+            className="aspect-[4/3] bg-gray-100 overflow-hidden group img-zoom card-hover-subtle rounded-lg"
+            data-animate="slide-right"
+            data-delay="100"
+          >
             <div className="w-full h-full relative">
               <Image
                 src="/about-1.jpg"
                 alt="Beban Barber Shop Interior"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
+                className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
               />
             </div>
           </div>
 
           {/* Rechtes Bild */}
-          <div className="aspect-[4/3] bg-gray-100 overflow-hidden group">
+          <div
+            className="aspect-[4/3] bg-gray-100 overflow-hidden group img-zoom card-hover-subtle rounded-lg"
+            data-animate="slide-left"
+            data-delay="200"
+          >
             <div className="w-full h-full relative">
               <Image
                 src="/about-2.jpg"
                 alt="Beban Barber Shop Arbeit"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
+                className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
               />
             </div>
           </div>

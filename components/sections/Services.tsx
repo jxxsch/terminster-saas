@@ -91,8 +91,9 @@ export function Services() {
 
         {/* Services Grid - 3D Karten mit Perspektive */}
         <div
-          className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+          className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0 is-visible' : 'opacity-0 translate-y-4'}`}
           style={{ perspective: '1000px', gridAutoRows: '1fr' }}
+          data-stagger="scale"
         >
 
           {services.map((service) => (

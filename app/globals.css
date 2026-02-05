@@ -362,3 +362,359 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
     padding-bottom: 120px;
   }
 }
+
+/* ========================================
+   SCROLL ANIMATIONS SYSTEM
+   ======================================== */
+
+/* Animation Variables */
+:root {
+  --animate-duration: 0.7s;
+  --animate-delay: 0s;
+  --animate-distance: 40px;
+  --animate-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Base state for all animated elements - hidden until triggered */
+[data-animate] {
+  opacity: 0;
+  will-change: transform, opacity;
+  transition:
+    opacity var(--animate-duration) var(--animate-easing),
+    transform var(--animate-duration) var(--animate-easing);
+  transition-delay: var(--animate-delay);
+}
+
+/* Fade Up */
+[data-animate="fade-up"] {
+  transform: translateY(var(--animate-distance));
+}
+
+/* Fade Down */
+[data-animate="fade-down"] {
+  transform: translateY(calc(var(--animate-distance) * -1));
+}
+
+/* Slide Left (comes from right) */
+[data-animate="slide-left"] {
+  transform: translateX(var(--animate-distance));
+}
+
+/* Slide Right (comes from left) */
+[data-animate="slide-right"] {
+  transform: translateX(calc(var(--animate-distance) * -1));
+}
+
+/* Fade In (no movement) */
+[data-animate="fade"] {
+  transform: none;
+}
+
+/* Scale Up */
+[data-animate="scale-up"] {
+  transform: scale(0.9);
+}
+
+/* Scale Down */
+[data-animate="scale-down"] {
+  transform: scale(1.1);
+}
+
+/* Fade Up Scale */
+[data-animate="fade-up-scale"] {
+  transform: translateY(var(--animate-distance)) scale(0.95);
+}
+
+/* Rotate In */
+[data-animate="rotate-in"] {
+  transform: rotate(-5deg) scale(0.95);
+}
+
+/* Blur In */
+[data-animate="blur-in"] {
+  transform: scale(1.02);
+  filter: blur(10px);
+  transition:
+    opacity var(--animate-duration) var(--animate-easing),
+    transform var(--animate-duration) var(--animate-easing),
+    filter var(--animate-duration) var(--animate-easing);
+}
+
+/* Visible state - applied by IntersectionObserver */
+[data-animate].is-visible {
+  opacity: 1;
+  transform: translateY(0) translateX(0) scale(1) rotate(0);
+  filter: blur(0);
+}
+
+/* Delay utilities */
+[data-delay="100"] { --animate-delay: 0.1s; }
+[data-delay="200"] { --animate-delay: 0.2s; }
+[data-delay="300"] { --animate-delay: 0.3s; }
+[data-delay="400"] { --animate-delay: 0.4s; }
+[data-delay="500"] { --animate-delay: 0.5s; }
+[data-delay="600"] { --animate-delay: 0.6s; }
+[data-delay="700"] { --animate-delay: 0.7s; }
+[data-delay="800"] { --animate-delay: 0.8s; }
+
+/* Duration utilities */
+[data-duration="fast"] { --animate-duration: 0.4s; }
+[data-duration="normal"] { --animate-duration: 0.7s; }
+[data-duration="slow"] { --animate-duration: 1s; }
+[data-duration="slower"] { --animate-duration: 1.4s; }
+
+/* Distance utilities */
+[data-distance="sm"] { --animate-distance: 20px; }
+[data-distance="md"] { --animate-distance: 40px; }
+[data-distance="lg"] { --animate-distance: 60px; }
+[data-distance="xl"] { --animate-distance: 80px; }
+
+/* Easing utilities */
+[data-easing="ease-out"] { --animate-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+[data-easing="ease-in-out"] { --animate-easing: cubic-bezier(0.42, 0, 0.58, 1); }
+[data-easing="spring"] { --animate-easing: cubic-bezier(0.34, 1.56, 0.64, 1); }
+[data-easing="bounce"] { --animate-easing: cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+
+/* ========================================
+   MICRO-INTERACTIONS
+   ======================================== */
+
+/* Interactive Button - Scale & Glow */
+.btn-interactive {
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.btn-interactive:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
+}
+
+.btn-interactive:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 5px 15px rgba(212, 175, 55, 0.2);
+}
+
+/* Interactive Card - Lift Effect */
+.card-interactive {
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.3s ease;
+}
+
+.card-interactive:hover {
+  transform: translateY(-8px);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(212, 175, 55, 0.1);
+}
+
+/* Subtle Card Hover */
+.card-hover-subtle {
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.card-hover-subtle:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* Gold Glow on Hover */
+.hover-glow-gold {
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-glow-gold:hover {
+  box-shadow:
+    0 0 20px rgba(212, 175, 55, 0.3),
+    0 0 40px rgba(212, 175, 55, 0.1);
+}
+
+/* Image Zoom on Hover */
+.img-zoom {
+  overflow: hidden;
+}
+
+.img-zoom img,
+.img-zoom > div {
+  transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.img-zoom:hover img,
+.img-zoom:hover > div {
+  transform: scale(1.08);
+}
+
+/* Text Underline Animation */
+.text-underline-animate {
+  position: relative;
+}
+
+.text-underline-animate::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--color-gold);
+  transition: width 0.3s ease;
+}
+
+.text-underline-animate:hover::after {
+  width: 100%;
+}
+
+/* ========================================
+   PARALLAX EFFECTS
+   ======================================== */
+
+/* Parallax Container */
+.parallax-container {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Parallax Layer - controlled by JS */
+[data-parallax] {
+  will-change: transform;
+  transition: transform 0.1s linear;
+}
+
+/* Parallax speeds (applied via JS) */
+[data-parallax="slow"] { --parallax-speed: 0.3; }
+[data-parallax="medium"] { --parallax-speed: 0.5; }
+[data-parallax="fast"] { --parallax-speed: 0.7; }
+
+/* Fixed Background Parallax (CSS-only) */
+.parallax-bg {
+  background-attachment: fixed;
+  background-position: center;
+  background-size: cover;
+}
+
+/* ========================================
+   STAGGER ANIMATION FOR CHILDREN
+   ======================================== */
+
+/* Stagger children - each child gets increasing delay */
+[data-stagger] > * {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s ease;
+}
+
+[data-stagger].is-visible > *:nth-child(1) { transition-delay: 0.05s; }
+[data-stagger].is-visible > *:nth-child(2) { transition-delay: 0.1s; }
+[data-stagger].is-visible > *:nth-child(3) { transition-delay: 0.15s; }
+[data-stagger].is-visible > *:nth-child(4) { transition-delay: 0.2s; }
+[data-stagger].is-visible > *:nth-child(5) { transition-delay: 0.25s; }
+[data-stagger].is-visible > *:nth-child(6) { transition-delay: 0.3s; }
+[data-stagger].is-visible > *:nth-child(7) { transition-delay: 0.35s; }
+[data-stagger].is-visible > *:nth-child(8) { transition-delay: 0.4s; }
+[data-stagger].is-visible > *:nth-child(9) { transition-delay: 0.45s; }
+[data-stagger].is-visible > *:nth-child(10) { transition-delay: 0.5s; }
+[data-stagger].is-visible > *:nth-child(11) { transition-delay: 0.55s; }
+[data-stagger].is-visible > *:nth-child(12) { transition-delay: 0.6s; }
+
+[data-stagger].is-visible > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger with slide directions */
+[data-stagger="fade-up"] > * {
+  transform: translateY(30px);
+}
+
+[data-stagger="fade-down"] > * {
+  transform: translateY(-30px);
+}
+
+[data-stagger="slide-left"] > * {
+  transform: translateX(30px);
+}
+
+[data-stagger="slide-right"] > * {
+  transform: translateX(-30px);
+}
+
+[data-stagger="scale"] > * {
+  transform: scale(0.9);
+}
+
+[data-stagger].is-visible > * {
+  transform: translateY(0) translateX(0) scale(1);
+}
+
+/* ========================================
+   REDUCED MOTION - ACCESSIBILITY
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  [data-animate],
+  [data-stagger] > * {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+
+  [data-parallax] {
+    transform: none !important;
+  }
+
+  .parallax-bg {
+    background-attachment: scroll;
+  }
+}
+
+/* ========================================
+   MOBILE OPTIMIZATIONS
+   ======================================== */
+
+@media (max-width: 768px) {
+  :root {
+    --animate-distance: 25px;
+    --animate-duration: 0.5s;
+  }
+
+  /* Disable parallax on mobile for performance */
+  [data-parallax] {
+    transform: none !important;
+  }
+
+  .parallax-bg {
+    background-attachment: scroll;
+  }
+
+  /* Simpler hover effects on touch devices */
+  .card-interactive:hover,
+  .card-hover-subtle:hover {
+    transform: none;
+  }
+
+  /* Reduce stagger delays on mobile */
+  [data-stagger].is-visible > *:nth-child(n) {
+    transition-delay: 0.03s;
+  }
+  [data-stagger].is-visible > *:nth-child(2) { transition-delay: 0.06s; }
+  [data-stagger].is-visible > *:nth-child(3) { transition-delay: 0.09s; }
+  [data-stagger].is-visible > *:nth-child(4) { transition-delay: 0.12s; }
+}
