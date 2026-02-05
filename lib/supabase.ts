@@ -3,6 +3,40 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
+// ============================================
+// CACHING SYSTEM für statische Daten
+// ============================================
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+const cache = new Map<string, CacheEntry<unknown>>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 Minuten
+
+function getCached<T>(key: string): T | null {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.data as T;
+}
+
+function setCache<T>(key: string, data: T): void {
+  cache.set(key, { data, timestamp: Date.now() });
+}
+
+// Cache invalidieren (z.B. nach Admin-Änderungen)
+export function invalidateCache(key?: string): void {
+  if (key) {
+    cache.delete(key);
+  } else {
+    cache.clear();
+  }
+}
+
 // Custom storage without locks to avoid AbortError issues
 const customStorage = {
   getItem: (key: string): string | null => {
@@ -152,6 +186,9 @@ export interface FreeDayException {
 // ============================================
 
 export async function getTeam(): Promise<TeamMember[]> {
+  const cached = getCached<TeamMember[]>('team');
+  if (cached) return cached;
+
   const { data, error } = await supabase
     .from('team')
     .select('*')
@@ -163,7 +200,9 @@ export async function getTeam(): Promise<TeamMember[]> {
     return [];
   }
 
-  return data || [];
+  const result = data || [];
+  setCache('team', result);
+  return result;
 }
 
 export async function getTeamMember(id: string): Promise<TeamMember | null> {
@@ -246,6 +285,9 @@ export function formatDuration(minutes: number): string {
 // ============================================
 
 export async function getTimeSlots(): Promise<TimeSlot[]> {
+  const cached = getCached<TimeSlot[]>('timeSlots');
+  if (cached) return cached;
+
   const { data, error } = await supabase
     .from('time_slots')
     .select('*')
@@ -257,7 +299,9 @@ export async function getTimeSlots(): Promise<TimeSlot[]> {
     return [];
   }
 
-  return data || [];
+  const result = data || [];
+  setCache('timeSlots', result);
+  return result;
 }
 
 // Helper: Nur die Zeit-Strings zurückgeben
@@ -494,6 +538,9 @@ export async function searchCustomers(query: string): Promise<Customer[]> {
 // ============================================
 
 export async function getSeries(): Promise<Series[]> {
+  const cached = getCached<Series[]>('series');
+  if (cached) return cached;
+
   const { data, error } = await supabase
     .from('series')
     .select('*')
@@ -505,7 +552,9 @@ export async function getSeries(): Promise<Series[]> {
     return [];
   }
 
-  return data || [];
+  const result = data || [];
+  setCache('series', result);
+  return result;
 }
 
 export async function createSeries(series: Omit<Series, 'id' | 'created_at'>): Promise<Series | null> {
@@ -1357,6 +1406,9 @@ export interface OpeningHours {
 }
 
 export async function getOpeningHours(): Promise<OpeningHours[]> {
+  const cached = getCached<OpeningHours[]>('openingHours');
+  if (cached) return cached;
+
   const { data, error } = await supabase
     .from('opening_hours')
     .select('*')
@@ -1367,7 +1419,9 @@ export async function getOpeningHours(): Promise<OpeningHours[]> {
     return [];
   }
 
-  return data || [];
+  const result = data || [];
+  setCache('openingHours', result);
+  return result;
 }
 
 export async function updateOpeningHours(
@@ -1394,6 +1448,10 @@ export async function updateOpeningHours(
 // ============================================
 
 export async function getSetting<T>(key: string): Promise<T | null> {
+  const cacheKey = `setting_${key}`;
+  const cached = getCached<T>(cacheKey);
+  if (cached !== null) return cached;
+
   const { data, error } = await supabase
     .from('site_settings')
     .select('value')
@@ -1405,7 +1463,11 @@ export async function getSetting<T>(key: string): Promise<T | null> {
     return null;
   }
 
-  return data?.value as T;
+  const result = data?.value as T;
+  if (result !== null && result !== undefined) {
+    setCache(cacheKey, result);
+  }
+  return result;
 }
 
 export async function getAllSettings(): Promise<Record<string, unknown>> {
@@ -1458,6 +1520,9 @@ export interface ClosedDate {
 }
 
 export async function getClosedDates(): Promise<ClosedDate[]> {
+  const cached = getCached<ClosedDate[]>('closedDates');
+  if (cached) return cached;
+
   const { data, error } = await supabase
     .from('closed_dates')
     .select('*')
@@ -1468,7 +1533,9 @@ export async function getClosedDates(): Promise<ClosedDate[]> {
     return [];
   }
 
-  return data || [];
+  const result = data || [];
+  setCache('closedDates', result);
+  return result;
 }
 
 export async function createClosedDate(
@@ -1530,6 +1597,9 @@ export interface OpenSunday {
 }
 
 export async function getOpenSundays(): Promise<OpenSunday[]> {
+  const cached = getCached<OpenSunday[]>('openSundays');
+  if (cached) return cached;
+
   const { data, error } = await supabase
     .from('open_sundays')
     .select('*')
@@ -1540,7 +1610,9 @@ export async function getOpenSundays(): Promise<OpenSunday[]> {
     return [];
   }
 
-  return data || [];
+  const result = data || [];
+  setCache('openSundays', result);
+  return result;
 }
 
 export async function createOpenSunday(
@@ -1604,6 +1676,12 @@ export interface OpenSundayStaff {
 }
 
 export async function getOpenSundayStaff(openSundayId?: number): Promise<OpenSundayStaff[]> {
+  // Nur cachen wenn alle Einträge abgefragt werden
+  if (openSundayId === undefined) {
+    const cached = getCached<OpenSundayStaff[]>('openSundayStaff');
+    if (cached) return cached;
+  }
+
   let query = supabase.from('open_sunday_staff').select('*');
 
   if (openSundayId !== undefined) {
@@ -1617,7 +1695,11 @@ export async function getOpenSundayStaff(openSundayId?: number): Promise<OpenSun
     return [];
   }
 
-  return data || [];
+  const result = data || [];
+  if (openSundayId === undefined) {
+    setCache('openSundayStaff', result);
+  }
+  return result;
 }
 
 export async function createOpenSundayStaff(
@@ -2372,6 +2454,9 @@ export interface OpenHoliday {
 }
 
 export async function getOpenHolidays(): Promise<OpenHoliday[]> {
+  const cached = getCached<OpenHoliday[]>('openHolidays');
+  if (cached) return cached;
+
   const { data, error } = await supabase
     .from('open_holidays')
     .select('*')
@@ -2382,7 +2467,9 @@ export async function getOpenHolidays(): Promise<OpenHoliday[]> {
     return [];
   }
 
-  return data || [];
+  const result = data || [];
+  setCache('openHolidays', result);
+  return result;
 }
 
 export async function createOpenHoliday(
@@ -2601,6 +2688,12 @@ export const productCategories = {
 
 // Alle Arbeitszeiten laden (optional gefiltert nach Mitarbeiter)
 export async function getStaffWorkingHours(staffId?: string): Promise<StaffWorkingHours[]> {
+  // Nur cachen wenn alle Einträge abgefragt werden
+  if (!staffId) {
+    const cached = getCached<StaffWorkingHours[]>('staffWorkingHours');
+    if (cached) return cached;
+  }
+
   let query = supabase
     .from('staff_working_hours')
     .select('*')
@@ -2617,7 +2710,11 @@ export async function getStaffWorkingHours(staffId?: string): Promise<StaffWorki
     return [];
   }
 
-  return data || [];
+  const result = data || [];
+  if (!staffId) {
+    setCache('staffWorkingHours', result);
+  }
+  return result;
 }
 
 // Arbeitszeit für einen bestimmten Tag setzen (Upsert)
@@ -2681,6 +2778,12 @@ export async function clearStaffWorkingHours(staffId: string): Promise<boolean> 
 
 // Alle Ausnahmen laden (optional gefiltert nach Mitarbeiter)
 export async function getFreeDayExceptions(staffId?: string): Promise<FreeDayException[]> {
+  // Nur cachen wenn alle Einträge abgefragt werden
+  if (!staffId) {
+    const cached = getCached<FreeDayException[]>('freeDayExceptions');
+    if (cached) return cached;
+  }
+
   let query = supabase
     .from('free_day_exceptions')
     .select('*')
@@ -2697,7 +2800,11 @@ export async function getFreeDayExceptions(staffId?: string): Promise<FreeDayExc
     return [];
   }
 
-  return data || [];
+  const result = data || [];
+  if (!staffId) {
+    setCache('freeDayExceptions', result);
+  }
+  return result;
 }
 
 // Ausnahmen für einen Zeitraum laden

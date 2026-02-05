@@ -131,12 +131,12 @@ export function Hero() {
       {/* Main Content */}
       <main className="relative z-10 h-full flex flex-col justify-center px-4 sm:px-6 lg:px-8">
         {/* Social Links - Left Side (Desktop only) - Absolute positioned */}
-        <div className="hidden lg:flex flex-col items-center space-y-6 absolute left-8 top-1/2 -translate-y-1/2">
+        <div className="hidden lg:flex flex-col items-center space-y-6 absolute left-8 top-1/2 -translate-y-1/2 z-20">
             <a
-              href={content.instagramUrl}
+              href={content.instagramUrl || 'https://www.instagram.com/beban_barber_shop2.0/'}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/40 hover:text-white transition-colors duration-300"
+              className="text-white/40 hover:text-white transition-colors duration-300 cursor-pointer"
               aria-label="Instagram"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -147,10 +147,10 @@ export function Hero() {
             <div className="h-24 w-[1px] bg-white/20" />
 
             <a
-              href={content.facebookUrl}
+              href={content.facebookUrl || 'https://www.facebook.com/share/1MtAAD8TAW/'}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white/40 hover:text-white transition-colors duration-300"
+              className="text-white/40 hover:text-white transition-colors duration-300 cursor-pointer"
               aria-label="Facebook"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -18,6 +18,16 @@ export function Contact() {
   const t = useTranslations('footer');
   const currentYear = new Date().getFullYear();
 
+  // Kontaktformular State
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    message: '',
+  });
+  const [formStatus, setFormStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [formError, setFormError] = useState('');
+
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
@@ -41,6 +51,47 @@ export function Contact() {
 
     return () => observer.disconnect();
   }, []);
+
+  // Kontaktformular absenden
+  async function handleContactSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setFormStatus('loading');
+    setFormError('');
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Ein Fehler ist aufgetreten');
+      }
+
+      setFormStatus('success');
+      setFormData({ name: '', email: '', phone: '', message: '' });
+
+      // Nach 3 Sekunden Modal schließen
+      setTimeout(() => {
+        setIsFormOpen(false);
+        setFormStatus('idle');
+      }, 3000);
+
+    } catch (error) {
+      setFormStatus('error');
+      setFormError(error instanceof Error ? error.message : 'Ein Fehler ist aufgetreten');
+    }
+  }
+
+  // Modal schließen und Status zurücksetzen
+  function closeContactForm() {
+    setIsFormOpen(false);
+    setFormStatus('idle');
+    setFormError('');
+  }
 
   return (
     <>
@@ -291,7 +342,7 @@ export function Contact() {
           {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setIsFormOpen(false)}
+            onClick={closeContactForm}
           />
 
           {/* Modal */}
@@ -306,46 +357,70 @@ export function Contact() {
                 <span className="text-[10px] font-semibold text-gold tracking-[0.2em] uppercase">{t('form.badge')}</span>
                 <h2 className="text-lg font-medium text-gray-900 mt-1">{t('form.title')}</h2>
               </div>
-              <button onClick={() => setIsFormOpen(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+              <button onClick={closeContactForm} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
-            {/* Form */}
-            <form className="p-6" onSubmit={(e) => { e.preventDefault(); setIsFormOpen(false); }}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-2">{t('form.nameLabel')}</label>
-                  <input
-                    type="text"
-                    required
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base focus:border-gold focus:bg-white focus:outline-none transition-all"
-                    placeholder={t('form.namePlaceholder')}
-                  />
+            {/* Success State */}
+            {formStatus === 'success' ? (
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-2">{t('form.emailLabel')}</label>
-                  <input
-                    type="email"
-                    required
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base focus:border-gold focus:bg-white focus:outline-none transition-all"
-                    placeholder={t('form.emailPlaceholder')}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-2">{t('form.phoneLabel')}</label>
-                  <input
-                    type="tel"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base focus:border-gold focus:bg-white focus:outline-none transition-all"
-                    placeholder={t('form.phonePlaceholder')}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-2">{t('form.messageLabel')}</label>
-                  <textarea
-                    required
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('form.successTitle')}</h3>
+                <p className="text-gray-500 text-sm">{t('form.successMessage')}</p>
+              </div>
+            ) : (
+              /* Form */
+              <form className="p-6" onSubmit={handleContactSubmit}>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-2">{t('form.nameLabel')}</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      disabled={formStatus === 'loading'}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base focus:border-gold focus:bg-white focus:outline-none transition-all disabled:opacity-50"
+                      placeholder={t('form.namePlaceholder')}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-2">{t('form.emailLabel')}</label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      disabled={formStatus === 'loading'}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base focus:border-gold focus:bg-white focus:outline-none transition-all disabled:opacity-50"
+                      placeholder={t('form.emailPlaceholder')}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-2">{t('form.phoneLabel')}</label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      disabled={formStatus === 'loading'}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base focus:border-gold focus:bg-white focus:outline-none transition-all disabled:opacity-50"
+                      placeholder={t('form.phonePlaceholder')}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-2">{t('form.messageLabel')}</label>
+                    <textarea
+                      required
+                      value={formData.message}
+                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      disabled={formStatus === 'loading'}
                     rows={4}
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base focus:border-gold focus:bg-white focus:outline-none transition-all resize-none"
                     placeholder={t('form.messagePlaceholder')}
@@ -353,16 +428,32 @@ export function Contact() {
                 </div>
               </div>
 
-              {/* Footer */}
-              <div className="mt-6">
-                <button
-                  type="submit"
-                  className="w-full py-3.5 bg-gray-900 text-white text-xs font-medium tracking-[0.15em] uppercase rounded-xl hover:bg-gold transition-all duration-300 shadow-lg"
-                >
-                  {t('form.submitButton')}
-                </button>
-              </div>
-            </form>
+                {/* Error Message */}
+                {formStatus === 'error' && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+                    <p className="text-sm text-red-600">{formError}</p>
+                  </div>
+                )}
+
+                {/* Footer */}
+                <div className="mt-6">
+                  <button
+                    type="submit"
+                    disabled={formStatus === 'loading'}
+                    className="w-full py-3.5 bg-gray-900 text-white text-xs font-medium tracking-[0.15em] uppercase rounded-xl hover:bg-gold transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {formStatus === 'loading' ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Wird gesendet...
+                      </>
+                    ) : (
+                      t('form.submitButton')
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

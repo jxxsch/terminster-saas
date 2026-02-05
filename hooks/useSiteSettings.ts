@@ -340,8 +340,8 @@ const defaultHeroContent: HeroContent = {
   locationValue: 'Friedrich-Ebert-Platz 3a, Leverkusen',
   hoursLabel: 'Öffnungszeiten',
   hoursValue: 'Mo-Sa 10:00 - 19:00',
-  instagramUrl: '',
-  facebookUrl: '',
+  instagramUrl: 'https://www.instagram.com/beban_barber_shop2.0/',
+  facebookUrl: 'https://www.facebook.com/share/1MtAAD8TAW/',
 };
 
 export function useHeroContent() {
@@ -392,8 +392,8 @@ export function useHeroContent() {
           locationValue: locationValue || defaultHeroContent.locationValue,
           hoursLabel: hoursLabel || defaultHeroContent.hoursLabel,
           hoursValue: hoursValue || defaultHeroContent.hoursValue,
-          instagramUrl: extractUrl(instagram),
-          facebookUrl: extractUrl(facebook),
+          instagramUrl: extractUrl(instagram) || defaultHeroContent.instagramUrl,
+          facebookUrl: extractUrl(facebook) || defaultHeroContent.facebookUrl,
         });
       } catch (error) {
         console.error('Error loading hero content:', error);
