@@ -13,6 +13,7 @@ import {
   updateSeries,
   getCustomerById,
   updateCustomer,
+  getSetting,
 } from '@/lib/supabase';
 
 interface AppointmentSlotProps {
@@ -84,7 +85,15 @@ export function AppointmentSlot({
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [popupPosition, setPopupPosition] = useState<'bottom' | 'top'>('bottom');
+  const [allowEditCustomer, setAllowEditCustomer] = useState(true);
   const slotRef = useRef<HTMLDivElement>(null);
+
+  // Setting laden: Kundendaten bearbeitbar?
+  useEffect(() => {
+    getSetting<boolean>('allow_edit_customer_in_modal').then((val) => {
+      if (val !== null) setAllowEditCustomer(val);
+    });
+  }, []);
 
   // Bestimme Popup-Position basierend auf verfügbarem Platz
   // Popup braucht ca. 350px Höhe für alle Inhalte
@@ -130,7 +139,7 @@ export function AppointmentSlot({
     if (!appointment) return;
 
     setIsCancelling(true);
-    const success = await deleteAppointment(appointment.id);
+    const success = await cancelAppointmentAdmin(appointment.id);
     if (success) {
       onDelete(appointment.id, appointment);
       setShowDetails(false);
@@ -336,6 +345,8 @@ export function AppointmentSlot({
         source: 'manual',
         status: 'cancelled',
         series_id: series.id,
+        cancelled_by: 'barber',
+        cancelled_at: new Date().toISOString(),
       });
 
       if (result.success && result.appointment) {
@@ -567,7 +578,7 @@ export function AppointmentSlot({
                           {isSavingSeriesContact ? 'Speichern...' : 'Speichern'}
                         </button>
                       </div>
-                    ) : (
+                    ) : allowEditCustomer ? (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -580,13 +591,8 @@ export function AppointmentSlot({
                         </svg>
                         Kontakt bearbeiten
                       </button>
-                    )}
+                    ) : null}
 
-                    {/* Service */}
-                    <div>
-                      <span className="text-[9px] text-gray-400 uppercase tracking-wider block">Service</span>
-                      <span className="text-sm text-gray-700">{getServiceName(series.service_id)}</span>
-                    </div>
                   </>
                 )}
 
@@ -1141,12 +1147,6 @@ export function AppointmentSlot({
                 </div>
               </div>
 
-              {/* Service */}
-              <div>
-                <span className="text-[9px] text-gray-400 uppercase tracking-wider block">Service</span>
-                <span className="text-sm text-gray-700">{getServiceName(appointment.service_id)}</span>
-              </div>
-
               {/* Buttons */}
               <div className="flex gap-2 pt-2 border-t border-gray-100">
                 {isEditing ? (
@@ -1167,15 +1167,17 @@ export function AppointmentSlot({
                   </>
                 ) : (
                   <>
-                    <button
-                      onClick={handleEdit}
-                      className="flex-1 py-1.5 px-2 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                      Bearbeiten
-                    </button>
+                    {allowEditCustomer && (
+                      <button
+                        onClick={handleEdit}
+                        className="flex-1 py-1.5 px-2 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                        Bearbeiten
+                      </button>
+                    )}
                     <button
                       onClick={openCancelModal}
                       className="flex-1 py-1.5 px-2 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors flex items-center justify-center gap-1"

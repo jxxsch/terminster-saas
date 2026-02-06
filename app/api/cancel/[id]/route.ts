@@ -54,11 +54,12 @@ export async function POST(
       );
     }
 
-    // Termin stornieren (Status auf cancelled setzen + cancelled_at)
+    // Termin stornieren (Status auf cancelled setzen + cancelled_at + cancelled_by)
     const { error: updateError } = await supabase
       .from('appointments')
       .update({
         status: 'cancelled',
+        cancelled_by: 'customer',
         cancelled_at: new Date().toISOString(),
       })
       .eq('id', id);

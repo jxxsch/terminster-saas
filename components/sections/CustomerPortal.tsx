@@ -650,7 +650,7 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                             <div>
                               <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>{formatDate(apt.date)}</p>
-                              <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{apt.time_slot} {tCommon('oclock')}</p>
+                              <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{apt.time_slot} {tCommon('oclock')} · <span style={{ color: '#94a3b8' }}>{t('barber')}:</span> {getBarberName(apt.barber_id)}</p>
                             </div>
                             {canCancelAppointment(apt) ? (
                               <button
@@ -666,20 +666,6 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                                 &lt; {cancellationHours}h
                               </span>
                             )}
-                          </div>
-                          <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', fontSize: '0.75rem' }}>
-                            <div>
-                              <span style={{ color: '#94a3b8' }}>{t('barber')}:</span>{' '}
-                              <span style={{ color: '#0f172a' }}>{getBarberName(apt.barber_id)}</span>
-                            </div>
-                            <div>
-                              <span style={{ color: '#94a3b8' }}>{t('service')}:</span>{' '}
-                              <span style={{ color: '#0f172a' }}>{getServiceName(apt.service_id)}</span>
-                            </div>
-                            <div>
-                              <span style={{ color: '#94a3b8' }}>{t('price')}:</span>{' '}
-                              <span style={{ color: '#d4a853', fontWeight: 600 }}>{getServicePrice(apt.service_id)}</span>
-                            </div>
                           </div>
                         </div>
                       ))
@@ -705,23 +691,13 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                               <p style={{ fontSize: '0.875rem', fontWeight: 600, color: apt.status === 'cancelled' ? '#ef4444' : '#64748b' }}>
                                 {formatDate(apt.date)}
                               </p>
-                              <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{apt.time_slot} {tCommon('oclock')}</p>
+                              <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{apt.time_slot} {tCommon('oclock')} · <span style={{ color: '#94a3b8' }}>{t('barber')}:</span> {getBarberName(apt.barber_id)}</p>
                             </div>
                             {apt.status === 'cancelled' && (
                               <span style={{ padding: '0.375rem 0.625rem', fontSize: '0.6875rem', color: '#ef4444', backgroundColor: '#fee2e2', borderRadius: '0.375rem' }}>
                                 {t('cancelled')}
                               </span>
                             )}
-                          </div>
-                          <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.75rem' }}>
-                            <div>
-                              <span style={{ color: '#94a3b8' }}>{t('barber')}:</span>{' '}
-                              <span style={{ color: '#64748b' }}>{getBarberName(apt.barber_id)}</span>
-                            </div>
-                            <div>
-                              <span style={{ color: '#94a3b8' }}>{t('service')}:</span>{' '}
-                              <span style={{ color: '#64748b' }}>{getServiceName(apt.service_id)}</span>
-                            </div>
                           </div>
                         </div>
                       ))

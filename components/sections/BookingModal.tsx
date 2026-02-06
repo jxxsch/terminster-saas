@@ -289,7 +289,7 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
   },
   header: {
-    padding: '1.25rem 10px',
+    padding: '1.25rem 25px',
     borderBottom: '1px solid #f1f5f9',
     display: 'flex',
     justifyContent: 'space-between',
@@ -319,7 +319,7 @@ const styles: Record<string, React.CSSProperties> = {
   progressContainer: {
     display: 'flex',
     gap: '0.5rem',
-    padding: '0.75rem 10px',
+    padding: '0.75rem 25px',
     borderBottom: '1px solid #f1f5f9',
     flexShrink: 0,
   },
@@ -350,7 +350,7 @@ const styles: Record<string, React.CSSProperties> = {
   content: {
     flex: 1,
     overflowY: 'auto',
-    padding: '1rem 10px',
+    padding: '1rem 25px',
   },
   section: {
     marginBottom: '1.5rem',
@@ -531,11 +531,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   choiceGrid: {
     display: 'grid',
-    gridTemplateColumns: '3fr 1fr',
+    gridTemplateColumns: '1fr 1fr',
     gap: '0.75rem',
   },
   choiceBtn: {
-    padding: '1rem',
+    padding: '0.5rem',
     borderRadius: '0.75rem',
     border: '1px solid #e2e8f0',
     backgroundColor: '#ffffff',
@@ -570,10 +570,10 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '0.5rem',
   },
   input: {
-    padding: '1rem',
+    padding: '0.75rem',
     borderRadius: '0.5rem',
     border: '1px solid #e2e8f0',
-    fontSize: '1rem',
+    fontSize: '0.75rem',
     color: '#0f172a',
     backgroundColor: '#ffffff',
     outline: 'none',
@@ -661,7 +661,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#22c55e',
   },
   footer: {
-    padding: '1rem 10px',
+    padding: '1rem 25px',
     borderTop: '1px solid #f1f5f9',
     flexShrink: 0,
   },
@@ -673,7 +673,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   footerSummary: {
     flex: 1,
-    fontSize: '0.625rem',
+    fontSize: '0.9rem',
     color: '#64748b',
   },
   gold: {
@@ -689,7 +689,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     backgroundColor: '#0f172a',
     color: '#ffffff',
-    fontSize: '0.6875rem',
+    fontSize: '1rem',
     fontWeight: 500,
     cursor: 'pointer',
     transition: 'all 0.15s',
@@ -1332,7 +1332,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div style={styles.header}>
+          <div style={{ ...styles.header, ...(isMobile ? { padding: '1.25rem 10px' } : {}) }}>
             <span style={styles.title}>{t('title')}</span>
             <button style={styles.closeBtn} onClick={handleClose}>
               <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1517,7 +1517,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
           ) : (
             <>
               {/* Progress Bar - 3 Steps */}
-              <div style={styles.progressContainer}>
+              <div style={{ ...styles.progressContainer, ...(isMobile ? { padding: '0.75rem 10px' } : {}) }}>
                 {[
                   { num: 1, label: t('steps.barber'), done: selectedBarber !== null },
                   { num: 2, label: t('steps.time'), done: selectedSlot !== null },
@@ -1542,7 +1542,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
               </div>
 
               {/* Content */}
-              <div style={styles.content} ref={contentRef}>
+              <div style={{ ...styles.content, ...(isMobile ? { padding: '1rem 10px' } : {}) }} ref={contentRef}>
                 {/* Section 1: Barber Selection */}
                 <div id="booking-section-barber" style={styles.section}>
                   <div style={styles.sectionHeader}>
@@ -1823,12 +1823,12 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                           }}
                           style={styles.choiceGrid}
                         >
-                          <button type="button" onClick={() => setContactMode('auth')} style={{ ...styles.choiceBtn, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%', border: '1px solid rgb(15, 23, 42)' }}>
+                          <button type="button" onClick={() => setContactMode('auth')} style={{ ...styles.choiceBtn, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%', border: '1px solid #d4a853' }}>
                             <div style={{ ...styles.choiceBtnHeader, justifyContent: 'center' }}>
                               <svg width="18" height="18" fill="none" stroke="rgb(15, 23, 42)" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                               </svg>
-                              <span style={{ ...styles.choiceBtnTitle, fontSize: '1rem', color: 'rgb(15, 23, 42)' }}>{tAuth('login')}</span>
+                              <span style={{ ...styles.choiceBtnTitle, fontSize: '0.9rem', color: 'rgb(15, 23, 42)' }}>{tAuth('login')}</span>
                             </div>
                             <p style={{ ...styles.choiceBtnDesc, textAlign: 'center' }}>{t('manageAppointments')}</p>
                           </button>
@@ -2038,7 +2038,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
               </div>
 
               {/* Footer */}
-              <div style={styles.footer}>
+              <div style={{ ...styles.footer, ...(isMobile ? { padding: '1rem 10px' } : {}) }}>
                 {bookingError && (
                   <div style={styles.errorMsg}>
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
