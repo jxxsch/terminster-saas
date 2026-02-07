@@ -1,15 +1,19 @@
 'use client';
 
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSectionSettings } from '@/hooks/useSiteSettings';
 import { useGoogleRating } from '@/hooks/useGoogleRating';
 import { useReviews } from '@/hooks/useReviews';
 
+const CircularGallery = dynamic(() => import('@/components/ui/CircularGallery'), { ssr: false });
+
 export function About() {
   const [isVisible, setIsVisible] = useState(false);
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const t = useTranslations('about');
   const locale = useLocale();
@@ -46,6 +50,22 @@ export function About() {
       aboutContent: null, // Use i18n paragraphs instead
     };
   }, [locale, title, subtitle, aboutText, getLocalizedText, t]);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 1024);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  const galleryItems = useMemo(() => [
+    { image: '/about-1.jpg', text: '' },
+    { image: '/about-2.jpg', text: '' },
+    { image: '/gallery/1.jpg', text: '' },
+    { image: '/gallery/2.jpg', text: '' },
+    { image: '/gallery/3.jpg', text: '' },
+    { image: '/gallery/4.jpg', text: '' },
+  ], []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -140,48 +160,62 @@ export function About() {
         </div>
 
         {/* Goldene Trennlinie */}
-        <div className={`flex items-center gap-6 mb-20 transition-all duration-700 delay-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`flex items-center gap-6 mb-4 lg:mb-20 transition-all duration-700 delay-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
         </div>
 
-        {/* Bilder Grid - Staggered Slide */}
-        <div
-          className={`grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20 transition-all duration-700 delay-600 ${isVisible ? 'opacity-100 translate-y-0 is-visible' : 'opacity-0 translate-y-4'}`}
-        >
-          {/* Linkes Bild */}
-          <div
-            className="aspect-[4/3] bg-gray-100 overflow-hidden group img-zoom card-hover-subtle rounded-lg"
-            data-animate="slide-right"
-            data-delay="100"
-          >
-            <div className="w-full h-full relative">
-              <Image
-                src="/about-1.jpg"
-                alt="Beban Barber Shop Interior"
-                fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-              />
-            </div>
+        {/* Bilder: Mobile = CircularGallery, Desktop = Grid */}
+        {isMobile ? (
+          <div className={`h-[350px] mb-4 transition-all duration-700 delay-600 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <CircularGallery
+              items={galleryItems}
+              bend={0}
+              textColor="#ffffff"
+              borderRadius={0.07}
+              font="bold 30px Figtree"
+              scrollSpeed={1.8}
+              scrollEase={0.01}
+            />
           </div>
+        ) : (
+          <div
+            className={`grid grid-cols-2 gap-12 mb-20 transition-all duration-700 delay-600 ${isVisible ? 'opacity-100 translate-y-0 is-visible' : 'opacity-0 translate-y-4'}`}
+          >
+            {/* Linkes Bild */}
+            <div
+              className="aspect-[4/3] bg-gray-100 overflow-hidden group img-zoom card-hover-subtle rounded-lg"
+              data-animate="slide-right"
+              data-delay="100"
+            >
+              <div className="w-full h-full relative">
+                <Image
+                  src="/about-1.jpg"
+                  alt="Beban Barber Shop Interior"
+                  fill
+                  sizes="50vw"
+                  className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                />
+              </div>
+            </div>
 
-          {/* Rechtes Bild */}
-          <div
-            className="aspect-[4/3] bg-gray-100 overflow-hidden group img-zoom card-hover-subtle rounded-lg"
-            data-animate="slide-left"
-            data-delay="200"
-          >
-            <div className="w-full h-full relative">
-              <Image
-                src="/about-2.jpg"
-                alt="Beban Barber Shop Arbeit"
-                fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
-              />
+            {/* Rechtes Bild */}
+            <div
+              className="aspect-[4/3] bg-gray-100 overflow-hidden group img-zoom card-hover-subtle rounded-lg"
+              data-animate="slide-left"
+              data-delay="200"
+            >
+              <div className="w-full h-full relative">
+                <Image
+                  src="/about-2.jpg"
+                  alt="Beban Barber Shop Arbeit"
+                  fill
+                  sizes="50vw"
+                  className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Rezensionen Karussell */}
         <div className={`relative py-12 transition-all duration-700 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
