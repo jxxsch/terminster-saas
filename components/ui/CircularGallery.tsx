@@ -530,7 +530,7 @@ class App {
     const currentScroll = window.scrollY;
     const delta = currentScroll - this.lastPageScroll;
     this.lastPageScroll = currentScroll;
-    this.scroll.target += delta * this.scrollSpeed * 0.01;
+    this.scroll.target += delta * this.scrollSpeed * 0.08;
   }
 
   onCheck() {
