@@ -166,7 +166,7 @@ export function About() {
 
         {/* Bilder: Mobile = CircularGallery, Desktop = Grid */}
         {isMobile ? (
-          <div className={`h-[350px] mb-4 transition-all duration-700 delay-600 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className={`h-[350px] mb-4 -mx-4 sm:-mx-6 transition-all duration-700 delay-600 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <CircularGallery
               items={galleryItems}
               bend={0}
