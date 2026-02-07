@@ -575,6 +575,7 @@ export async function createSeries(series: Omit<Series, 'id' | 'created_at'>): P
     return null;
   }
 
+  invalidateCache('series');
   return data;
 }
 
@@ -589,6 +590,7 @@ export async function deleteSeries(id: string): Promise<boolean> {
     return false;
   }
 
+  invalidateCache('series');
   return true;
 }
 
