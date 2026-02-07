@@ -411,9 +411,11 @@ class App {
   boundOnTouchDown!: (e: MouseEvent | TouchEvent) => void;
   boundOnTouchMove!: (e: MouseEvent | TouchEvent) => void;
   boundOnTouchUp!: () => void;
+  boundOnPageScroll!: () => void;
 
   isDown: boolean = false;
   start: number = 0;
+  lastPageScroll: number = 0;
 
   constructor(
     container: HTMLElement,
@@ -524,6 +526,13 @@ class App {
     this.onCheckDebounce();
   }
 
+  onPageScroll() {
+    const currentScroll = window.scrollY;
+    const delta = currentScroll - this.lastPageScroll;
+    this.lastPageScroll = currentScroll;
+    this.scroll.target += delta * this.scrollSpeed * 0.01;
+  }
+
   onCheck() {
     if (!this.medias || !this.medias[0]) return;
     const width = this.medias[0].width;
@@ -567,7 +576,10 @@ class App {
     this.boundOnTouchDown = this.onTouchDown.bind(this);
     this.boundOnTouchMove = this.onTouchMove.bind(this);
     this.boundOnTouchUp = this.onTouchUp.bind(this);
+    this.boundOnPageScroll = this.onPageScroll.bind(this);
+    this.lastPageScroll = window.scrollY;
     window.addEventListener('resize', this.boundOnResize);
+    window.addEventListener('scroll', this.boundOnPageScroll, { passive: true });
     this.container.addEventListener('wheel', this.boundOnWheel, { passive: true });
     this.container.addEventListener('mousedown', this.boundOnTouchDown);
     window.addEventListener('mousemove', this.boundOnTouchMove);
@@ -580,6 +592,7 @@ class App {
   destroy() {
     window.cancelAnimationFrame(this.raf);
     window.removeEventListener('resize', this.boundOnResize);
+    window.removeEventListener('scroll', this.boundOnPageScroll);
     this.container.removeEventListener('wheel', this.boundOnWheel);
     this.container.removeEventListener('mousedown', this.boundOnTouchDown);
     window.removeEventListener('mousemove', this.boundOnTouchMove);
