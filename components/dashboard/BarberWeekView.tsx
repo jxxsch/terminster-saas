@@ -490,32 +490,45 @@ export function BarberWeekView({
     if (!deletedItems) return;
 
     // Normale Termine wiederherstellen
-    for (const apt of deletedItems.appointments) {
-      const result = await createAppointment({
-        barber_id: apt.barber_id,
-        date: apt.date,
-        time_slot: apt.time_slot,
-        service_id: apt.service_id,
-        customer_name: apt.customer_name,
-        customer_phone: apt.customer_phone || null,
-        customer_email: apt.customer_email || null,
-        customer_id: apt.customer_id || null,
-        source: apt.source,
-        status: apt.status,
-        series_id: apt.series_id || null,
-        is_pause: false,
-      });
-      if (result.success && result.appointment) {
-        setAppointments(prev => [...prev, result.appointment!]);
-      }
-    }
+    // Sofort alle im UI wiederherstellen (mit temporären IDs)
+    const tempAppointments = deletedItems.appointments.map(apt => ({ ...apt }));
+    setAppointments(prev => [...prev, ...tempAppointments]);
 
-    // Serien-Stornierungen löschen (macht Serie wieder sichtbar)
-    for (const cancellationId of deletedItems.seriesCancellations) {
-      const success = await deleteAppointment(cancellationId);
-      if (success) {
-        setAppointments(prev => prev.filter(apt => apt.id !== cancellationId));
-      }
+    // Parallel in DB wiederherstellen und IDs aktualisieren
+    const results = await Promise.all(
+      deletedItems.appointments.map(apt =>
+        createAppointment({
+          barber_id: apt.barber_id,
+          date: apt.date,
+          time_slot: apt.time_slot,
+          service_id: apt.service_id,
+          customer_name: apt.customer_name,
+          customer_phone: apt.customer_phone || null,
+          customer_email: apt.customer_email || null,
+          customer_id: apt.customer_id || null,
+          source: apt.source,
+          status: apt.status,
+          series_id: apt.series_id || null,
+          is_pause: false,
+        })
+      )
+    );
+
+    // Temporäre Einträge durch echte DB-Einträge ersetzen
+    const oldIds = new Set(tempAppointments.map(a => a.id));
+    const newAppointments = results
+      .filter(r => r.success && r.appointment)
+      .map(r => r.appointment!);
+    setAppointments(prev => [
+      ...prev.filter(apt => !oldIds.has(apt.id)),
+      ...newAppointments,
+    ]);
+
+    // Serien-Stornierungen parallel löschen
+    if (deletedItems.seriesCancellations.length > 0) {
+      await Promise.all(deletedItems.seriesCancellations.map(id => deleteAppointment(id)));
+      const cancelIds = new Set(deletedItems.seriesCancellations);
+      setAppointments(prev => prev.filter(apt => !cancelIds.has(apt.id)));
     }
 
     setDeletedItems(null);
