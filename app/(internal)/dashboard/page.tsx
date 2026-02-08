@@ -505,11 +505,15 @@ export default function DashboardPage() {
           {/* Heute Button - Mobile */}
           <button
             onClick={() => {
-              setCurrentWeekOffset(0);
               const today = new Date();
               const dayOfWeek = today.getDay();
-              const todayIndex = dayOfWeek === 0 ? 0 : dayOfWeek - 1;
-              setSelectedDay(todayIndex);
+              if (dayOfWeek === 0) {
+                setCurrentWeekOffset(1);
+                setSelectedDay(0);
+              } else {
+                setCurrentWeekOffset(0);
+                setSelectedDay(dayOfWeek - 1);
+              }
             }}
             className={`flex-shrink-0 px-2 py-1.5 text-[10px] font-bold rounded-lg transition-all ${
               currentWeekOffset !== 0 || !weekDays[selectedDay]?.isToday
@@ -739,11 +743,15 @@ export default function DashboardPage() {
           {/* Heute Button */}
           <button
             onClick={() => {
-              setCurrentWeekOffset(0);
               const today = new Date();
               const dayOfWeek = today.getDay();
-              const todayIndex = dayOfWeek === 0 ? 0 : dayOfWeek - 1;
-              setSelectedDay(todayIndex);
+              if (dayOfWeek === 0) {
+                setCurrentWeekOffset(1);
+                setSelectedDay(0);
+              } else {
+                setCurrentWeekOffset(0);
+                setSelectedDay(dayOfWeek - 1);
+              }
             }}
             className={`ml-1 px-4 py-2 text-xs font-bold rounded-xl transition-all ${
               currentWeekOffset !== 0 || !weekDays[selectedDay]?.isToday

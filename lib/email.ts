@@ -233,8 +233,7 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
                 <tr>
                   <td style="padding: 28px; text-align: center;">
                     <p style="margin: 0 0 8px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">DEIN TERMIN</p>
-                    <p style="margin: 0 0 4px; font-size: 24px; font-weight: 700; color: #1a1a1a;">${dateFormatted} • ${data.time}</p>
-                    <p style="margin: 0; font-size: 14px; color: #6b7280; font-weight: 500;">${data.serviceName}</p>
+                    <p style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">${dateFormatted} • ${data.time}</p>
                   </td>
                 </tr>
               </table>
@@ -250,7 +249,7 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
                           <table role="presentation" style="display: inline-table;">
                             <tr>
                               <td style="width: 42px; vertical-align: middle;">
-                                <img src="${barberImage}" alt="${data.barberName}" style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; object-position: ${barberImagePosition};">
+                                <div style="width: 42px; height: 42px; border-radius: 50%; background-image: url('${barberImage}'); background-size: cover; background-position: ${barberImagePosition}; background-color: #d4a853;"></div>
                               </td>
                               <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
                                 <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">BARBER</p>
@@ -473,8 +472,7 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
                 <tr>
                   <td style="padding: 28px; text-align: center;">
                     <p style="margin: 0 0 8px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">DEIN TERMIN</p>
-                    <p style="margin: 0 0 4px; font-size: 24px; font-weight: 700; color: #1a1a1a;">${dateFormatted} • ${data.time}</p>
-                    <p style="margin: 0; font-size: 14px; color: #6b7280; font-weight: 500;">${data.serviceName}</p>
+                    <p style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">${dateFormatted} • ${data.time}</p>
                   </td>
                 </tr>
               </table>
@@ -490,7 +488,7 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
                           <table role="presentation" style="display: inline-table;">
                             <tr>
                               <td style="width: 42px; vertical-align: middle;">
-                                <img src="${barberImage}" alt="${data.barberName}" style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; object-position: ${barberImagePosition};">
+                                <div style="width: 42px; height: 42px; border-radius: 50%; background-image: url('${barberImage}'); background-size: cover; background-position: ${barberImagePosition}; background-color: #d4a853;"></div>
                               </td>
                               <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
                                 <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">BARBER</p>
@@ -664,41 +662,18 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
 
   // Barber-Bereich: Gleicher Barber vs. Barber gewechselt
   const barberSection = data.barberChanged
-    ? `<!-- Barber gewechselt: Alter → Neuer -->
-                    <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">
+    ? `<!-- Neuer Barber mit grünem Rahmen -->
+                    <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: 2px solid #22c55e;">
                       <tr>
                         <td style="padding: 5px 10px; height: 54px; text-align: center;">
-                          <table role="presentation" style="display: inline-table; width: 100%;">
+                          <table role="presentation" style="display: inline-table;">
                             <tr>
-                              <!-- Alter Barber -->
-                              <td style="width: 38%; vertical-align: middle; text-align: center; opacity: 0.5;">
-                                <table role="presentation" style="display: inline-table;">
-                                  <tr>
-                                    <td style="width: 36px; vertical-align: middle;">
-                                      <img src="${oldBarberImage}" alt="${data.oldBarberName}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; object-position: ${oldBarberImagePosition};">
-                                    </td>
-                                    <td style="padding-left: 6px; vertical-align: middle; text-align: left;">
-                                      <p style="margin: 0; font-size: 12px; font-weight: 700; color: #9ca3af; text-decoration: line-through;">${data.oldBarberName}</p>
-                                    </td>
-                                  </tr>
-                                </table>
+                              <td style="width: 42px; vertical-align: middle;">
+                                <div style="width: 42px; height: 42px; border-radius: 50%; background-image: url('${newBarberImage}'); background-size: cover; background-position: ${newBarberImagePosition}; background-color: #d4a853;"></div>
                               </td>
-                              <!-- Pfeil -->
-                              <td style="width: 24%; vertical-align: middle; text-align: center;">
-                                <span style="font-size: 18px; color: #d4a853;">→</span>
-                              </td>
-                              <!-- Neuer Barber -->
-                              <td style="width: 38%; vertical-align: middle; text-align: center;">
-                                <table role="presentation" style="display: inline-table;">
-                                  <tr>
-                                    <td style="width: 36px; vertical-align: middle;">
-                                      <img src="${newBarberImage}" alt="${data.newBarberName}" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; object-position: ${newBarberImagePosition}; border: 2px solid #22c55e;">
-                                    </td>
-                                    <td style="padding-left: 6px; vertical-align: middle; text-align: left;">
-                                      <p style="margin: 0; font-size: 12px; font-weight: 700; color: #1a1a1a;">${data.newBarberName}</p>
-                                    </td>
-                                  </tr>
-                                </table>
+                              <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
+                                <p style="margin: 0 0 2px; font-size: 9px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">NEUER BARBER</p>
+                                <p style="margin: 0; font-size: 14px; font-weight: 700; color: #1a1a1a;">${data.newBarberName}</p>
                               </td>
                             </tr>
                           </table>
@@ -712,7 +687,7 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
                           <table role="presentation" style="display: inline-table;">
                             <tr>
                               <td style="width: 42px; vertical-align: middle;">
-                                <img src="${newBarberImage}" alt="${data.newBarberName}" style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; object-position: ${newBarberImagePosition};">
+                                <div style="width: 42px; height: 42px; border-radius: 50%; background-image: url('${newBarberImage}'); background-size: cover; background-position: ${newBarberImagePosition}; background-color: #d4a853;"></div>
                               </td>
                               <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
                                 <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">BARBER</p>
@@ -760,9 +735,8 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
               <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 20px; border: 1px solid #e5e7eb; margin-bottom: 8px; opacity: 0.7;">
                 <tr>
                   <td style="padding: 20px 28px; text-align: center;">
-                    <p style="margin: 0 0 8px; font-size: 11px; font-weight: 700; color: #ef4444; text-transform: uppercase; letter-spacing: 2px;">ALTER TERMIN</p>
-                    <p style="margin: 0 0 4px; font-size: 20px; font-weight: 700; color: #9ca3af; text-decoration: line-through;">${oldDateFormatted} &bull; ${data.oldTime}</p>
-                    <p style="margin: 0; font-size: 14px; color: #9ca3af; font-weight: 500;">${data.serviceName}</p>
+                    <p style="margin: 0 0 8px; font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 2px;">ALTER TERMIN</p>
+                    <p style="margin: 0; font-size: 20px; font-weight: 700; color: #9ca3af; text-decoration: line-through;">${oldDateFormatted} &bull; ${data.oldTime}</p>
                   </td>
                 </tr>
               </table>
@@ -772,8 +746,7 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
                 <tr>
                   <td style="padding: 24px 28px; text-align: center;">
                     <p style="margin: 0 0 8px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">NEUER TERMIN</p>
-                    <p style="margin: 0 0 4px; font-size: 24px; font-weight: 700; color: #1a1a1a;">${newDateFormatted} &bull; ${data.newTime}</p>
-                    <p style="margin: 0; font-size: 14px; color: #6b7280; font-weight: 500;">${data.serviceName}</p>
+                    <p style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">${newDateFormatted} &bull; ${data.newTime}</p>
                   </td>
                 </tr>
               </table>
