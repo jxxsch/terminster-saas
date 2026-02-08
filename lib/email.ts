@@ -17,6 +17,31 @@ async function getLogoUrl(): Promise<string> {
   return data?.value || `${BASE_URL}/logo.png`;
 }
 
+// Konvertiert Bild-URL in ein E-Mail-kompatibles Format (JPG statt WebP)
+// Viele E-Mail-Clients (Outlook, Yahoo, Thunderbird) unterstützen kein WebP
+function toEmailSafeImageUrl(imageUrl: string, barberName?: string): string {
+  if (!imageUrl) return imageUrl;
+
+  // Für statische Bilder von terminster.com: .webp → .jpg
+  if (imageUrl.includes('terminster.com/') && imageUrl.endsWith('.webp')) {
+    return imageUrl.replace(/\.webp$/, '.jpg');
+  }
+
+  // Für Supabase Storage URLs: verwende lokale JPG-Version stattdessen
+  // (JPG existiert nicht in Supabase Storage, aber lokal unter /team/{name}.jpg)
+  if (imageUrl.includes('supabase.co/storage/') && barberName) {
+    const slug = barberName.toLowerCase().replace(/\s+/g, '-');
+    return `${BASE_URL}/team/${slug}.jpg`;
+  }
+
+  // Allgemeiner Fallback: .webp → .jpg
+  if (imageUrl.endsWith('.webp')) {
+    return imageUrl.replace(/\.webp$/, '.jpg');
+  }
+
+  return imageUrl;
+}
+
 // Typen
 export interface BookingEmailData {
   customerName: string;
@@ -50,19 +75,16 @@ export interface ReminderEmailData {
 export interface RescheduleEmailData {
   customerName: string;
   customerEmail: string;
-  // Alter Termin
   oldBarberName: string;
   oldBarberImage?: string;
   oldImagePosition?: string;
-  oldDate: string;       // ISO "2026-02-10"
-  oldTime: string;       // "14:00"
-  // Neuer Termin
+  oldDate: string;
+  oldTime: string;
   newBarberName: string;
   newBarberImage?: string;
   newImagePosition?: string;
   newDate: string;
   newTime: string;
-  // Gemeinsam
   serviceName: string;
   duration: number;
   price: string;
@@ -148,23 +170,27 @@ export async function sendAppointmentReminder(data: ReminderEmailData): Promise<
   }
 }
 
-// Terminverschiebung senden
+// Terminverschiebungs-Bestätigung senden
 export async function sendRescheduleConfirmation(data: RescheduleEmailData): Promise<{ success: boolean; error?: string }> {
   try {
-    // .ics Datei mit neuem Termin generieren
+    // .ics Datei für den neuen Termin generieren
     const icsContent = generateIcsContent({
       title: `${data.serviceName} bei Beban Barbershop`,
       date: data.newDate,
       time: data.newTime,
       duration: data.duration,
       location: 'Beban Barbershop, Friedrich-Ebert-Platz 3a, 51373 Leverkusen',
-      description: `Dein verschobener Termin bei Beban Barbershop mit ${data.newBarberName}`,
+      description: `Dein Termin bei Beban Barbershop mit ${data.newBarberName}`,
     });
+
+    const subject = data.barberChanged
+      ? `Terminänderung - Neuer Termin: ${formatDateShort(data.newDate)} um ${data.newTime}`
+      : `Termin verschoben - Neuer Termin: ${formatDateShort(data.newDate)} um ${data.newTime}`;
 
     const { error } = await resend.emails.send({
       from: `${FROM_NAME} <${FROM_EMAIL}>`,
       to: data.customerEmail,
-      subject: `Terminverschiebung - Neuer Termin: ${formatDateShort(data.newDate)} um ${data.newTime}`,
+      subject,
       html: generateRescheduleHtml(data, await getLogoUrl()),
       attachments: [
         {
@@ -191,7 +217,7 @@ export async function sendRescheduleConfirmation(data: RescheduleEmailData): Pro
 
 function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string): string {
   const dateFormatted = formatDateShort(data.date);
-  const barberImage = data.barberImage || `${BASE_URL}/team/default.webp`;
+  const barberImage = toEmailSafeImageUrl(data.barberImage || `${BASE_URL}/team/default.jpg`, data.barberName);
   const barberImagePosition = data.imagePosition || 'center 30%';
   const icsDownloadUrl = `${BASE_URL}/api/calendar/${data.appointmentId}`;
   const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
@@ -249,7 +275,7 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
                           <table role="presentation" style="display: inline-table;">
                             <tr>
                               <td style="width: 42px; vertical-align: middle;">
-                                <div style="width: 42px; height: 42px; border-radius: 50%; background-image: url('${barberImage}'); background-size: cover; background-position: ${barberImagePosition}; background-color: #d4a853;"></div>
+                                <img src="${barberImage}" alt="${data.barberName}" style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; object-position: ${barberImagePosition};">
                               </td>
                               <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
                                 <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">BARBER</p>
@@ -318,8 +344,8 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
                     <table role="presentation" style="width: 100%;">
                       <tr>
                         <td style="width: 44px; vertical-align: top;">
-                          <div style="width: 44px; height: 44px; background-color: #f3f4f6; border-radius: 12px; text-align: center; line-height: 44px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="m21 8-2 2-1.5-3.7A2 2 0 0 0 15.646 5H8.4a2 2 0 0 0-1.903 1.257L5 10 3 8"/><path d="M7 14h.01"/><path d="M17 14h.01"/><rect width="18" height="8" x="3" y="10" rx="2"/><path d="M5 18v2"/><path d="M19 18v2"/></svg>
+                          <div style="width: 44px; height: 44px; background-color: rgba(212, 168, 83, 0.1); border-radius: 12px; text-align: center; line-height: 44px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4a853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></svg>
                           </div>
                         </td>
                         <td style="padding-left: 16px; vertical-align: top;">
@@ -339,7 +365,7 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
                   <td>
                     <!-- Kalender Button -->
                     <a href="${icsDownloadUrl}" target="_blank" style="display: block; background-color: #d4a853; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; padding: 18px 24px; border-radius: 16px; text-align: center; box-shadow: 0 10px 25px -5px rgba(212, 168, 83, 0.4);">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>Termin speichern (.ics)
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Termin speichern (.ics)
                     </a>
                   </td>
                 </tr>
@@ -390,14 +416,14 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
               <table role="presentation" style="width: 100%; margin-bottom: 24px; border-top: 1px solid #e5e7eb; padding-top: 24px;">
                 <tr>
                   <td style="text-align: center; padding-top: 24px;">
-                    <a href="https://www.instagram.com/beban_barber_shop2.0/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                    <a href="https://www.instagram.com/beban_barber_shop2.0/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
                     </a>
-                    <a href="https://www.facebook.com/share/1MtAAD8TAW/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                    <a href="https://www.facebook.com/share/1MtAAD8TAW/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
                     </a>
-                    <a href="https://www.youtube.com/@barbershopbeban7716" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+                    <a href="https://www.youtube.com/@barbershopbeban7716" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
                     </a>
                   </td>
                 </tr>
@@ -431,7 +457,7 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
 
 function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string {
   const dateFormatted = formatDateShort(data.date);
-  const barberImage = data.barberImage || `${BASE_URL}/team/default.webp`;
+  const barberImage = toEmailSafeImageUrl(data.barberImage || `${BASE_URL}/team/default.jpg`, data.barberName);
   const barberImagePosition = data.imagePosition || 'center 30%';
   const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
 
@@ -478,17 +504,17 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
               </table>
 
               <!-- Barber & Stornieren Row -->
-              <table role="presentation" style="width: 100%; margin-bottom: 12px; table-layout: fixed;">
+              <table role="presentation" style="width: 100%; margin-bottom: 12px; border-collapse: separate; border-spacing: 6px 0;">
                 <tr>
-                  <td style="width: 50%; padding-right: 6px; vertical-align: top;">
+                  <td style="width: 50%; vertical-align: top;">
                     <!-- Barber Box -->
                     <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">
                       <tr>
-                        <td style="padding: 5px 10px; height: 54px; text-align: center;">
-                          <table role="presentation" style="display: inline-table;">
+                        <td style="padding: 5px 12px; height: 54px;">
+                          <table role="presentation">
                             <tr>
                               <td style="width: 42px; vertical-align: middle;">
-                                <div style="width: 42px; height: 42px; border-radius: 50%; background-image: url('${barberImage}'); background-size: cover; background-position: ${barberImagePosition}; background-color: #d4a853;"></div>
+                                <img src="${barberImage}" alt="${data.barberName}" style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; object-position: ${barberImagePosition};">
                               </td>
                               <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
                                 <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">BARBER</p>
@@ -500,22 +526,22 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
                       </tr>
                     </table>
                   </td>
-                  <td style="width: 50%; padding-left: 6px; vertical-align: top;">
+                  <td style="width: 50%; vertical-align: top;">
                     <!-- Stornieren Box -->
                     <a href="${cancelUrl}" target="_blank" style="text-decoration: none; display: block;">
                       <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">
                         <tr>
-                          <td style="padding: 5px 10px; height: 54px; text-align: center;">
-                            <table role="presentation" style="display: inline-table;">
+                          <td style="padding: 5px 12px; height: 54px;">
+                            <table role="presentation">
                               <tr>
                                 <td style="width: 42px; vertical-align: middle;">
                                   <div style="width: 42px; height: 42px; background-color: #fef2f2; border-radius: 50%; text-align: center; line-height: 42px;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                                   </div>
                                 </td>
                                 <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
                                   <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">TERMIN</p>
-                                  <p style="margin: 0; font-size: 14px; font-weight: 700; color: #ef4444;">Stornieren</p>
+                                  <p style="margin: 0; font-size: 14px; font-weight: 600; color: #ef4444;">Stornieren</p>
                                 </td>
                               </tr>
                             </table>
@@ -559,8 +585,8 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
                     <table role="presentation" style="width: 100%;">
                       <tr>
                         <td style="width: 44px; vertical-align: top;">
-                          <div style="width: 44px; height: 44px; background-color: #f3f4f6; border-radius: 12px; text-align: center; line-height: 44px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="m21 8-2 2-1.5-3.7A2 2 0 0 0 15.646 5H8.4a2 2 0 0 0-1.903 1.257L5 10 3 8"/><path d="M7 14h.01"/><path d="M17 14h.01"/><rect width="18" height="8" x="3" y="10" rx="2"/><path d="M5 18v2"/><path d="M19 18v2"/></svg>
+                          <div style="width: 44px; height: 44px; background-color: rgba(212, 168, 83, 0.1); border-radius: 12px; text-align: center; line-height: 44px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4a853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></svg>
                           </div>
                         </td>
                         <td style="padding-left: 16px; vertical-align: top;">
@@ -611,14 +637,14 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
               <table role="presentation" style="width: 100%; margin-bottom: 24px; border-top: 1px solid #e5e7eb; padding-top: 24px;">
                 <tr>
                   <td style="text-align: center; padding-top: 24px;">
-                    <a href="https://www.instagram.com/beban_barber_shop2.0/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                    <a href="https://www.instagram.com/beban_barber_shop2.0/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
                     </a>
-                    <a href="https://www.facebook.com/share/1MtAAD8TAW/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                    <a href="https://www.facebook.com/share/1MtAAD8TAW/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
                     </a>
-                    <a href="https://www.youtube.com/@barbershopbeban7716" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+                    <a href="https://www.youtube.com/@barbershopbeban7716" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
                     </a>
                   </td>
                 </tr>
@@ -653,51 +679,25 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
 function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): string {
   const oldDateFormatted = formatDateShort(data.oldDate);
   const newDateFormatted = formatDateShort(data.newDate);
-  const oldBarberImage = data.oldBarberImage || `${BASE_URL}/team/default.webp`;
-  const oldBarberImagePosition = data.oldImagePosition || 'center 30%';
-  const newBarberImage = data.newBarberImage || `${BASE_URL}/team/default.webp`;
+  const newBarberImage = toEmailSafeImageUrl(data.newBarberImage || `${BASE_URL}/team/default.jpg`, data.newBarberName);
   const newBarberImagePosition = data.newImagePosition || 'center 30%';
   const icsDownloadUrl = `${BASE_URL}/api/calendar/${data.appointmentId}`;
   const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
 
-  // Barber-Bereich: Gleicher Barber vs. Barber gewechselt
-  const barberSection = data.barberChanged
-    ? `<!-- Neuer Barber mit grünem Rahmen -->
-                    <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: 2px solid #22c55e;">
-                      <tr>
-                        <td style="padding: 5px 10px; height: 54px; text-align: center;">
-                          <table role="presentation" style="display: inline-table;">
-                            <tr>
-                              <td style="width: 42px; vertical-align: middle;">
-                                <div style="width: 42px; height: 42px; border-radius: 50%; background-image: url('${newBarberImage}'); background-size: cover; background-position: ${newBarberImagePosition}; background-color: #d4a853;"></div>
-                              </td>
-                              <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
-                                <p style="margin: 0 0 2px; font-size: 9px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap;">NEUER BARBER</p>
-                                <p style="margin: 0; font-size: 14px; font-weight: 700; color: #1a1a1a;">${data.newBarberName}</p>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                    </table>`
-    : `<!-- Gleicher Barber -->
-                    <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">
-                      <tr>
-                        <td style="padding: 5px 10px; height: 54px; text-align: center;">
-                          <table role="presentation" style="display: inline-table;">
-                            <tr>
-                              <td style="width: 42px; vertical-align: middle;">
-                                <div style="width: 42px; height: 42px; border-radius: 50%; background-image: url('${newBarberImage}'); background-size: cover; background-position: ${newBarberImagePosition}; background-color: #d4a853;"></div>
-                              </td>
-                              <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
-                                <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">BARBER</p>
-                                <p style="margin: 0; font-size: 14px; font-weight: 700; color: #1a1a1a;">${data.newBarberName}</p>
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                    </table>`;
+  // Immer Logo oben
+  const headerImage = logoUrl;
+  const headerImagePosition = 'center center';
+
+  // Neuer Termin Box: Grüner Rand
+  const newTerminBorder = '2px solid #10b981';
+
+  // Barber-Label & Border
+  const barberLabel = data.barberChanged ? 'NEUER BARBER' : 'BARBER';
+  const barberBoxBorder = data.barberChanged ? '2px solid #10b981' : '1px solid #e5e7eb';
+  // Status: Immer blau, grauer Rand
+  const statusBoxBorder = '1px solid #e5e7eb';
+  const statusColor = '#3b82f6';
+  const statusBgColor = '#eff6ff';
 
   return `
 <!DOCTYPE html>
@@ -714,12 +714,12 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
         <!-- Main Card -->
         <table role="presentation" style="max-width: 420px; margin: 0 auto; background-color: #ffffff; border-radius: 32px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);">
 
-          <!-- Header mit Logo -->
+          <!-- Header -->
           <tr>
             <td style="padding: 48px 24px 24px; text-align: center;">
               <div style="margin-bottom: 24px;">
                 <a href="${BASE_URL}/de" target="_blank" style="text-decoration: none;">
-                  <img src="${logoUrl}" alt="Beban Barbershop" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover;">
+                  <img src="${headerImage}" alt="Beban Barbershop" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; object-position: ${headerImagePosition}; border: 3px solid #f3f4f6;">
                 </a>
               </div>
               <h1 style="margin: 0 0 8px; font-size: 22px; font-weight: 600; color: #1a1a1a; font-family: Georgia, 'Times New Roman', Times, serif; text-align: center;">Termin verschoben</h1>
@@ -731,22 +731,22 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
           <tr>
             <td style="padding: 0 24px 24px;">
 
-              <!-- Alter Termin Box -->
-              <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 20px; border: 1px solid #e5e7eb; margin-bottom: 8px; opacity: 0.7;">
+              <!-- Alter Termin (durchgestrichen) -->
+              <table role="presentation" style="width: 100%; background-color: #f9fafb; border-radius: 20px; border: 1px solid #e5e7eb; margin-bottom: 12px;">
                 <tr>
-                  <td style="padding: 20px 28px; text-align: center;">
-                    <p style="margin: 0 0 8px; font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 2px;">ALTER TERMIN</p>
-                    <p style="margin: 0; font-size: 20px; font-weight: 700; color: #9ca3af; text-decoration: line-through;">${oldDateFormatted} &bull; ${data.oldTime}</p>
+                  <td style="padding: 20px; text-align: center;">
+                    <p style="margin: 0 0 6px; font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 2px;">ALTER TERMIN</p>
+                    <p style="margin: 0; font-size: 20px; font-weight: 700; color: #9ca3af; text-decoration: line-through;">${oldDateFormatted} • ${data.oldTime}</p>
                   </td>
                 </tr>
               </table>
 
-              <!-- Neuer Termin Box -->
-              <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 20px; border: 2px solid #22c55e; margin-bottom: 12px;">
+              <!-- Neuer Termin -->
+              <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 20px; border: ${newTerminBorder}; margin-bottom: 12px;">
                 <tr>
-                  <td style="padding: 24px 28px; text-align: center;">
+                  <td style="padding: 28px; text-align: center;">
                     <p style="margin: 0 0 8px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">NEUER TERMIN</p>
-                    <p style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">${newDateFormatted} &bull; ${data.newTime}</p>
+                    <p style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">${newDateFormatted} • ${data.newTime}</p>
                   </td>
                 </tr>
               </table>
@@ -755,23 +755,40 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
               <table role="presentation" style="width: 100%; margin-bottom: 12px; table-layout: fixed;">
                 <tr>
                   <td style="width: 50%; padding-right: 6px; vertical-align: top;">
-                    ${barberSection}
-                  </td>
-                  <td style="width: 50%; padding-left: 6px; vertical-align: top;">
-                    <!-- Status Box: Verschoben -->
-                    <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">
+                    <!-- Barber Box -->
+                    <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: ${barberBoxBorder};">
                       <tr>
                         <td style="padding: 5px 10px; height: 54px; text-align: center;">
                           <table role="presentation" style="display: inline-table;">
                             <tr>
                               <td style="width: 42px; vertical-align: middle;">
-                                <div style="width: 42px; height: 42px; background-color: #eff6ff; border-radius: 50%; text-align: center; line-height: 42px;">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                <img src="${newBarberImage}" alt="${data.newBarberName}" style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; object-position: ${newBarberImagePosition};">
+                              </td>
+                              <td style="padding-left: 10px; vertical-align: middle; text-align: left; white-space: nowrap;">
+                                <p style="margin: 0 0 2px; font-size: ${data.barberChanged ? '9px' : '10px'}; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: ${data.barberChanged ? '0.5px' : '1px'}; white-space: nowrap;">${barberLabel}</p>
+                                <p style="margin: 0; font-size: 14px; font-weight: 700; color: #1a1a1a;">${data.newBarberName}</p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td style="width: 50%; padding-left: 6px; vertical-align: top;">
+                    <!-- Status Box -->
+                    <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: ${statusBoxBorder};">
+                      <tr>
+                        <td style="padding: 5px 10px; height: 54px; text-align: center;">
+                          <table role="presentation" style="display: inline-table;">
+                            <tr>
+                              <td style="width: 42px; vertical-align: middle;">
+                                <div style="width: 42px; height: 42px; background-color: ${statusBgColor}; border-radius: 50%; text-align: center; line-height: 42px;">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${statusColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                                 </div>
                               </td>
                               <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
                                 <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">STATUS</p>
-                                <p style="margin: 0; font-size: 14px; font-weight: 700; color: #3b82f6;">Verschoben</p>
+                                <p style="margin: 0; font-size: 14px; font-weight: 700; color: ${statusColor};">Verschoben</p>
                               </td>
                             </tr>
                           </table>
@@ -814,8 +831,8 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
                     <table role="presentation" style="width: 100%;">
                       <tr>
                         <td style="width: 44px; vertical-align: top;">
-                          <div style="width: 44px; height: 44px; background-color: #f3f4f6; border-radius: 12px; text-align: center; line-height: 44px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="m21 8-2 2-1.5-3.7A2 2 0 0 0 15.646 5H8.4a2 2 0 0 0-1.903 1.257L5 10 3 8"/><path d="M7 14h.01"/><path d="M17 14h.01"/><rect width="18" height="8" x="3" y="10" rx="2"/><path d="M5 18v2"/><path d="M19 18v2"/></svg>
+                          <div style="width: 44px; height: 44px; background-color: rgba(212, 168, 83, 0.1); border-radius: 12px; text-align: center; line-height: 44px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4a853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></svg>
                           </div>
                         </td>
                         <td style="padding-left: 16px; vertical-align: top;">
@@ -835,7 +852,7 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
                   <td>
                     <!-- Kalender Button -->
                     <a href="${icsDownloadUrl}" target="_blank" style="display: block; background-color: #d4a853; color: #ffffff; text-decoration: none; font-size: 15px; font-weight: 700; padding: 18px 24px; border-radius: 16px; text-align: center; box-shadow: 0 10px 25px -5px rgba(212, 168, 83, 0.4);">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>Neuen Termin speichern (.ics)
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Neuen Termin speichern (.ics)
                     </a>
                   </td>
                 </tr>
@@ -886,14 +903,14 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
               <table role="presentation" style="width: 100%; margin-bottom: 24px; border-top: 1px solid #e5e7eb; padding-top: 24px;">
                 <tr>
                   <td style="text-align: center; padding-top: 24px;">
-                    <a href="https://www.instagram.com/beban_barber_shop2.0/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                    <a href="https://www.instagram.com/beban_barber_shop2.0/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
                     </a>
-                    <a href="https://www.facebook.com/share/1MtAAD8TAW/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                    <a href="https://www.facebook.com/share/1MtAAD8TAW/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
                     </a>
-                    <a href="https://www.youtube.com/@barbershopbeban7716" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+                    <a href="https://www.youtube.com/@barbershopbeban7716" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
                     </a>
                   </td>
                 </tr>
@@ -1113,7 +1130,7 @@ function generateAccountInviteHtml(data: AccountInviteEmailData, logoUrl: string
                   <img src="${logoUrl}" alt="Beban Barbershop" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover;">
                 </a>
               </div>
-              <h1 style="margin: 0 0 8px; font-size: 22px; font-weight: 600; color: #1a1a1a; font-family: Georgia, 'Times New Roman', Times, serif; text-align: center;">Willkommen bei Beban!</h1>
+              <h1 style="margin: 0 0 8px; font-size: 22px; font-weight: 600; color: #1a1a1a; font-family: Georgia, 'Times New Roman', Times, serif; text-align: center;">Willkommen bei Beban Barbershop 2.0</h1>
               <p style="margin: 0; font-size: 14px; color: #6b7280; font-weight: 500; text-align: center;">Dein Kundenkonto wurde erstellt.</p>
             </td>
           </tr>
@@ -1236,14 +1253,14 @@ function generateAccountInviteHtml(data: AccountInviteEmailData, logoUrl: string
               <table role="presentation" style="width: 100%; margin-bottom: 24px; border-top: 1px solid #e5e7eb; padding-top: 24px;">
                 <tr>
                   <td style="text-align: center; padding-top: 24px;">
-                    <a href="https://www.instagram.com/beban_barber_shop2.0/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                    <a href="https://www.instagram.com/beban_barber_shop2.0/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
                     </a>
-                    <a href="https://www.facebook.com/share/1MtAAD8TAW/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                    <a href="https://www.facebook.com/share/1MtAAD8TAW/" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
                     </a>
-                    <a href="https://www.youtube.com/@barbershopbeban7716" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 38px; text-decoration: none; margin: 0 4px;">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+                    <a href="https://www.youtube.com/@barbershopbeban7716" target="_blank" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
                     </a>
                   </td>
                 </tr>

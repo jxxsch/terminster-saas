@@ -19,7 +19,6 @@ import {
   getOpenHolidays,
   getSetting,
   isBarberFreeDay,
-  isSlotBlockedByTimeOff,
   getStaffWorkingHours,
   getFreeDayExceptions,
   getOpeningHours,
@@ -33,6 +32,7 @@ import {
   StaffWorkingHours,
   FreeDayException,
   OpeningHours,
+  isSlotBlockedByTimeOff,
 } from '@/lib/supabase';
 import { sendBookingConfirmationEmail } from '@/lib/email-client';
 import { useAuth } from '@/context/AuthContext';
@@ -251,7 +251,7 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
   },
   header: {
-    padding: '1.25rem 25px',
+    padding: '1.25rem 10px',
     borderBottom: '1px solid #f1f5f9',
     display: 'flex',
     justifyContent: 'space-between',
@@ -281,7 +281,7 @@ const styles: Record<string, React.CSSProperties> = {
   progressContainer: {
     display: 'flex',
     gap: '0.5rem',
-    padding: '0.75rem 25px',
+    padding: '0.75rem 10px',
     borderBottom: '1px solid #f1f5f9',
     flexShrink: 0,
   },
@@ -312,7 +312,7 @@ const styles: Record<string, React.CSSProperties> = {
   content: {
     flex: 1,
     overflowY: 'auto',
-    padding: '1rem 25px',
+    padding: '1rem 10px',
   },
   section: {
     marginBottom: '1.5rem',
@@ -493,11 +493,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   choiceGrid: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: '3fr 1fr',
     gap: '0.75rem',
   },
   choiceBtn: {
-    padding: '0.5rem',
+    padding: '1rem',
     borderRadius: '0.75rem',
     border: '1px solid #e2e8f0',
     backgroundColor: '#ffffff',
@@ -532,10 +532,10 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '0.5rem',
   },
   input: {
-    padding: '0.75rem',
+    padding: '1rem',
     borderRadius: '0.5rem',
     border: '1px solid #e2e8f0',
-    fontSize: '0.75rem',
+    fontSize: '1rem',
     color: '#0f172a',
     backgroundColor: '#ffffff',
     outline: 'none',
@@ -623,7 +623,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#22c55e',
   },
   footer: {
-    padding: '1rem 25px',
+    padding: '1rem 10px',
     borderTop: '1px solid #f1f5f9',
     flexShrink: 0,
   },
@@ -635,7 +635,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   footerSummary: {
     flex: 1,
-    fontSize: '0.9rem',
+    fontSize: '0.625rem',
     color: '#64748b',
   },
   gold: {
@@ -651,7 +651,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     backgroundColor: '#0f172a',
     color: '#ffffff',
-    fontSize: '1rem',
+    fontSize: '0.6875rem',
     fontWeight: 500,
     cursor: 'pointer',
     transition: 'all 0.15s',
@@ -1292,7 +1292,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div style={{ ...styles.header, ...(isMobile ? { padding: '1.25rem 10px' } : {}) }}>
+          <div style={styles.header}>
             <span style={styles.title}>{t('title')}</span>
             <button style={styles.closeBtn} onClick={handleClose}>
               <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1477,7 +1477,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
           ) : (
             <>
               {/* Progress Bar - 3 Steps */}
-              <div style={{ ...styles.progressContainer, ...(isMobile ? { padding: '0.75rem 10px' } : {}) }}>
+              <div style={styles.progressContainer}>
                 {[
                   { num: 1, label: t('steps.barber'), done: selectedBarber !== null },
                   { num: 2, label: t('steps.time'), done: selectedSlot !== null },
@@ -1502,7 +1502,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
               </div>
 
               {/* Content */}
-              <div style={{ ...styles.content, ...(isMobile ? { padding: '1rem 10px' } : {}) }} ref={contentRef}>
+              <div style={styles.content} ref={contentRef}>
                 {/* Section 1: Barber Selection */}
                 <div id="booking-section-barber" style={styles.section}>
                   <div style={styles.sectionHeader}>
@@ -1529,7 +1529,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                             alt={barber.name}
                             fill
                             sizes="(max-width: 768px) 40vw, 280px"
-                            quality={75}
+                            quality={85}
                             style={{
                               objectFit: 'cover',
                               objectPosition: barber.image_position,
@@ -1606,7 +1606,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                           : undefined;
                         const isBarberNotAssignedToSunday = day.isOpenSunday && !barberSundayAssignment;
 
-                        // Barber ist nicht verfügbar, wenn: freier Tag ohne Ausnahme ODER Urlaub (ganztägig) ODER Ersatztag ODER nicht für Sonntag eingeteilt
+                        // Barber ist nicht verfügbar, wenn: freier Tag ohne Ausnahme ODER Urlaub ODER Ersatztag ODER nicht für Sonntag eingeteilt
                         const isBarberUnavailable = barberData && (
                           (isFreeDay && !hasException) ||
                           isReplacementDay ||
@@ -1614,7 +1614,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                           staffTimeOff.some(off => off.staff_id === selectedBarber && off.start_date <= day.dateStr && off.end_date >= day.dateStr && !off.start_time)
                         );
 
-                        // Partielle Blockierungen für diesen Barber an diesem Tag
+                        // Partielle Blockierungen für Slot-Filter
                         const partialBlocks = staffTimeOff.filter(off =>
                           off.staff_id === selectedBarber &&
                           off.start_date <= day.dateStr &&
@@ -1662,7 +1662,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                               effectiveOpenTime,
                               effectiveCloseTime,
                             ).filter(slot =>
-                              !partialBlocks.some(block => isSlotBlockedByTimeOff(block, slot))
+                              !partialBlocks.some(block => block.start_time && block.end_time && slot >= block.start_time && slot <= block.end_time)
                             );
 
                         const isExpanded = expandedDays.has(day.dateStr);
@@ -1792,12 +1792,12 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                           }}
                           style={styles.choiceGrid}
                         >
-                          <button type="button" onClick={() => setContactMode('auth')} style={{ ...styles.choiceBtn, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%', border: '1px solid #d4a853' }}>
+                          <button type="button" onClick={() => setContactMode('auth')} style={{ ...styles.choiceBtn, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%', border: '1px solid rgb(15, 23, 42)' }}>
                             <div style={{ ...styles.choiceBtnHeader, justifyContent: 'center' }}>
                               <svg width="18" height="18" fill="none" stroke="rgb(15, 23, 42)" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                               </svg>
-                              <span style={{ ...styles.choiceBtnTitle, fontSize: '0.9rem', color: 'rgb(15, 23, 42)' }}>{tAuth('login')}</span>
+                              <span style={{ ...styles.choiceBtnTitle, fontSize: '1rem', color: 'rgb(15, 23, 42)' }}>{tAuth('login')}</span>
                             </div>
                             <p style={{ ...styles.choiceBtnDesc, textAlign: 'center' }}>{t('manageAppointments')}</p>
                           </button>
@@ -2007,7 +2007,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
               </div>
 
               {/* Footer */}
-              <div style={{ ...styles.footer, ...(isMobile ? { padding: '1rem 10px' } : {}) }}>
+              <div style={styles.footer}>
                 {bookingError && (
                   <div style={styles.errorMsg}>
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -117,6 +117,8 @@ export default function KundenPage() {
     if (!selectedCustomer) return;
 
     const updated = await updateCustomer(selectedCustomer.id, {
+      first_name: editData.first_name,
+      last_name: editData.last_name,
       email: editData.email,
       phone: editData.phone,
       birth_date: editData.birth_date,
@@ -601,8 +603,8 @@ export default function KundenPage() {
                       <input
                         type="text"
                         value={editData.first_name || ''}
-                        disabled
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-400 cursor-not-allowed"
+                        onChange={(e) => setEditData({ ...editData, first_name: e.target.value })}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
                       />
                     </div>
                     <div>
@@ -610,8 +612,8 @@ export default function KundenPage() {
                       <input
                         type="text"
                         value={editData.last_name || ''}
-                        disabled
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-400 cursor-not-allowed"
+                        onChange={(e) => setEditData({ ...editData, last_name: e.target.value })}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
                       />
                     </div>
                     <div>

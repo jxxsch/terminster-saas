@@ -53,6 +53,20 @@ const customStorage = {
   },
 };
 
+// Browser Client Factory für Multi-Tenant Bereiche
+export function createBrowserClient() {
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: 'implicit',
+      storage: customStorage,
+      storageKey: 'beban-auth',
+    },
+  });
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -334,7 +348,37 @@ export async function getAppointments(startDate: string, endDate: string): Promi
     return [];
   }
 
-  return activeData || [];
+  // Abfrage 2: Stornierte Termine MIT series_id (Serien-Ausnahmen)
+  // Diese werden benötigt, damit die Serie für diesen Tag nicht angezeigt wird
+  const { data: cancelledSeriesData, error: cancelledError } = await supabase
+    .from('appointments')
+    .select('*')
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .eq('status', 'cancelled')
+    .not('series_id', 'is', null);
+
+  if (cancelledError) {
+    console.error('Error fetching cancelled series appointments:', cancelledError);
+    // Gib trotzdem die aktiven Termine zurück
+    return activeData || [];
+  }
+
+  // Kombiniere beide Ergebnisse (ohne Duplikate)
+  const allAppointments = [...(activeData || [])];
+  const existingIds = new Set(allAppointments.map(a => a.id));
+
+  for (const apt of (cancelledSeriesData || [])) {
+    if (!existingIds.has(apt.id)) {
+      allAppointments.push(apt);
+    }
+  }
+
+  // Sortiere nach Datum und Zeit
+  return allAppointments.sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    return a.time_slot.localeCompare(b.time_slot);
+  });
 }
 
 export async function createAppointment(appointment: Omit<Appointment, 'id' | 'created_at'>): Promise<{
@@ -440,11 +484,7 @@ export async function moveAppointment(
 export async function cancelAppointmentAdmin(id: string): Promise<boolean> {
   const { error } = await supabase
     .from('appointments')
-    .update({
-      status: 'cancelled',
-      cancelled_by: 'barber',
-      cancelled_at: new Date().toISOString(),
-    })
+    .update({ status: 'cancelled' })
     .eq('id', id);
 
   if (error) {
@@ -547,23 +587,10 @@ export async function createSeries(series: Omit<Series, 'id' | 'created_at'>): P
     return null;
   }
 
-  invalidateCache('series');
   return data;
 }
 
 export async function deleteSeries(id: string): Promise<boolean> {
-  // 1. Alle zugehörigen Appointments löschen
-  const { error: aptError } = await supabase
-    .from('appointments')
-    .delete()
-    .eq('series_id', id);
-
-  if (aptError) {
-    console.error('Error deleting series appointments:', aptError);
-    return false;
-  }
-
-  // 2. Serie selbst löschen
   const { error } = await supabase
     .from('series')
     .delete()
@@ -574,7 +601,6 @@ export async function deleteSeries(id: string): Promise<boolean> {
     return false;
   }
 
-  invalidateCache('series');
   return true;
 }
 
@@ -1045,10 +1071,23 @@ export async function getCustomerByAuthId(authId: string): Promise<Customer | nu
 
 export async function updateCustomer(
   id: string,
-  updates: Partial<Pick<Customer, 'phone' | 'email' | 'birth_date' | 'preferred_barber_id' | 'is_blocked'>>
+  updates: Partial<Pick<Customer, 'name' | 'phone' | 'email' | 'first_name' | 'last_name' | 'birth_date' | 'preferred_barber_id' | 'is_blocked'>>
 ): Promise<Customer | null> {
-  // Name (first_name, last_name, name) ist schreibgeschützt und wird nie aktualisiert
+  // Wenn first_name oder last_name aktualisiert werden, auch name aktualisieren
   const finalUpdates = { ...updates };
+  if (updates.first_name !== undefined || updates.last_name !== undefined) {
+    const { data: current } = await supabase
+      .from('customers')
+      .select('first_name, last_name')
+      .eq('id', id)
+      .single();
+
+    if (current) {
+      const firstName = updates.first_name ?? current.first_name;
+      const lastName = updates.last_name ?? current.last_name;
+      finalUpdates.name = `${firstName} ${lastName}`;
+    }
+  }
 
   const { data, error } = await supabase
     .from('customers')
@@ -1293,7 +1332,6 @@ export async function cancelAppointment(id: string): Promise<{ success: boolean;
     .from('appointments')
     .update({
       status: 'cancelled',
-      cancelled_by: 'customer',
       cancelled_at: new Date().toISOString()
     })
     .eq('id', id);

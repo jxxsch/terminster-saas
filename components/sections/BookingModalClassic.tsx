@@ -295,7 +295,7 @@ function findAlternatives(
     return true;
   };
 
-  // Helper: Prüfe ob Barber an Tag verfügbar ist (ganztägig)
+  // Helper: Prüfe ob Barber an Tag verfügbar ist
   const isBarberAvailable = (barberId: string, dateStr: string): boolean => {
     const barber = team.find(b => b.id === barberId);
     if (!barber) return false;
@@ -424,7 +424,7 @@ function findBarberAlternatives(
     return true;
   };
 
-  // Helper: Prüfe ob Barber an Tag verfügbar ist (ganztägig)
+  // Helper: Prüfe ob Barber an Tag verfügbar ist
   const isBarberAvailableOnDay = (bId: string, dateStr: string): boolean => {
     const b = team.find(t => t.id === bId);
     if (!b) return false;

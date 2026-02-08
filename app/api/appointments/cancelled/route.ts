@@ -11,7 +11,7 @@ export async function GET() {
     // Letzte 10 stornierte Termine laden
     const { data: appointments, error } = await supabase
       .from('appointments')
-      .select('id, customer_name, date, time_slot, cancelled_at, cancelled_by, barber_id')
+      .select('id, customer_name, date, time_slot, cancelled_at, barber_id')
       .eq('status', 'cancelled')
       .order('cancelled_at', { ascending: false, nullsFirst: false })
       .limit(10);
@@ -39,7 +39,6 @@ export async function GET() {
       time_slot: apt.time_slot,
       barber_name: teamMap.get(apt.barber_id) || 'Unbekannt',
       cancelled_at: apt.cancelled_at || new Date().toISOString(),
-      cancelled_by: (apt.cancelled_by as 'customer' | 'barber' | null) || null,
     })) || [];
 
     return NextResponse.json({ appointments: formattedAppointments });

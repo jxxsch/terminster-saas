@@ -775,11 +775,4 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   [data-stagger].is-visible > *:nth-child(2) { transition-delay: 0.06s; }
   [data-stagger].is-visible > *:nth-child(3) { transition-delay: 0.09s; }
   [data-stagger].is-visible > *:nth-child(4) { transition-delay: 0.12s; }
-
-  /* All input fields 1rem on mobile (prevents iOS zoom on focus) */
-  input,
-  select,
-  textarea {
-    font-size: 1rem !important;
-  }
 }

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terminster Booking Widget - Test</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      background: #0a0a0a;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #fff;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #888;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+      gap: 40px;
+    }
+    .widget-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .widget-label {
+      color: #888;
+      font-size: 14px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .widget-label strong {
+      color: #fff;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .widget-label code {
+      background: #222;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #D4AF37;
+      font-size: 12px;
+    }
+    .divider {
+      border-top: 1px solid #333;
+      margin: 60px 0;
+    }
+    h2 {
+      color: #fff;
+      margin-bottom: 20px;
+    }
+    h3 {
+      color: #ccc;
+      margin-top: 40px;
+      margin-bottom: 16px;
+      font-size: 1rem;
+    }
+    .code-block {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 20px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+    .code-block pre {
+      margin: 0;
+      color: #ccc;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .comment { color: #6a737d; }
+    .string { color: #98c379; }
+    .keyword { color: #c678dd; }
+    .tag { color: #e06c75; }
+    .attr { color: #d19a66; }
+
+    /* Light theme background */
+    .light-bg {
+      background: #f5f5f5;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Terminster Booking Widget</h1>
+    <p class="subtitle">Version 2.0 - Multi-tenant, Multi-language, Light/Dark Theme</p>
+
+    <div class="grid">
+      <!-- Dark Theme (German) -->
+      <div class="widget-container">
+        <div class="widget-label">
+          <strong>Dark Theme (Deutsch)</strong>
+          <code>data-theme="dark" data-locale="de"</code>
+        </div>
+        <div
+          data-terminster-widget
+          data-auto-init
+          data-tenant="beban"
+          data-shop="beban-barbershop-koln"
+          data-theme="dark"
+          data-locale="de"
+          data-api-url="http://localhost:3000"
+        ></div>
+      </div>
+
+      <!-- Light Theme (English) -->
+      <div class="widget-container">
+        <div class="widget-label">
+          <strong>Light Theme (English)</strong>
+          <code>data-theme="light" data-locale="en"</code>
+        </div>
+        <div class="light-bg">
+          <div
+            id="widget-light"
+            data-terminster-widget
+            data-tenant="beban"
+            data-shop="beban-barbershop-koln"
+            data-theme="light"
+            data-locale="en"
+            data-api-url="http://localhost:3000"
+          ></div>
+        </div>
+      </div>
+
+      <!-- Turkish -->
+      <div class="widget-container">
+        <div class="widget-label">
+          <strong>Turkce (Turkish)</strong>
+          <code>data-locale="tr"</code>
+        </div>
+        <div
+          id="widget-turkish"
+          data-terminster-widget
+          data-tenant="beban"
+          data-shop="beban-barbershop-koln"
+          data-theme="dark"
+          data-locale="tr"
+          data-api-url="http://localhost:3000"
+        ></div>
+      </div>
+
+      <!-- Custom Color -->
+      <div class="widget-container">
+        <div class="widget-label">
+          <strong>Custom Color</strong>
+          <code>data-color="#FF6B6B"</code>
+        </div>
+        <div
+          id="widget-custom"
+          data-terminster-widget
+          data-tenant="beban"
+          data-shop="beban-barbershop-koln"
+          data-theme="dark"
+          data-color="#FF6B6B"
+          data-api-url="http://localhost:3000"
+        ></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h2>Integration Guide</h2>
+
+    <h3>1. Simple HTML (Auto-Init)</h3>
+    <div class="code-block">
+      <pre><span class="comment">&lt;!-- Add this where you want the widget --&gt;</span>
+<span class="tag">&lt;div</span>
+  <span class="attr">data-terminster-widget</span>
+  <span class="attr">data-auto-init</span>
+  <span class="attr">data-tenant</span>=<span class="string">"your-tenant"</span>
+  <span class="attr">data-shop</span>=<span class="string">"your-shop"</span>
+  <span class="attr">data-theme</span>=<span class="string">"dark"</span>
+<span class="tag">&gt;&lt;/div&gt;</span>
+
+<span class="comment">&lt;!-- Add script at end of body --&gt;</span>
+<span class="tag">&lt;script</span> <span class="attr">src</span>=<span class="string">"https://widget.terminster.de/booking-widget.umd.js"</span><span class="tag">&gt;&lt;/script&gt;</span></pre>
+    </div>
+
+    <h3>2. JavaScript Initialization</h3>
+    <div class="code-block">
+      <pre><span class="tag">&lt;div</span> <span class="attr">id</span>=<span class="string">"booking-widget"</span><span class="tag">&gt;&lt;/div&gt;</span>
+
+<span class="tag">&lt;script</span> <span class="attr">src</span>=<span class="string">"https://widget.terminster.de/booking-widget.umd.js"</span><span class="tag">&gt;&lt;/script&gt;</span>
+<span class="tag">&lt;script&gt;</span>
+  <span class="keyword">const</span> widget = TerminsterWidget.init({
+    tenant_slug: <span class="string">'your-tenant'</span>,
+    shop_slug: <span class="string">'your-shop'</span>,
+    theme: <span class="string">'dark'</span>,
+    locale: <span class="string">'de'</span>,
+    primary_color: <span class="string">'#D4AF37'</span>,
+    on_success: (appointment) =&gt; {
+      console.log(<span class="string">'Booked!'</span>, appointment);
+    },
+    on_error: (error) =&gt; {
+      console.error(<span class="string">'Error:'</span>, error);
+    }
+  });
+
+  <span class="comment">// Later: widget.destroy() or widget.update({ theme: 'light' })</span>
+<span class="tag">&lt;/script&gt;</span></pre>
+    </div>
+
+    <h3>3. Configuration Options</h3>
+    <div class="code-block">
+      <pre><span class="keyword">interface</span> WidgetConfig {
+  tenant_slug: <span class="keyword">string</span>;       <span class="comment">// Required: Your tenant identifier</span>
+  shop_slug?: <span class="keyword">string</span>;        <span class="comment">// Optional: Specific shop (or show selector)</span>
+  api_url?: <span class="keyword">string</span>;          <span class="comment">// Optional: Custom API URL</span>
+  theme?: <span class="string">'light'</span> | <span class="string">'dark'</span> | <span class="string">'auto'</span>;  <span class="comment">// Default: 'dark'</span>
+  primary_color?: <span class="keyword">string</span>;    <span class="comment">// Optional: Brand color (hex)</span>
+  locale?: <span class="string">'de'</span> | <span class="string">'en'</span> | <span class="string">'tr'</span>;  <span class="comment">// Default: 'de'</span>
+  show_header?: <span class="keyword">boolean</span>;     <span class="comment">// Show title + progress (default: true)</span>
+  show_shop_selector?: <span class="keyword">boolean</span>;  <span class="comment">// Multi-location picker (default: true)</span>
+  allow_any_barber?: <span class="keyword">boolean</span>;  <span class="comment">// "Any barber" option (default: true)</span>
+  on_success?: (appointment) =&gt; <span class="keyword">void</span>;  <span class="comment">// Success callback</span>
+  on_error?: (error) =&gt; <span class="keyword">void</span>;  <span class="comment">// Error callback</span>
+}</pre>
+    </div>
+
+    <h3>4. Data Attributes</h3>
+    <div class="code-block">
+      <pre><span class="attr">data-terminster-widget</span>  <span class="comment">// Required: Marks element as widget container</span>
+<span class="attr">data-auto-init</span>          <span class="comment">// Auto-initialize on page load</span>
+<span class="attr">data-tenant</span>=<span class="string">"slug"</span>      <span class="comment">// Tenant identifier</span>
+<span class="attr">data-shop</span>=<span class="string">"slug"</span>        <span class="comment">// Shop identifier (optional)</span>
+<span class="attr">data-theme</span>=<span class="string">"dark"</span>       <span class="comment">// Theme: light, dark, auto</span>
+<span class="attr">data-locale</span>=<span class="string">"de"</span>        <span class="comment">// Language: de, en, tr</span>
+<span class="attr">data-color</span>=<span class="string">"#D4AF37"</span>    <span class="comment">// Primary color</span>
+<span class="attr">data-header</span>=<span class="string">"false"</span>     <span class="comment">// Hide header</span>
+<span class="attr">data-shop-selector</span>=<span class="string">"false"</span>  <span class="comment">// Hide shop selector</span>
+<span class="attr">data-any-barber</span>=<span class="string">"false"</span>  <span class="comment">// Hide "any barber" option</span>
+<span class="attr">data-api-url</span>=<span class="string">"..."</span>      <span class="comment">// Custom API URL</span></pre>
+    </div>
+
+    <h3>5. API Methods</h3>
+    <div class="code-block">
+      <pre><span class="comment">// Global API</span>
+TerminsterWidget.init(config)      <span class="comment">// Initialize on default container</span>
+TerminsterWidget.initOn(el, config)  <span class="comment">// Initialize on specific element</span>
+TerminsterWidget.destroyAll()      <span class="comment">// Destroy all widget instances</span>
+TerminsterWidget.version           <span class="comment">// Current version string</span>
+
+<span class="comment">// Instance methods (returned by init/initOn)</span>
+widget.destroy()                   <span class="comment">// Remove widget</span>
+widget.update(config)              <span class="comment">// Update configuration</span></pre>
+    </div>
+  </div>
+
+  <!-- Load Widget Script -->
+  <script src="../dist/booking-widget.umd.js"></script>
+  <script>
+    // Manual initialization for additional widgets
+    document.addEventListener('DOMContentLoaded', function() {
+      // Light theme widget
+      if (window.TerminsterWidget) {
+        TerminsterWidget.initOn('#widget-light', {
+          tenant_slug: 'beban',
+          shop_slug: 'beban-barbershop-koln',
+          api_url: 'http://localhost:3000'
+        });
+
+        // Turkish widget
+        TerminsterWidget.initOn('#widget-turkish', {
+          tenant_slug: 'beban',
+          shop_slug: 'beban-barbershop-koln',
+          api_url: 'http://localhost:3000'
+        });
+
+        // Custom color widget
+        TerminsterWidget.initOn('#widget-custom', {
+          tenant_slug: 'beban',
+          shop_slug: 'beban-barbershop-koln',
+          api_url: 'http://localhost:3000'
+        });
+      }
+    });
+  </script>
+</body>
+</html>

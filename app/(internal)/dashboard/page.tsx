@@ -84,7 +84,6 @@ export default function DashboardPage() {
     time_slot: string;
     barber_name: string;
     cancelled_at: string;
-    cancelled_by: 'customer' | 'barber' | null;
   }>>([]);
   const t = useTranslations('dashboard');
   const tDays = useTranslations('days');
@@ -505,15 +504,11 @@ export default function DashboardPage() {
           {/* Heute Button - Mobile */}
           <button
             onClick={() => {
+              setCurrentWeekOffset(0);
               const today = new Date();
               const dayOfWeek = today.getDay();
-              if (dayOfWeek === 0) {
-                setCurrentWeekOffset(1);
-                setSelectedDay(0);
-              } else {
-                setCurrentWeekOffset(0);
-                setSelectedDay(dayOfWeek - 1);
-              }
+              const todayIndex = dayOfWeek === 0 ? 0 : dayOfWeek - 1;
+              setSelectedDay(todayIndex);
             }}
             className={`flex-shrink-0 px-2 py-1.5 text-[10px] font-bold rounded-lg transition-all ${
               currentWeekOffset !== 0 || !weekDays[selectedDay]?.isToday
@@ -743,15 +738,11 @@ export default function DashboardPage() {
           {/* Heute Button */}
           <button
             onClick={() => {
+              setCurrentWeekOffset(0);
               const today = new Date();
               const dayOfWeek = today.getDay();
-              if (dayOfWeek === 0) {
-                setCurrentWeekOffset(1);
-                setSelectedDay(0);
-              } else {
-                setCurrentWeekOffset(0);
-                setSelectedDay(dayOfWeek - 1);
-              }
+              const todayIndex = dayOfWeek === 0 ? 0 : dayOfWeek - 1;
+              setSelectedDay(todayIndex);
             }}
             className={`ml-1 px-4 py-2 text-xs font-bold rounded-xl transition-all ${
               currentWeekOffset !== 0 || !weekDays[selectedDay]?.isToday
@@ -918,17 +909,8 @@ export default function DashboardPage() {
                               <p style={{ fontSize: '0.875rem', color: '#64748b' }}>Barber: {apt.barber_name}</p>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                              <span style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                padding: '0.25rem 0.5rem',
-                                borderRadius: '9999px',
-                                fontSize: '0.75rem',
-                                fontWeight: 500,
-                                backgroundColor: apt.cancelled_by === 'customer' ? '#fff7ed' : apt.cancelled_by === 'barber' ? '#f1f5f9' : '#fee2e2',
-                                color: apt.cancelled_by === 'customer' ? '#c2410c' : apt.cancelled_by === 'barber' ? '#475569' : '#b91c1c',
-                              }}>
-                                {apt.cancelled_by === 'customer' ? 'Kunde storniert' : apt.cancelled_by === 'barber' ? 'Shop storniert' : 'Storniert'}
+                              <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.25rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 500, backgroundColor: '#fee2e2', color: '#b91c1c' }}>
+                                Storniert
                               </span>
                               <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>{cancelledStr}</p>
                             </div>

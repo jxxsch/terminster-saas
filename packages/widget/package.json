@@ -1,0 +1,34 @@
+{
+  "name": "@terminster/widget",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/booking-widget.umd.js",
+  "module": "./dist/booking-widget.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/booking-widget.es.js",
+      "require": "./dist/booking-widget.umd.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "@terminster/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^4.5.2",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vite-plugin-dts": "^4.5.4"
+  }
+}

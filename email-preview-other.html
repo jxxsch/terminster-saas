@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-Mail Vorschau - Alle Mails</title>
+  <style>
+    body { margin: 0; padding: 40px 20px; background: #1a1a1a; font-family: -apple-system, sans-serif; }
+    .preview-container { max-width: 1500px; margin: 0 auto; }
+    .preview-header { text-align: center; margin-bottom: 40px; }
+    .preview-header h1 { color: #d4a853; font-size: 24px; font-weight: 300; letter-spacing: 2px; margin: 0 0 8px; }
+    .preview-header p { color: #888; font-size: 14px; margin: 0; }
+    .preview-grid { display: flex; gap: 32px; justify-content: center; flex-wrap: wrap; }
+    .preview-card { background: #222; border-radius: 16px; padding: 24px; flex: 0 0 auto; width: 460px; }
+    .preview-label { color: #d4a853; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; text-align: center; }
+    .preview-label span { background: #d4a853; color: #1a1a1a; padding: 4px 12px; border-radius: 20px; }
+    .email-frame { border-radius: 12px; overflow: hidden; background: #f8f9fa; }
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <div class="preview-header">
+      <h1>E-MAIL VORSCHAU</h1>
+      <p>Buchungsbestätigung &bull; Terminerinnerung &bull; Konto-Einladung</p>
+    </div>
+
+    <div class="preview-grid">
+
+      <!-- Mail: Buchungsbestätigung -->
+      <div class="preview-card">
+        <div class="preview-label"><span>Buchungsbestätigung</span></div>
+        <div class="email-frame">
+          <table role="presentation" style="width: 100%; border-collapse: collapse; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8f9fa;">
+            <tr>
+              <td style="padding: 24px 16px;">
+                <table role="presentation" style="max-width: 420px; margin: 0 auto; background-color: #ffffff; border-radius: 32px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);">
+
+                  <!-- Header: Logo -->
+                  <tr>
+                    <td style="padding: 48px 24px 24px; text-align: center;">
+                      <div style="margin-bottom: 24px;">
+                        <img src="public/logo.png" alt="Beban Barbershop" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover;">
+                      </div>
+                      <h1 style="margin: 0 0 8px; font-size: 22px; font-weight: 600; color: #1a1a1a; font-family: Georgia, 'Times New Roman', Times, serif; text-align: center;">Termin bestätigt!</h1>
+                      <p style="margin: 0; font-size: 14px; color: #6b7280; font-weight: 500; text-align: center;">Wir freuen uns auf deinen Besuch.</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 0 24px 24px;">
+
+                      <!-- Termin Box -->
+                      <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 20px; border: 1px solid #e5e7eb; margin-bottom: 12px;">
+                        <tr>
+                          <td style="padding: 28px; text-align: center;">
+                            <p style="margin: 0 0 8px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">DEIN TERMIN</p>
+                            <p style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">12.02.2026 &bull; 14:00</p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Barber & Status -->
+                      <table role="presentation" style="width: 100%; margin-bottom: 12px; table-layout: fixed;">
+                        <tr>
+                          <td style="width: 50%; padding-right: 6px; vertical-align: top;">
+                            <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">
+                              <tr>
+                                <td style="padding: 5px 10px; height: 54px; text-align: center;">
+                                  <table role="presentation" style="display: inline-table;">
+                                    <tr>
+                                      <td style="width: 42px; vertical-align: middle;">
+                                        <img src="public/team/sahir.jpg" alt="Sahir" style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; object-position: 51% 32%;">
+                                      </td>
+                                      <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
+                                        <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">BARBER</p>
+                                        <p style="margin: 0; font-size: 14px; font-weight: 700; color: #1a1a1a;">Sahir</p>
+                                      </td>
+                                    </tr>
+                                  </table>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                          <td style="width: 50%; padding-left: 6px; vertical-align: top;">
+                            <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">
+                              <tr>
+                                <td style="padding: 5px 10px; height: 54px; text-align: center;">
+                                  <table role="presentation" style="display: inline-table;">
+                                    <tr>
+                                      <td style="width: 42px; vertical-align: middle;">
+                                        <div style="width: 42px; height: 42px; background-color: #f0fdf4; border-radius: 50%; text-align: center; line-height: 42px;">
+                                          <span style="display: inline-block; width: 14px; height: 14px; background-color: #22c55e; border-radius: 50%;"></span>
+                                        </div>
+                                      </td>
+                                      <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
+                                        <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">STATUS</p>
+                                        <p style="margin: 0; font-size: 14px; font-weight: 700; color: #22c55e;">Bestätigt</p>
+                                      </td>
+                                    </tr>
+                                  </table>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Standort -->
+                      <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb; margin-bottom: 12px;">
+                        <tr>
+                          <td style="padding: 20px;">
+                            <table role="presentation" style="width: 100%;">
+                              <tr>
+                                <td style="width: 44px; vertical-align: top;">
+                                  <div style="width: 44px; height: 44px; background-color: rgba(212, 168, 83, 0.1); border-radius: 12px; text-align: center; line-height: 44px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4a853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+                                  </div>
+                                </td>
+                                <td style="padding-left: 16px; vertical-align: top;">
+                                  <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">STANDORT</p>
+                                  <p style="margin: 0; font-size: 14px; font-weight: 700; color: #1a1a1a;">Rathaus Galerie Leverkusen</p>
+                                  <p style="margin: 0 0 2px; font-size: 14px; font-weight: 700; color: #1a1a1a;">Obergeschoss</p>
+                                  <p style="margin: 0; font-size: 13px; color: #6b7280; line-height: 1.5;">Friedrich-Ebert-Platz 3a<br>51373 Leverkusen</p>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Parken -->
+                      <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb; margin-bottom: 32px;">
+                        <tr>
+                          <td style="padding: 20px;">
+                            <table role="presentation" style="width: 100%;">
+                              <tr>
+                                <td style="width: 44px; vertical-align: top;">
+                                  <div style="width: 44px; height: 44px; background-color: rgba(212, 168, 83, 0.1); border-radius: 12px; text-align: center; line-height: 44px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4a853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></svg>
+                                  </div>
+                                </td>
+                                <td style="padding-left: 16px; vertical-align: top;">
+                                  <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">PARKEN</p>
+                                  <p style="margin: 0 0 2px; font-size: 14px; font-weight: 700; color: #1a1a1a;">Parkhaus Rathaus Galerie</p>
+                                  <p style="margin: 0; font-size: 13px; color: #6b7280; line-height: 1.5;">1,50 &euro; pro Stunde</p>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Buttons -->
+                      <table role="presentation" style="width: 100%;">
+                        <tr>
+                          <td>
+                            <div style="display: block; background-color: #d4a853; color: #ffffff; font-size: 15px; font-weight: 700; padding: 18px 24px; border-radius: 16px; text-align: center; box-shadow: 0 10px 25px -5px rgba(212, 168, 83, 0.4);">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Termin speichern (.ics)
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding-top: 16px; text-align: center;">
+                            <span style="color: #6b7280; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Termin stornieren</span>
+                          </td>
+                        </tr>
+                      </table>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 40px 32px; background-color: #f9fafb; border-top: 1px solid #e5e7eb;">
+                      <table role="presentation" style="width: 100%; margin-bottom: 24px;">
+                        <tr><td style="text-align: center;">
+                          <p style="margin: 0 0 6px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">KONTAKT</p>
+                          <p style="margin: 0 0 4px; color: #4b5563; font-size: 14px; font-weight: 500;">info@beban-barbershop.de</p>
+                          <p style="margin: 0; color: #4b5563; font-size: 14px; font-weight: 500;">0214 7500 4590</p>
+                        </td></tr>
+                      </table>
+                      <table role="presentation" style="width: 100%; margin-bottom: 24px;">
+                        <tr><td style="text-align: center;">
+                          <p style="margin: 0 0 6px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">ÖFFNUNGSZEITEN</p>
+                          <p style="margin: 0 0 4px; font-size: 14px; color: #4b5563; font-weight: 500;">Mo &ndash; Sa: 10:00 &ndash; 19:00 Uhr</p>
+                          <p style="margin: 0; font-size: 14px; color: #9ca3af; font-weight: 500;">So: Geschlossen</p>
+                        </td></tr>
+                      </table>
+                      <table role="presentation" style="width: 100%; margin-bottom: 24px; border-top: 1px solid #e5e7eb; padding-top: 24px;">
+                        <tr><td style="text-align: center; padding-top: 24px;">
+                          <a href="#" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                          </a>
+                          <a href="#" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                          </a>
+                          <a href="#" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+                          </a>
+                        </td></tr>
+                      </table>
+                      <table role="presentation" style="width: 100%;">
+                        <tr><td style="text-align: center;">
+                          <p style="margin: 0 0 8px; font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;">&copy; 2026 BEBAN BARBERSHOP</p>
+                          <p style="margin: 0; font-size: 10px; color: #9ca3af;">Datenschutz &bull; Impressum</p>
+                        </td></tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mail: Terminerinnerung -->
+      <div class="preview-card">
+        <div class="preview-label"><span>Terminerinnerung</span></div>
+        <div class="email-frame">
+          <table role="presentation" style="width: 100%; border-collapse: collapse; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8f9fa;">
+            <tr>
+              <td style="padding: 24px 16px;">
+                <table role="presentation" style="max-width: 420px; margin: 0 auto; background-color: #ffffff; border-radius: 32px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);">
+
+                  <!-- Header: Logo -->
+                  <tr>
+                    <td style="padding: 48px 24px 24px; text-align: center;">
+                      <div style="margin-bottom: 24px;">
+                        <img src="public/logo.png" alt="Beban Barbershop" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover;">
+                      </div>
+                      <h1 style="margin: 0 0 8px; font-size: 22px; font-weight: 600; color: #1a1a1a; font-family: Georgia, 'Times New Roman', Times, serif; text-align: center;">Dein Termin ist morgen!</h1>
+                      <p style="margin: 0; font-size: 14px; color: #6b7280; font-weight: 500; text-align: center;">Wir erinnern dich an deinen Termin.</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 0 24px 24px;">
+
+                      <!-- Termin Box -->
+                      <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 20px; border: 1px solid #e5e7eb; margin-bottom: 12px;">
+                        <tr>
+                          <td style="padding: 28px; text-align: center;">
+                            <p style="margin: 0 0 8px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">DEIN TERMIN</p>
+                            <p style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">13.02.2026 &bull; 10:30</p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Barber & Stornieren -->
+                      <table role="presentation" style="width: 100%; margin-bottom: 12px; table-layout: fixed;">
+                        <tr>
+                          <td style="width: 50%; padding-right: 6px; vertical-align: top;">
+                            <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">
+                              <tr>
+                                <td style="padding: 5px 12px; height: 54px;">
+                                  <table role="presentation">
+                                    <tr>
+                                      <td style="width: 42px; vertical-align: middle;">
+                                        <img src="public/team/khalid.jpg" alt="Khalid" style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; object-position: center 30%;">
+                                      </td>
+                                      <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
+                                        <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">BARBER</p>
+                                        <p style="margin: 0; font-size: 14px; font-weight: 700; color: #1a1a1a;">Khalid</p>
+                                      </td>
+                                    </tr>
+                                  </table>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                          <td style="width: 50%; padding-left: 6px; vertical-align: top;">
+                            <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb;">
+                              <tr>
+                                <td style="padding: 5px 12px; height: 54px;">
+                                  <table role="presentation">
+                                    <tr>
+                                      <td style="width: 42px; vertical-align: middle;">
+                                        <div style="width: 42px; height: 42px; background-color: #fef2f2; border-radius: 50%; text-align: center; line-height: 42px;">
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                                        </div>
+                                      </td>
+                                      <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
+                                        <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">TERMIN</p>
+                                        <p style="margin: 0; font-size: 14px; font-weight: 600; color: #ef4444;">Stornieren</p>
+                                      </td>
+                                    </tr>
+                                  </table>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Standort -->
+                      <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb; margin-bottom: 12px;">
+                        <tr>
+                          <td style="padding: 20px;">
+                            <table role="presentation" style="width: 100%;">
+                              <tr>
+                                <td style="width: 44px; vertical-align: top;">
+                                  <div style="width: 44px; height: 44px; background-color: rgba(212, 168, 83, 0.1); border-radius: 12px; text-align: center; line-height: 44px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4a853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg>
+                                  </div>
+                                </td>
+                                <td style="padding-left: 16px; vertical-align: top;">
+                                  <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">STANDORT</p>
+                                  <p style="margin: 0; font-size: 14px; font-weight: 700; color: #1a1a1a;">Rathaus Galerie Leverkusen</p>
+                                  <p style="margin: 0 0 2px; font-size: 14px; font-weight: 700; color: #1a1a1a;">Obergeschoss</p>
+                                  <p style="margin: 0; font-size: 13px; color: #6b7280; line-height: 1.5;">Friedrich-Ebert-Platz 3a<br>51373 Leverkusen</p>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Parken -->
+                      <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb; margin-bottom: 32px;">
+                        <tr>
+                          <td style="padding: 20px;">
+                            <table role="presentation" style="width: 100%;">
+                              <tr>
+                                <td style="width: 44px; vertical-align: top;">
+                                  <div style="width: 44px; height: 44px; background-color: rgba(212, 168, 83, 0.1); border-radius: 12px; text-align: center; line-height: 44px;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d4a853" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/></svg>
+                                  </div>
+                                </td>
+                                <td style="padding-left: 16px; vertical-align: top;">
+                                  <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">PARKEN</p>
+                                  <p style="margin: 0 0 2px; font-size: 14px; font-weight: 700; color: #1a1a1a;">Parkhaus Rathaus Galerie</p>
+                                  <p style="margin: 0; font-size: 13px; color: #6b7280; line-height: 1.5;">1,50 &euro; pro Stunde</p>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 40px 32px; background-color: #f9fafb; border-top: 1px solid #e5e7eb;">
+                      <table role="presentation" style="width: 100%; margin-bottom: 24px;">
+                        <tr><td style="text-align: center;">
+                          <p style="margin: 0 0 6px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">KONTAKT</p>
+                          <p style="margin: 0 0 4px; color: #4b5563; font-size: 14px; font-weight: 500;">info@beban-barbershop.de</p>
+                          <p style="margin: 0; color: #4b5563; font-size: 14px; font-weight: 500;">0214 7500 4590</p>
+                        </td></tr>
+                      </table>
+                      <table role="presentation" style="width: 100%; margin-bottom: 24px;">
+                        <tr><td style="text-align: center;">
+                          <p style="margin: 0 0 6px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">ÖFFNUNGSZEITEN</p>
+                          <p style="margin: 0 0 4px; font-size: 14px; color: #4b5563; font-weight: 500;">Mo &ndash; Sa: 10:00 &ndash; 19:00 Uhr</p>
+                          <p style="margin: 0; font-size: 14px; color: #9ca3af; font-weight: 500;">So: Geschlossen</p>
+                        </td></tr>
+                      </table>
+                      <table role="presentation" style="width: 100%; margin-bottom: 24px; border-top: 1px solid #e5e7eb; padding-top: 24px;">
+                        <tr><td style="text-align: center; padding-top: 24px;">
+                          <a href="#" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                          </a>
+                          <a href="#" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                          </a>
+                          <a href="#" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+                          </a>
+                        </td></tr>
+                      </table>
+                      <table role="presentation" style="width: 100%;">
+                        <tr><td style="text-align: center;">
+                          <p style="margin: 0 0 8px; font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;">&copy; 2026 BEBAN BARBERSHOP</p>
+                          <p style="margin: 0; font-size: 10px; color: #9ca3af;">Datenschutz &bull; Impressum</p>
+                        </td></tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mail: Konto-Einladung -->
+      <div class="preview-card">
+        <div class="preview-label"><span>Konto-Einladung</span></div>
+        <div class="email-frame">
+          <table role="presentation" style="width: 100%; border-collapse: collapse; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8f9fa;">
+            <tr>
+              <td style="padding: 24px 16px;">
+                <table role="presentation" style="max-width: 420px; margin: 0 auto; background-color: #ffffff; border-radius: 32px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);">
+
+                  <!-- Header: Logo -->
+                  <tr>
+                    <td style="padding: 48px 24px 24px; text-align: center;">
+                      <div style="margin-bottom: 24px;">
+                        <img src="public/logo.png" alt="Beban Barbershop" style="width: 72px; height: 72px; border-radius: 50%; object-fit: cover;">
+                      </div>
+                      <h1 style="margin: 0 0 8px; font-size: 22px; font-weight: 600; color: #1a1a1a; font-family: Georgia, 'Times New Roman', Times, serif; text-align: center;">Willkommen bei Beban!</h1>
+                      <p style="margin: 0; font-size: 14px; color: #6b7280; font-weight: 500; text-align: center;">Dein Kundenkonto wurde erstellt.</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 0 24px 24px;">
+
+                      <!-- Begrüßung -->
+                      <table role="presentation" style="width: 100%; background-color: #ffffff; border-radius: 20px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
+                        <tr>
+                          <td style="padding: 28px; text-align: center;">
+                            <p style="margin: 0 0 8px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">HALLO</p>
+                            <p style="margin: 0; font-size: 24px; font-weight: 700; color: #1a1a1a;">Max Mustermann</p>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Info -->
+                      <table role="presentation" style="width: 100%; margin-bottom: 24px;">
+                        <tr>
+                          <td style="text-align: center;">
+                            <p style="margin: 0 0 16px; font-size: 14px; color: #4b5563; line-height: 1.6;">
+                              Wir haben ein Kundenkonto für dich angelegt. Damit kannst du:
+                            </p>
+                            <table role="presentation" style="margin: 0 auto;">
+                              <tr>
+                                <td style="padding: 8px 0;">
+                                  <table role="presentation"><tr>
+                                    <td style="width: 28px; vertical-align: top;">
+                                      <div style="width: 20px; height: 20px; background-color: #f0fdf4; border-radius: 50%; text-align: center; line-height: 20px;">
+                                        <span style="color: #22c55e; font-size: 12px;">&#10003;</span>
+                                      </div>
+                                    </td>
+                                    <td style="padding-left: 8px; font-size: 14px; font-weight: 600; color: #1a1a1a;">Termine online buchen</td>
+                                  </tr></table>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding: 8px 0;">
+                                  <table role="presentation"><tr>
+                                    <td style="width: 28px; vertical-align: top;">
+                                      <div style="width: 20px; height: 20px; background-color: #f0fdf4; border-radius: 50%; text-align: center; line-height: 20px;">
+                                        <span style="color: #22c55e; font-size: 12px;">&#10003;</span>
+                                      </div>
+                                    </td>
+                                    <td style="padding-left: 8px; font-size: 14px; font-weight: 600; color: #1a1a1a;">Deine Termine einsehen</td>
+                                  </tr></table>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding: 8px 0;">
+                                  <table role="presentation"><tr>
+                                    <td style="width: 28px; vertical-align: top;">
+                                      <div style="width: 20px; height: 20px; background-color: #f0fdf4; border-radius: 50%; text-align: center; line-height: 20px;">
+                                        <span style="color: #22c55e; font-size: 12px;">&#10003;</span>
+                                      </div>
+                                    </td>
+                                    <td style="padding-left: 8px; font-size: 14px; font-weight: 600; color: #1a1a1a;">Termine stornieren</td>
+                                  </tr></table>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- CTA Button -->
+                      <table role="presentation" style="width: 100%; margin-bottom: 24px;">
+                        <tr>
+                          <td>
+                            <div style="display: block; background-color: #d4a853; color: #ffffff; font-size: 15px; font-weight: 700; padding: 18px 24px; border-radius: 16px; text-align: center; box-shadow: 0 10px 25px -5px rgba(212, 168, 83, 0.4);">
+                              Passwort festlegen
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+
+                      <!-- Hinweis -->
+                      <table role="presentation" style="width: 100%; background-color: #f9fafb; border-radius: 12px; margin-bottom: 8px;">
+                        <tr>
+                          <td style="padding: 16px; text-align: center;">
+                            <p style="margin: 0; font-size: 12px; color: #6b7280; line-height: 1.5;">
+                              Der Link ist <strong>24 Stunden</strong> gültig.<br>
+                              Falls du diese E-Mail nicht erwartet hast, kannst du sie ignorieren.
+                            </p>
+                          </td>
+                        </tr>
+                      </table>
+
+                    </td>
+                  </tr>
+
+                  <!-- Footer -->
+                  <tr>
+                    <td style="padding: 40px 32px; background-color: #f9fafb; border-top: 1px solid #e5e7eb;">
+                      <table role="presentation" style="width: 100%; margin-bottom: 24px;">
+                        <tr><td style="text-align: center;">
+                          <p style="margin: 0 0 6px; font-size: 11px; font-weight: 700; color: #d4a853; text-transform: uppercase; letter-spacing: 2px;">KONTAKT</p>
+                          <p style="margin: 0 0 4px; color: #4b5563; font-size: 14px; font-weight: 500;">info@beban-barbershop.de</p>
+                          <p style="margin: 0; color: #4b5563; font-size: 14px; font-weight: 500;">0214 7500 4590</p>
+                        </td></tr>
+                      </table>
+                      <table role="presentation" style="width: 100%; margin-bottom: 24px; border-top: 1px solid #e5e7eb; padding-top: 24px;">
+                        <tr><td style="text-align: center; padding-top: 24px;">
+                          <a href="#" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+                          </a>
+                          <a href="#" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                          </a>
+                          <a href="#" style="display: inline-block; width: 40px; height: 40px; background-color: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 50%; text-align: center; line-height: 40px; text-decoration: none; margin: 0 6px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+                          </a>
+                        </td></tr>
+                      </table>
+                      <table role="presentation" style="width: 100%;">
+                        <tr><td style="text-align: center;">
+                          <p style="margin: 0 0 8px; font-size: 10px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;">&copy; 2026 BEBAN BARBERSHOP</p>
+                          <p style="margin: 0; font-size: 10px; color: #9ca3af;">Datenschutz &bull; Impressum</p>
+                        </td></tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

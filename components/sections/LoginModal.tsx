@@ -25,7 +25,7 @@ type Tab = 'login' | 'register' | 'forgot';
 
 export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordSetupData }: LoginModalProps) {
   const t = useTranslations('auth');
-  const { signIn, signUp, refreshCustomer } = useAuth();
+  const { signIn, signUp } = useAuth();
 
   // Password Setup Mode
   const isPasswordSetupMode = !!passwordSetupData;
@@ -176,8 +176,8 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
     setIsSubmitting(true);
 
     try {
-      // KRITISCH: Passwort setzen und User-Metadata aktualisieren
-      const { error: updateError, data: updateData } = await supabase.auth.updateUser({
+      // Passwort setzen und User-Metadata aktualisieren
+      const { error: updateError } = await supabase.auth.updateUser({
         password,
         data: {
           first_name: firstName.trim(),
@@ -193,58 +193,60 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
         return;
       }
 
-      // Passwort gesetzt - ab hier sofort Erfolg melden
-      setIsSubmitting(false);
-      onSuccess?.();
+      // Aktuellen User holen
+      const { data: { user } } = await supabase.auth.getUser();
 
-      // FIRE-AND-FORGET: DB-Updates im Hintergrund (blockieren NICHT die UI)
-      const userId = updateData?.user?.id;
-      if (userId) {
+      if (user) {
         const fullName = `${firstName.trim()} ${lastName.trim()}`;
-        const userEmail = updateData.user.email;
 
-        // Alle DB-Updates in einer async IIFE (fire-and-forget, blockiert nicht die UI)
-        (async () => {
-          try {
+        // Customer-Eintrag aktualisieren
+        await supabase
+          .from('customers')
+          .update({
+            first_name: firstName.trim(),
+            last_name: lastName.trim(),
+            name: fullName,
+            phone: phone.trim(),
+            birth_date: birthDate,
+          })
+          .eq('auth_id', user.id);
+
+        // Alle zukünftigen Termine mit neuen Kundendaten aktualisieren
+        const today = new Date().toISOString().split('T')[0];
+
+        // Hole customer_id
+        const { data: customer } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('auth_id', user.id)
+          .single();
+
+        if (customer) {
+          // Termine mit customer_id aktualisieren
+          await supabase
+            .from('appointments')
+            .update({
+              customer_name: fullName,
+              customer_phone: phone.trim(),
+            })
+            .eq('customer_id', customer.id)
+            .gte('date', today);
+
+          // Serien mit customer_email aktualisieren
+          if (user.email) {
             await supabase
-              .from('customers')
+              .from('series')
               .update({
-                first_name: firstName.trim(),
-                last_name: lastName.trim(),
-                name: fullName,
-                phone: phone.trim(),
-                birth_date: birthDate,
+                customer_name: fullName,
+                customer_phone: phone.trim(),
               })
-              .eq('auth_id', userId);
-
-            const today = new Date().toISOString().split('T')[0];
-            const { data: customer } = await supabase
-              .from('customers')
-              .select('id')
-              .eq('auth_id', userId)
-              .single();
-
-            if (customer) {
-              await supabase
-                .from('appointments')
-                .update({ customer_name: fullName, customer_phone: phone.trim() })
-                .eq('customer_id', customer.id)
-                .gte('date', today);
-            }
-
-            if (userEmail) {
-              await supabase
-                .from('series')
-                .update({ customer_name: fullName, customer_phone: phone.trim() })
-                .eq('customer_email', userEmail.toLowerCase());
-            }
-
-            await refreshCustomer();
-          } catch (bgErr) {
-            console.error('Background DB updates failed:', bgErr);
+              .eq('customer_email', user.email.toLowerCase());
           }
-        })();
+        }
       }
+
+      // Erfolg - CustomerPortal öffnen
+      onSuccess?.();
     } catch (err) {
       console.error('Password setup error:', err);
       setError('Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
