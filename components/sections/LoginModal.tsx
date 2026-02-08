@@ -25,7 +25,7 @@ type Tab = 'login' | 'register' | 'forgot';
 
 export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordSetupData }: LoginModalProps) {
   const t = useTranslations('auth');
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, refreshCustomer } = useAuth();
 
   // Password Setup Mode
   const isPasswordSetupMode = !!passwordSetupData;
@@ -244,6 +244,9 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
           }
         }
       }
+
+      // Customer-Daten im AuthContext aktualisieren
+      await refreshCustomer();
 
       // Erfolg - CustomerPortal öffnen
       onSuccess?.();
