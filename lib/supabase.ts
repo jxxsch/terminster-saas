@@ -1045,23 +1045,10 @@ export async function getCustomerByAuthId(authId: string): Promise<Customer | nu
 
 export async function updateCustomer(
   id: string,
-  updates: Partial<Pick<Customer, 'name' | 'phone' | 'email' | 'first_name' | 'last_name' | 'birth_date' | 'preferred_barber_id' | 'is_blocked'>>
+  updates: Partial<Pick<Customer, 'phone' | 'email' | 'birth_date' | 'preferred_barber_id' | 'is_blocked'>>
 ): Promise<Customer | null> {
-  // Wenn first_name oder last_name aktualisiert werden, auch name aktualisieren
+  // Name (first_name, last_name, name) ist schreibgeschützt und wird nie aktualisiert
   const finalUpdates = { ...updates };
-  if (updates.first_name !== undefined || updates.last_name !== undefined) {
-    const { data: current } = await supabase
-      .from('customers')
-      .select('first_name, last_name')
-      .eq('id', id)
-      .single();
-
-    if (current) {
-      const firstName = updates.first_name ?? current.first_name;
-      const lastName = updates.last_name ?? current.last_name;
-      finalUpdates.name = `${firstName} ${lastName}`;
-    }
-  }
 
   const { data, error } = await supabase
     .from('customers')

@@ -227,8 +227,6 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
     setProfileSuccess(false);
 
     const result = await updateCustomer(customer.id, {
-      first_name: editFirstName.trim(),
-      last_name: editLastName.trim(),
       phone: editPhone.trim() || null,
       birth_date: editBirthDate || null,
     });
@@ -245,8 +243,6 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
   const hasProfileChanges = () => {
     if (!customer) return false;
     return (
-      editFirstName !== (customer.first_name || '') ||
-      editLastName !== (customer.last_name || '') ||
       editPhone !== (customer.phone || '') ||
       editBirthDate !== (customer.birth_date || '')
     );
@@ -724,18 +720,18 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                         <input
                           type="text"
                           value={editFirstName}
-                          onChange={(e) => setEditFirstName(e.target.value)}
+                          disabled
                           placeholder={tAuth('firstName')}
                           className="portal-input"
-                          style={styles.input}
+                          style={{ ...styles.input, opacity: 0.6, cursor: 'not-allowed' }}
                         />
                         <input
                           type="text"
                           value={editLastName}
-                          onChange={(e) => setEditLastName(e.target.value)}
+                          disabled
                           placeholder={tAuth('lastName')}
                           className="portal-input"
-                          style={styles.input}
+                          style={{ ...styles.input, opacity: 0.6, cursor: 'not-allowed' }}
                         />
                       </div>
                     </div>
