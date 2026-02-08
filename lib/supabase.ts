@@ -779,6 +779,22 @@ export async function createSeriesWithAppointments(
 }
 
 /**
+ * Gibt den ersten (frühesten) Termin einer Serie zurück.
+ */
+export async function getFirstSeriesAppointment(seriesId: string): Promise<Appointment | null> {
+  const { data, error } = await supabase
+    .from('appointments')
+    .select('*')
+    .eq('series_id', seriesId)
+    .order('date', { ascending: true })
+    .limit(1)
+    .single();
+
+  if (error || !data) return null;
+  return data as Appointment;
+}
+
+/**
  * Storniert alle zukünftigen Termine einer Serie ab einem bestimmten Datum.
  * Setzt end_date auf der Serie und löscht zukünftige Appointment-Rows.
  */

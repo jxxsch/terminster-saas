@@ -10,12 +10,14 @@ import {
   searchCustomers,
   formatPrice,
   formatDuration,
+  getFirstSeriesAppointment,
   Appointment,
   Series,
   TeamMember,
   Service,
   Customer
 } from '@/lib/supabase';
+import { sendBookingConfirmationEmail } from '@/lib/email-client';
 
 const DAY_NAMES = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 const MONTH_NAMES = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
@@ -261,6 +263,30 @@ export function AddAppointmentModal({
         return;
       }
 
+      // Buchungsbestätigung für ersten Termin senden (fire-and-forget)
+      const seriesEmail = selectedCustomer?.email || customerEmail.trim();
+      if (seriesEmail && result.appointmentsCreated > 0) {
+        getFirstSeriesAppointment(result.series.id).then(firstApt => {
+          if (firstApt) {
+            const barber = team.find(t => t.id === barberId);
+            const service = services.find(s => s.id === serviceId);
+            sendBookingConfirmationEmail({
+              customerName: firstApt.customer_name,
+              customerEmail: seriesEmail,
+              barberName: barber?.name || 'Barber',
+              barberImage: barber?.image || undefined,
+              imagePosition: barber?.image_position,
+              serviceName: service?.name || 'Termin',
+              date: firstApt.date,
+              time: firstApt.time_slot,
+              duration: service?.duration || 30,
+              price: service ? formatPrice(service.price) : '0,00 €',
+              appointmentId: firstApt.id,
+            }).catch(err => console.error('Series booking confirmation email failed:', err));
+          }
+        }).catch(err => console.error('Failed to get first series appointment:', err));
+      }
+
       if (result.appointmentsSkipped > 0) {
         // Konflikte vorhanden: Modal zeigen, Serie-Callback verzögern
         setConflictResult({
@@ -444,6 +470,27 @@ export function AddAppointmentModal({
             console.error('Invite fetch error:', err);
           }
         }
+
+        // Buchungsbestätigung per E-Mail senden (fire-and-forget)
+        const email = result.appointment.customer_email;
+        if (email) {
+          const barber = team.find(t => t.id === barberId);
+          const service = services.find(s => s.id === serviceId);
+          sendBookingConfirmationEmail({
+            customerName: result.appointment.customer_name,
+            customerEmail: email,
+            barberName: barber?.name || 'Barber',
+            barberImage: barber?.image || undefined,
+            imagePosition: barber?.image_position,
+            serviceName: service?.name || 'Termin',
+            date: result.appointment.date,
+            time: result.appointment.time_slot,
+            duration: service?.duration || 30,
+            price: service ? formatPrice(service.price) : '0,00 €',
+            appointmentId: result.appointment.id,
+          }).catch(err => console.error('Booking confirmation email failed:', err));
+        }
+
         onCreated(result.appointment);
       } else {
         setError(result.error === 'conflict' ? 'Zeitslot bereits belegt' : 'Fehler beim Speichern');
