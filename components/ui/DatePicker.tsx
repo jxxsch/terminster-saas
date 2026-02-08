@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 
@@ -36,6 +36,7 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
   const WEEKDAYS = useMemo(() => DAY_KEYS.map(key => tDays(`short.${key}`)), [tDays]);
 
   const [isOpen, setIsOpen] = useState(false);
+  const [inputText, setInputText] = useState('');
   const [viewDate, setViewDate] = useState(() => {
     if (value) {
       const [year, month] = value.split('-').map(Number);
@@ -48,6 +49,7 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
   const [mounted, setMounted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const isTypingRef = useRef(false);
 
   // Parse min/max dates
   const minDate = min ? new Date(min + 'T00:00:00') : null;
@@ -63,38 +65,37 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
     setMounted(true);
   }, []);
 
-  // Calculate dropdown position when opening
-  useEffect(() => {
+  // Calculate dropdown position (useLayoutEffect runs after DOM update but before paint)
+  useLayoutEffect(() => {
     if (isOpen && inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
       const dropdownWidth = 280;
-      const dropdownHeight = 340;
       const padding = 8;
 
-      // Calculate left position - check if it goes off screen to the right
+      // Left: innerhalb des Viewports halten
       let left = rect.left;
       if (left + dropdownWidth > window.innerWidth - padding) {
         left = window.innerWidth - dropdownWidth - padding;
       }
-      // Make sure it doesn't go off screen to the left
       if (left < padding) {
         left = padding;
       }
 
-      // Calculate top position - check if it goes off screen at the bottom
-      let top = rect.bottom + 4;
-      if (top + dropdownHeight > window.innerHeight - padding) {
-        // Show above the input instead
-        top = rect.top - dropdownHeight - 4;
-      }
-      // Make sure it doesn't go off screen at the top
-      if (top < padding) {
-        top = padding;
+      // Echte Höhe messen (Portal ist bereits im DOM)
+      const actualHeight = dropdownRef.current?.getBoundingClientRect().height || 340;
+      const spaceBelow = window.innerHeight - rect.bottom;
+
+      let top: number;
+      if (spaceBelow >= actualHeight + padding) {
+        top = rect.bottom + 4;
+      } else {
+        // Unterkante Kalender = Oberkante Eingabefeld - 16px Abstand
+        top = rect.top - actualHeight - 16;
       }
 
       setDropdownPosition({ top, left });
     }
-  }, [isOpen]);
+  }, [isOpen, viewDate.month, viewDate.year]);
 
   // Close on click outside
   useEffect(() => {
@@ -124,10 +125,65 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
     }
   }, [isOpen]);
 
-  // Format display value
-  const displayValue = value
-    ? value.split('-').reverse().join('.')
-    : '';
+  // Sync inputText when value changes from outside (calendar pick, clear, etc.)
+  useEffect(() => {
+    if (!isTypingRef.current) {
+      setInputText(value ? value.split('-').reverse().join('.') : '');
+    }
+  }, [value]);
+
+  // Parse typed date (dd.mm.yyyy) and call onChange with ISO format
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    isTypingRef.current = true;
+    setIsOpen(false); // Kalender schließen beim Tippen
+    let raw = e.target.value;
+
+    // Only allow digits and dots
+    raw = raw.replace(/[^\d.]/g, '');
+
+    // Auto-insert dots after day and month
+    const digits = raw.replace(/\./g, '');
+    if (digits.length <= 2) {
+      raw = digits;
+    } else if (digits.length <= 4) {
+      raw = digits.slice(0, 2) + '.' + digits.slice(2);
+    } else {
+      raw = digits.slice(0, 2) + '.' + digits.slice(2, 4) + '.' + digits.slice(4, 8);
+    }
+
+    setInputText(raw);
+
+    // Try to parse complete date
+    const match = raw.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (match) {
+      const [, dd, mm, yyyy] = match;
+      const day = parseInt(dd);
+      const month = parseInt(mm);
+      const year = parseInt(yyyy);
+
+      if (day >= 1 && day <= 31 && month >= 1 && month <= 12 && year >= 1920 && year <= 2100) {
+        const isoDate = `${yyyy}-${mm}-${dd}`;
+        // Validate it's a real date
+        const dateObj = new Date(year, month - 1, day);
+        if (dateObj.getDate() === day && dateObj.getMonth() === month - 1) {
+          onChange(isoDate);
+          setViewDate({ year, month: month - 1 });
+        }
+      }
+    }
+  }
+
+  function handleInputBlur() {
+    isTypingRef.current = false;
+    // Reset to formatted value if input is incomplete/invalid
+    setInputText(value ? value.split('-').reverse().join('.') : '');
+  }
+
+  function toggleCalendar(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsOpen(prev => !prev);
+  }
 
   // Get days in month
   function getDaysInMonth(year: number, month: number) {
@@ -163,6 +219,7 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
 
   // Handle date selection
   function selectDate(day: number) {
+    isTypingRef.current = false;
     const month = String(viewDate.month + 1).padStart(2, '0');
     const dayStr = String(day).padStart(2, '0');
     onChange(`${viewDate.year}-${month}-${dayStr}`);
@@ -190,6 +247,7 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
 
   // Go to today
   function goToToday() {
+    isTypingRef.current = false;
     const today = new Date();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
@@ -204,6 +262,7 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
 
   // Clear date
   function clearDate() {
+    isTypingRef.current = false;
     onChange('');
     setIsOpen(false);
   }
@@ -232,11 +291,12 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
       width: '100%',
       padding: '0.625rem 0.75rem',
       fontSize: '0.8125rem',
-      border: '1px solid #e2e8f0',
+      borderWidth: '1px',
+      borderStyle: 'solid',
+      borderColor: '#e2e8f0',
       borderRadius: '0.5rem',
       backgroundColor: '#ffffff',
       color: '#0f172a',
-      cursor: 'pointer',
       outline: 'none',
       transition: 'border-color 0.15s, box-shadow 0.15s',
       ...style,
@@ -254,6 +314,8 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
       border: '1px solid #e2e8f0',
       padding: '0.75rem',
       width: '280px',
+      maxHeight: 'calc(100vh - 16px)',
+      overflowY: 'auto' as const,
     },
     header: {
       display: 'flex',
@@ -496,34 +558,51 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
         >
           {tCommon('delete')}
         </button>
-        <button
-          type="button"
-          onClick={goToToday}
-          style={{ ...styles.footerBtn, ...styles.footerBtnPrimary }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(212, 168, 83, 0.1)'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-        >
-          {tCommon('today')}
-        </button>
       </div>
     </div>
   );
 
   return (
-    <div style={styles.container}>
+    <div style={{ ...styles.container, position: 'relative' }}>
       <input
         ref={inputRef}
         type="text"
-        readOnly
-        value={displayValue}
+        value={inputText}
         placeholder={placeholder}
-        onClick={() => setIsOpen(!isOpen)}
+        onChange={handleInputChange}
+        onBlur={handleInputBlur}
+        inputMode="numeric"
+        maxLength={10}
         style={{
           ...styles.input,
+          paddingRight: '2.25rem',
           ...(isOpen ? styles.inputFocused : {}),
         }}
         required={required}
       />
+      <button
+        type="button"
+        onMouseDown={toggleCalendar}
+        tabIndex={-1}
+        style={{
+          position: 'absolute',
+          right: '0.5rem',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          background: 'none',
+          border: 'none',
+          padding: '4px',
+          cursor: 'pointer',
+          color: '#94a3b8',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
+        </svg>
+      </button>
 
       {mounted && isOpen && createPortal(dropdown, document.body)}
     </div>

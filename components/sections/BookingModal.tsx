@@ -1529,7 +1529,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                             alt={barber.name}
                             fill
                             sizes="(max-width: 768px) 40vw, 280px"
-                            quality={85}
+                            quality={75}
                             style={{
                               objectFit: 'cover',
                               objectPosition: barber.image_position,
