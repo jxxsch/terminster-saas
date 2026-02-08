@@ -98,6 +98,8 @@ Wichtige Änderungen hier dokumentieren:
 | 2026-01-27 | **Produkte-Sektion:** Neue Website-Sektion mit Kategorie-Tabs (Bart, Haare, Rasur, Pflege), Admin-Verwaltung für Produkte (CRUD), Navigation-Item im Header, i18n-Support | `components/sections/Products.tsx`, `app/(internal)/admin/produkte/page.tsx`, `components/shared/AppSidebar.tsx`, `lib/supabase.ts`, `messages/*.json` |
 | 2026-01-28 | **Kundenverwaltung im Admin:** Neue Admin-Seite unter Verwaltung/Kunden. Kundenliste mit Suche/Filter, Kundendetails mit Terminhistorie, Bearbeiten, Sperren/Entsperren. Neue Felder `preferred_barber_id` und `is_blocked` in customers-Tabelle | `app/(internal)/admin/kunden/page.tsx`, `components/shared/AppSidebar.tsx`, `lib/supabase.ts` |
 | 2026-01-28 | **100 Testkundendaten:** 100 Kundenkonten mit deutschen/ausländischen Namen, Geburtsdaten, ~217 Termine (67 Einzeltermine online, 150 Serientermine), 33 Serien (17 wöchentlich, 16 14-tägig), verteilt auf 5 Wochen | Supabase-Daten |
+| 2026-02-07 | **Serientermine Rebuild:** Serien generieren jetzt echte Appointment-Rows (52 Wochen). Neue DB-Felder `is_pause`, `last_generated_date`. PostgreSQL-Funktion `batch_insert_series_appointments`. Neue Supabase-Funktionen: `createSeriesWithAppointments`, `cancelSeriesFuture`, `extendSeriesAppointments`, `updateSeriesRhythm`. Cron-Job `/api/series/extend` (Mo 02:00 UTC). Einmalige Migration `/api/series/migrate`. Virtueller seriesAppointments-useMemo entfernt aus WeekView/BarberWeekView. BookingModal nutzt keine Serie-Liste mehr. | `lib/supabase.ts`, `app/api/series/extend/route.ts`, `app/api/series/migrate/route.ts`, `vercel.json`, `components/dashboard/WeekView.tsx`, `components/dashboard/BarberWeekView.tsx`, `components/dashboard/AddAppointmentModal.tsx`, `components/sections/BookingModal.tsx`, `components/dashboard/DragContext.tsx` |
+| 2026-02-08 | **Teilzeit-Blockierung:** Barber können jetzt für Teile eines Tags blockiert werden (z.B. "Krank ab 14:00"). Neue DB-Felder `start_time`/`end_time` in `staff_time_off`. Neuer "Blockierung"-Tab im AddAppointmentModal. Blockierte Slots grau im Kalender, nicht buchbar online. Helper `isSlotBlockedByTimeOff()`. `getFullDayOff`/`getSlotBlock` ersetzen `isBarberOffOnDate` | `lib/supabase.ts`, `components/dashboard/AddAppointmentModal.tsx`, `components/dashboard/WeekView.tsx`, `components/dashboard/BarberWeekView.tsx`, `components/sections/BookingModal.tsx`, `components/sections/BookingModalClassic.tsx` |
 
 ## Dateistruktur
 
@@ -184,9 +186,9 @@ my-website/
 | `services` | Leistungen | id, name, price (Cent), duration (Min), sort_order, active |
 | `time_slots` | Zeitslots | id, time, sort_order, active |
 | `customers` | Kunden | id, auth_id, first_name, last_name, name, email, phone, birth_date, preferred_barber_id, is_blocked, created_at |
-| `appointments` | Einzeltermine | id, barber_id, date, time_slot, service_id, customer_name, customer_phone, customer_id, customer_email, status, source, series_id |
-| `series` | Serientermine | id, barber_id, day_of_week, time_slot, service_id, customer_name, customer_phone, customer_email, start_date, end_date, interval_type |
-| `staff_time_off` | Urlaub/Abwesenheit | id, staff_id, start_date, end_date, reason, created_at |
+| `appointments` | Termine (inkl. Serien) | id, barber_id, date, time_slot, service_id, customer_name, customer_phone, customer_id, customer_email, status, source, series_id, is_pause |
+| `series` | Serien-Muster | id, barber_id, day_of_week, time_slot, service_id, customer_name, customer_phone, customer_email, start_date, end_date, interval_type, last_generated_date |
+| `staff_time_off` | Urlaub/Abwesenheit | id, staff_id, start_date, end_date, reason, start_time, end_time, created_at |
 | `opening_hours` | Öffnungszeiten | id, day_of_week, open_time, close_time, is_closed |
 | `site_settings` | Einstellungen & Content | key, value (JSONB), updated_at |
 | `closed_dates` | Geschlossene Tage | id, date, reason, created_at |
@@ -237,12 +239,21 @@ moveAppointment(id, updates): Promise<{ success: boolean; appointment: Appointme
 getSeries(): Promise<Series[]>
 createSeries(series): Promise<Series | null>
 deleteSeries(id): Promise<boolean>
+updateSeries(id, updates): Promise<Series | null>
+
+// Series Appointments (Echte Termine generieren)
+generateSeriesAppointments(series, fromDate, weeksAhead=52): Promise<SeriesGenerationResult>
+createSeriesWithAppointments(seriesData, isPause): Promise<{series, appointmentsCreated, appointmentsSkipped, conflicts[]}>
+cancelSeriesFuture(seriesId, fromDate): Promise<{success, deletedCount}>
+extendSeriesAppointments(seriesId): Promise<SeriesGenerationResult>  // Für Cron-Job
+updateSeriesRhythm(seriesId, newIntervalType): Promise<SeriesGenerationResult>
 
 // Staff Time Off (Urlaub)
 getStaffTimeOff(): Promise<StaffTimeOff[]>
 createStaffTimeOff(data): Promise<StaffTimeOff | null>
 deleteStaffTimeOff(id): Promise<boolean>
 isStaffOnTimeOff(staffId, date): Promise<boolean>
+isSlotBlockedByTimeOff(timeOff, slotTime): boolean  // Prüft ob Slot durch partielle Blockierung betroffen
 
 // Opening Hours
 getOpeningHours(): Promise<OpeningHours[]>

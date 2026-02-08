@@ -1,20 +1,32 @@
 // Client-seitige Funktionen zum Senden von E-Mails über die API
 
 export interface SendEmailParams {
-  type: 'booking_confirmation' | 'reminder';
+  type: 'booking_confirmation' | 'reminder' | 'reschedule';
   data: {
     customerName: string;
     customerEmail: string;
     customerPhone?: string;
-    barberName: string;
+    barberName?: string;
     barberImage?: string;
     imagePosition?: string;
     serviceName: string;
-    date: string;
-    time: string;
+    date?: string;
+    time?: string;
     duration?: number;
     price?: string;
     appointmentId?: string;
+    // Reschedule-spezifisch
+    oldBarberName?: string;
+    oldBarberImage?: string;
+    oldImagePosition?: string;
+    oldDate?: string;
+    oldTime?: string;
+    newBarberName?: string;
+    newBarberImage?: string;
+    newImagePosition?: string;
+    newDate?: string;
+    newTime?: string;
+    barberChanged?: boolean;
   };
 }
 
@@ -58,6 +70,32 @@ export async function sendBookingConfirmationEmail(data: {
 }): Promise<{ success: boolean; error?: string }> {
   return sendEmail({
     type: 'booking_confirmation',
+    data,
+  });
+}
+
+// Terminverschiebungs-E-Mail senden
+export async function sendRescheduleEmail(data: {
+  customerName: string;
+  customerEmail: string;
+  oldBarberName: string;
+  oldBarberImage?: string;
+  oldImagePosition?: string;
+  oldDate: string;
+  oldTime: string;
+  newBarberName: string;
+  newBarberImage?: string;
+  newImagePosition?: string;
+  newDate: string;
+  newTime: string;
+  serviceName: string;
+  duration: number;
+  price: string;
+  appointmentId: string;
+  barberChanged: boolean;
+}): Promise<{ success: boolean; error?: string }> {
+  return sendEmail({
+    type: 'reschedule',
     data,
   });
 }

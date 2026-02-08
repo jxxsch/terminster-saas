@@ -15,12 +15,12 @@ import {
   rectIntersection,
   CollisionDetection,
 } from '@dnd-kit/core';
-import { Appointment, Series, moveAppointment, updateSeries } from '@/lib/supabase';
+import { Appointment, Series, moveAppointment } from '@/lib/supabase';
 
 interface DragContextValue {
   isDragging: boolean;
   activeAppointment: Appointment | null;
-  activePauseSeries: { series: Series; date: string } | null;
+  activePauseSeries: null;
   overBarberHeader: { barberId: string; barberName: string; date: string } | null;
 }
 
@@ -87,15 +87,12 @@ interface DragProviderProps {
 export function DragProvider({
   children,
   appointments,
-  series = [],
   onAppointmentMoved,
-  onSeriesUpdated,
   onMoveError,
   onBarberHeaderDrop,
   disabled = false,
 }: DragProviderProps) {
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
-  const [activePauseSeries, setActivePauseSeries] = useState<{ series: Series; date: string } | null>(null);
   const [overBarberHeader, setOverBarberHeader] = useState<{ barberId: string; barberName: string; date: string } | null>(null);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -119,26 +116,12 @@ export function DragProvider({
     const { active } = event;
     const id = active.id as string;
 
-    // Check if it's a pause series: "series-pause|{seriesId}|{date}"
-    if (id.startsWith('series-pause|')) {
-      const parts = id.split('|');
-      if (parts.length === 3) {
-        const seriesId = parts[1];
-        const date = parts[2];
-        const seriesItem = series.find(s => s.id === seriesId);
-        if (seriesItem) {
-          setActivePauseSeries({ series: seriesItem, date });
-          return;
-        }
-      }
-    }
-
-    // Normal appointment
+    // All appointments (including pauses) are now real appointments
     const appointment = appointments.find(apt => apt.id === id);
     if (appointment) {
       setActiveAppointment(appointment);
     }
-  }, [appointments, series, disabled]);
+  }, [appointments, disabled]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { over, active } = event;
@@ -204,9 +187,7 @@ export function DragProvider({
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
-    const currentPauseSeries = activePauseSeries;
     setActiveAppointment(null);
-    setActivePauseSeries(null);
     setOverBarberHeader(null);
 
     // Timer aufräumen
@@ -220,45 +201,7 @@ export function DragProvider({
     const activeId = active.id as string;
     const dropId = over.id as string;
 
-    // Handle pause series drag - only allow same-day time slot changes
-    if (activeId.startsWith('series-pause|') && currentPauseSeries) {
-      // Parse the drop zone ID: "droppable|{barberId}|{date}|{timeSlot}"
-      if (!dropId.startsWith('droppable|')) return;
-
-      const parts = dropId.split('|');
-      if (parts.length !== 4) return;
-
-      const targetBarberId = parts[1];
-      const targetDate = parts[2];
-      const targetTimeSlot = parts[3];
-
-      const pauseSeries = currentPauseSeries.series;
-      const pauseDate = currentPauseSeries.date;
-
-      // Only allow moving to same barber, same day, different time slot
-      if (targetBarberId !== pauseSeries.barber_id) {
-        onMoveError('Pause kann nur innerhalb desselben Barbers verschoben werden');
-        return;
-      }
-      if (targetDate !== pauseDate) {
-        onMoveError('Pause kann nur innerhalb desselben Tages verschoben werden');
-        return;
-      }
-      if (targetTimeSlot === pauseSeries.time_slot) {
-        return; // No change
-      }
-
-      // Update series time_slot
-      const updated = await updateSeries(pauseSeries.id, { time_slot: targetTimeSlot });
-      if (updated && onSeriesUpdated) {
-        onSeriesUpdated(updated);
-      } else if (!updated) {
-        onMoveError('Fehler beim Verschieben der Pause');
-      }
-      return;
-    }
-
-    // Normal appointment drag
+    // Normal appointment drag (inkl. Pausen, die jetzt echte Appointments sind)
     const appointment = appointments.find(apt => apt.id === activeId);
     if (!appointment) return;
 
@@ -317,6 +260,25 @@ export function DragProvider({
     const date = parts[2];
     const timeSlot = parts[3];
 
+    // Prüfe ob Ziel-Slot in der Vergangenheit liegt (Slot-genaue Prüfung)
+    const now = new Date();
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const targetDateObj = new Date(date + 'T00:00:00');
+    if (targetDateObj < todayStart) {
+      onMoveError('Termine können nicht in die Vergangenheit verschoben werden');
+      return;
+    }
+    if (targetDateObj.getTime() === todayStart.getTime()) {
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const currentSlot = `${String(hours).padStart(2, '0')}:${minutes < 30 ? '00' : '30'}`;
+      if (timeSlot < currentSlot) {
+        onMoveError('Termine können nicht in die Vergangenheit verschoben werden');
+        return;
+      }
+    }
+
     // Prüfen ob sich etwas geändert hat
     if (
       appointment.barber_id === barberId &&
@@ -338,7 +300,7 @@ export function DragProvider({
     } else {
       onMoveError(result.error || 'Fehler beim Verschieben');
     }
-  }, [appointments, activePauseSeries, onAppointmentMoved, onSeriesUpdated, onMoveError, onBarberHeaderDrop]);
+  }, [appointments, onAppointmentMoved, onMoveError, onBarberHeaderDrop]);
 
   return (
     <DndContext
@@ -348,20 +310,23 @@ export function DragProvider({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <DragContextState.Provider value={{ isDragging: !!activeAppointment || !!activePauseSeries, activeAppointment, activePauseSeries, overBarberHeader }}>
+      <DragContextState.Provider value={{ isDragging: !!activeAppointment, activeAppointment, activePauseSeries: null, overBarberHeader }}>
         {children}
       </DragContextState.Provider>
 
       {/* Drag Overlay - zeigt das gezogene Element */}
       <DragOverlay dropAnimation={null}>
         {activeAppointment && (
-          <div className="bg-gold/80 text-black px-2 py-1 rounded shadow-lg text-xs font-medium">
-            {activeAppointment.customer_name}
-          </div>
-        )}
-        {activePauseSeries && (
-          <div className="bg-gray-300 text-gray-700 px-2 py-1 rounded shadow-lg text-xs font-medium">
-            Pause
+          <div className={`px-2 py-1 rounded shadow-lg text-xs font-medium ${
+            activeAppointment.is_pause
+              ? 'bg-gray-300 text-gray-700'
+              : activeAppointment.series_id
+              ? 'bg-blue-200 text-blue-800'
+              : activeAppointment.source === 'online'
+              ? 'bg-green-200 text-green-800'
+              : 'bg-gold/80 text-black'
+          }`}>
+            {activeAppointment.is_pause ? 'Pause' : activeAppointment.customer_name}
           </div>
         )}
       </DragOverlay>

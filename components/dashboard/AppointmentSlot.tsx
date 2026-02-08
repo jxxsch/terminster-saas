@@ -40,6 +40,8 @@ interface AppointmentSlotProps {
   onToggleSelect?: (shiftKey?: boolean) => void;
   // Name Display
   formatName?: (name: string) => string;
+  // Read-only für vergangene Termine
+  isPast?: boolean;
 }
 
 export function AppointmentSlot({
@@ -63,6 +65,7 @@ export function AppointmentSlot({
   isPreview = false,
   onToggleSelect,
   formatName = (name) => name,
+  isPast = false,
 }: AppointmentSlotProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [backdropReady, setBackdropReady] = useState(false);
@@ -85,7 +88,7 @@ export function AppointmentSlot({
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [popupPosition, setPopupPosition] = useState<'bottom' | 'top'>('bottom');
-  const [allowEditCustomer, setAllowEditCustomer] = useState(true);
+  const [allowEditCustomer, setAllowEditCustomer] = useState(false);
   const slotRef = useRef<HTMLDivElement>(null);
 
   // Setting laden: Kundendaten bearbeitbar?
@@ -252,6 +255,19 @@ export function AppointmentSlot({
     return servicesMap[serviceId]?.name || 'Unbekannt';
   };
 
+  // Rhythmus speichern (für Serien - auf Komponentenebene damit in beiden Pfaden nutzbar)
+  const handleSaveRhythmGlobal = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!series) return;
+    setIsSavingRhythm(true);
+    const updated = await updateSeries(series.id, { interval_type: selectedRhythm });
+    if (updated && onSeriesUpdate) {
+      onSeriesUpdate(updated);
+    }
+    setIsSavingRhythm(false);
+    setIsEditingRhythm(false);
+  };
+
   // Empty slot - wenn Barber abwesend, grau und nicht klickbar
   if (!appointment && !series) {
     if (isDisabled) {
@@ -261,7 +277,12 @@ export function AppointmentSlot({
         </div>
       );
     }
-    // Normaler leerer Slot
+    // Normaler leerer Slot - in der Vergangenheit nicht klickbar
+    if (isPast) {
+      return (
+        <div className="h-full bg-gray-50/30" />
+      );
+    }
     return (
       <div
         onClick={onClick}
@@ -319,16 +340,7 @@ export function AppointmentSlot({
       setIsEditingSeriesContact(false);
     };
 
-    const handleSaveRhythm = async (e: React.MouseEvent) => {
-      e.stopPropagation();
-      setIsSavingRhythm(true);
-      const updated = await updateSeries(series.id, { interval_type: selectedRhythm });
-      if (updated && onSeriesUpdate) {
-        onSeriesUpdate(updated);
-      }
-      setIsSavingRhythm(false);
-      setIsEditingRhythm(false);
-    };
+    const handleSaveRhythm = handleSaveRhythmGlobal;
 
     const handleCancelSingleAppointment = async () => {
       setIsCancellingSingle(true);
@@ -345,6 +357,7 @@ export function AppointmentSlot({
         source: 'manual',
         status: 'cancelled',
         series_id: series.id,
+        is_pause: false,
         cancelled_by: 'barber',
         cancelled_at: new Date().toISOString(),
       });
@@ -634,20 +647,21 @@ export function AppointmentSlot({
                   ) : (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-700">{rhythmLabels[currentRhythm]}</span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsEditingRhythm(true);
-                        }}
-                        className="text-[10px] text-gold hover:text-gold-dark"
-                      >
-                        Ändern
-                      </button>
+                      {!isPast && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsEditingRhythm(true);
+                          }}
+                          className="text-[10px] text-gold hover:text-gold-dark"
+                        >
+                          Ändern
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {/* Buttons */}
                 <div className="pt-2 border-t border-gray-100 space-y-2">
                   {/* Diesen Termin stornieren */}
                   <button
@@ -666,13 +680,13 @@ export function AppointmentSlot({
                   {/* Gesamte Serie löschen */}
                   <button
                     onClick={handleDeleteSeries}
-                    className="w-full py-1.5 px-2 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors flex items-center justify-center gap-1"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Gesamte Serie löschen
-                  </button>
+                      className="w-full py-1.5 px-2 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Gesamte Serie löschen
+                    </button>
                 </div>
               </div>
             </div>
@@ -737,6 +751,7 @@ export function AppointmentSlot({
                 </button>
 
                 {/* Rhythmus ändern */}
+                {!isPast && (
                 <button
                   onClick={() => {
                     setShowSeriesCancelModal(false);
@@ -750,6 +765,7 @@ export function AppointmentSlot({
                   </svg>
                   Rhythmus ändern
                 </button>
+                )}
 
                 {/* Gesamte Serie löschen */}
                 <button
@@ -787,7 +803,8 @@ export function AppointmentSlot({
 
   // Booked slot
   const isOnline = appointment?.source === 'online';
-  const isPause = appointment?.customer_name?.includes('Pause');
+  const isSeries = !!appointment?.series_id;
+  const isPause = appointment?.is_pause || appointment?.customer_name?.includes('Pause');
   const isCancelled = appointment?.status === 'cancelled';
 
   // Handler für Pause-Löschen (einzeln)
@@ -848,7 +865,8 @@ export function AppointmentSlot({
               Pause
             </span>
           </div>
-          {/* X zum Löschen */}
+          {/* X zum Löschen - nicht bei vergangenen */}
+          {!isPast && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -861,6 +879,7 @@ export function AppointmentSlot({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
+          )}
         </div>
 
         {/* Pause Löschen Bestätigungs-Modal */}
@@ -978,16 +997,18 @@ export function AppointmentSlot({
               </span>
             </div>
           </div>
-          {/* X zum direkten Löschen */}
-          <button
-            onClick={handleDeleteCancelledDirect}
-            className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded border border-red-300 bg-red-50 hover:bg-red-100 transition-colors"
-            title="Endgültig löschen"
-          >
-            <svg className="w-2.5 h-2.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {/* X zum direkten Löschen - nicht bei vergangenen */}
+          {!isPast && (
+            <button
+              onClick={handleDeleteCancelledDirect}
+              className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded border border-red-300 bg-red-50 hover:bg-red-100 transition-colors"
+              title="Endgültig löschen"
+            >
+              <svg className="w-2.5 h-2.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
     );
@@ -1002,28 +1023,47 @@ export function AppointmentSlot({
             ? 'bg-red-100 ring-2 ring-red-400 ring-inset'
             : isPreview
             ? 'bg-orange-100 ring-2 ring-orange-400 ring-inset'
+            : isSeries
+            ? 'bg-blue-100 hover:bg-blue-200'
             : isOnline
-            ? 'bg-green-50 hover:bg-green-100'
-            : 'bg-gold/20 hover:bg-gold/30'
+            ? 'bg-green-100 hover:bg-green-200'
+            : 'bg-gold/30 hover:bg-gold/40'
+          : isSeries
+          ? 'bg-blue-100 hover:bg-blue-200'
           : isOnline
-          ? 'bg-green-50 hover:bg-green-100'
-          : 'bg-gold/20 hover:bg-gold/30'
+          ? 'bg-green-100 hover:bg-green-200'
+          : 'bg-gold/30 hover:bg-gold/40'
       }`}
       onClick={handleClick}
     >
       <div className="flex items-center justify-between gap-1 h-full pl-1">
         <div className="flex-1 min-w-0">
-          <span className={`text-[13px] font-medium truncate block select-none ${
-            selectionMode && isSelected
-              ? 'text-red-700'
-              : selectionMode && isPreview
-              ? 'text-orange-700'
-              : isOnline
-              ? 'text-green-700'
-              : 'text-amber-800'
-          }`}>
-            {appointment?.customer_name ? formatName(appointment.customer_name) : ''}
-          </span>
+          <div className="flex items-center gap-1">
+            {isSeries && (
+              <svg className={`w-2.5 h-2.5 flex-shrink-0 ${
+                selectionMode && isSelected
+                  ? 'text-red-500'
+                  : selectionMode && isPreview
+                  ? 'text-orange-500'
+                  : 'text-blue-500'
+              }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            )}
+            <span className={`text-[13px] font-medium truncate select-none ${
+              selectionMode && isSelected
+                ? 'text-red-700'
+                : selectionMode && isPreview
+                ? 'text-orange-700'
+                : isSeries
+                ? 'text-blue-700'
+                : isOnline
+                ? 'text-green-700'
+                : 'text-amber-800'
+            }`}>
+              {appointment?.customer_name ? formatName(appointment.customer_name) : ''}
+            </span>
+          </div>
         </div>
         {/* Checkbox im Selection Mode - rechtsbündig */}
         {selectionMode && (
@@ -1046,9 +1086,16 @@ export function AppointmentSlot({
         {/* Rotes X zum Stornieren - versteckt im Selection Mode */}
         {!selectionMode && (
           <button
-            onClick={openCancelModal}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isSeries) {
+                setShowSeriesCancelModal(true);
+              } else {
+                setShowCancelModal(true);
+              }
+            }}
             className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded border border-red-300 bg-red-50 hover:bg-red-100 transition-colors"
-            title="Stornieren"
+            title={isSeries ? 'Serientermin bearbeiten' : 'Stornieren'}
           >
             <svg className="w-2.5 h-2.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1073,14 +1120,16 @@ export function AppointmentSlot({
           />
 
           {/* Popup */}
-          <div className={`absolute z-20 left-0 right-0 bg-white shadow-xl rounded-lg border border-gray-200 p-2 max-h-[320px] overflow-y-auto ${
+          <div className={`absolute z-20 left-0 right-0 bg-white shadow-xl rounded-lg border border-gray-200 p-2 ${
             popupPosition === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'
           }`}>
             <div className="space-y-2">
               {/* Header */}
               <div className="pb-2 border-b border-gray-100">
-                <span className={`text-xs font-medium ${isOnline ? 'text-green-600' : 'text-amber-700'}`}>
-                  {isOnline ? 'Online gebucht' : 'Manuell eingetragen'}
+                <span className={`text-xs font-medium ${
+                  isSeries ? 'text-blue-600' : isOnline ? 'text-green-600' : 'text-amber-700'
+                }`}>
+                  {isSeries ? 'Serientermin' : isOnline ? 'Online gebucht' : 'Manuell eingetragen'}
                 </span>
               </div>
 
@@ -1147,10 +1196,68 @@ export function AppointmentSlot({
                 </div>
               </div>
 
+              {/* Rhythmus - nur für Serientermine */}
+              {isSeries && series && (
+                <div>
+                  <span className="text-[9px] text-gray-400 uppercase tracking-wider block">Rhythmus</span>
+                  {isEditingRhythm ? (
+                    <div className="mt-1 space-y-2">
+                      <select
+                        value={selectedRhythm}
+                        onChange={(e) => setSelectedRhythm(e.target.value as 'weekly' | 'biweekly' | 'monthly')}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full text-sm text-black px-2 py-1.5 border border-gray-200 rounded focus:border-gold focus:outline-none"
+                      >
+                        <option value="weekly">Wöchentlich</option>
+                        <option value="biweekly">Alle 2 Wochen</option>
+                        <option value="monthly">Monatlich</option>
+                      </select>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsEditingRhythm(false);
+                            setSelectedRhythm((series.interval_type as 'weekly' | 'biweekly' | 'monthly') || 'weekly');
+                          }}
+                          className="flex-1 py-1 px-2 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50"
+                        >
+                          Abbrechen
+                        </button>
+                        <button
+                          onClick={handleSaveRhythmGlobal}
+                          disabled={isSavingRhythm || selectedRhythm === ((series.interval_type as string) || 'weekly')}
+                          className="flex-1 py-1 px-2 text-xs text-white bg-gold hover:bg-gold-dark rounded disabled:opacity-50"
+                        >
+                          {isSavingRhythm ? 'Speichern...' : 'Speichern'}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-700">
+                        {{ weekly: 'Wöchentlich', biweekly: 'Alle 2 Wochen', monthly: 'Monatlich' }[series.interval_type] || 'Wöchentlich'}
+                      </span>
+                      {!isPast && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedRhythm((series.interval_type as 'weekly' | 'biweekly' | 'monthly') || 'weekly');
+                            setIsEditingRhythm(true);
+                          }}
+                          className="text-[10px] text-gold hover:text-gold-dark"
+                        >
+                          Ändern
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Buttons */}
-              <div className="flex gap-2 pt-2 border-t border-gray-100">
+              <div className="pt-2 border-t border-gray-100 space-y-2">
                 {isEditing ? (
-                  <>
+                  <div className="flex gap-2">
                     <button
                       onClick={handleCancelEdit}
                       className="flex-1 py-1.5 px-2 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
@@ -1164,29 +1271,58 @@ export function AppointmentSlot({
                     >
                       {isSaving ? 'Speichern...' : 'Speichern'}
                     </button>
-                  </>
+                  </div>
                 ) : (
                   <>
                     {allowEditCustomer && (
                       <button
                         onClick={handleEdit}
-                        className="flex-1 py-1.5 px-2 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
+                        className="w-full py-1.5 px-2 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
                       >
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                         </svg>
-                        Bearbeiten
+                        Kontakt bearbeiten
                       </button>
                     )}
+                    {/* Stornieren-Button: bei Serie öffnet Serien-Modal */}
                     <button
-                      onClick={openCancelModal}
-                      className="flex-1 py-1.5 px-2 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors flex items-center justify-center gap-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (isSeries) {
+                          setShowDetails(false);
+                          setShowSeriesCancelModal(true);
+                        } else {
+                          openCancelModal(e);
+                        }
+                      }}
+                      className="w-full py-1.5 px-2 text-xs text-amber-700 border border-amber-200 rounded hover:bg-amber-50 transition-colors flex items-center justify-center gap-1"
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                       </svg>
-                      Stornieren
+                      {isSeries ? 'Nur diesen Termin stornieren' : 'Stornieren'}
                     </button>
+                    {/* Gesamte Serie löschen */}
+                    {isSeries && series && (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          const { deleteSeries } = await import('@/lib/supabase');
+                          const success = await deleteSeries(series.id);
+                          if (success && onSeriesDelete) {
+                            onSeriesDelete(series.id);
+                          }
+                          setShowDetails(false);
+                        }}
+                        className="w-full py-1.5 px-2 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Gesamte Serie löschen
+                      </button>
+                    )}
                   </>
                 )}
               </div>
@@ -1195,31 +1331,25 @@ export function AppointmentSlot({
         </>
       )}
 
-      {/* Stornieren Bestätigungs-Modal */}
-      {showCancelModal && appointment && (
+      {/* Stornieren Bestätigungs-Modal (nur für Nicht-Serien) */}
+      {showCancelModal && appointment && !isSeries && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/50"
             onClick={() => setShowCancelModal(false)}
           />
-          {/* Modal */}
           <div className="relative bg-white rounded-lg shadow-xl p-6 mx-4 text-center">
-            {/* Icon */}
             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-
             <h3 className="text-lg font-medium text-gray-900 mb-1">Termin stornieren?</h3>
             <p className="text-sm text-gray-500">
               <span className="font-medium text-gray-700">{appointment.customer_name}</span>
               <span className="mx-2">·</span>
               <span>{appointment.time_slot} Uhr</span>
             </p>
-
-            {/* Buttons */}
             <div className="flex gap-3 mt-5 justify-center">
               <button
                 onClick={() => setShowCancelModal(false)}
@@ -1243,6 +1373,104 @@ export function AppointmentSlot({
                 ) : (
                   'Ja, stornieren'
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Serien-Cancel-Modal (Nur diesen / Rhythmus / Gesamte Serie) */}
+      {showSeriesCancelModal && appointment && isSeries && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowSeriesCancelModal(false)}
+          />
+          <div className="relative bg-white rounded-lg shadow-xl p-6 mx-4 text-center">
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </div>
+
+            <h3 className="text-lg font-medium text-gray-900 mb-1">Serientermin bearbeiten</h3>
+            <p className="text-sm text-gray-500">
+              <span className="font-medium text-gray-700">{appointment.customer_name}</span>
+              <span className="mx-2">·</span>
+              <span>{date}</span>
+              <span className="mx-2">·</span>
+              <span>{timeSlot} Uhr</span>
+            </p>
+
+            <div className="flex flex-col gap-3 mt-5">
+              {/* Einzelnen Termin stornieren */}
+              <button
+                onClick={handleConfirmCancel}
+                disabled={isCancelling}
+                className="w-full py-3 px-4 text-sm text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors flex items-center justify-center gap-2"
+              >
+                {isCancelling ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                    Stornieren...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                    Nur diesen Termin stornieren
+                  </>
+                )}
+              </button>
+
+              {/* Rhythmus ändern */}
+              {!isPast && series && (
+                <button
+                  onClick={() => {
+                    setShowSeriesCancelModal(false);
+                    calculatePopupPosition();
+                    setSelectedRhythm((series.interval_type as 'weekly' | 'biweekly' | 'monthly') || 'weekly');
+                    setIsEditingRhythm(true);
+                    setShowDetails(true);
+                  }}
+                  className="w-full py-3 px-4 text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Rhythmus ändern
+                </button>
+              )}
+
+              {/* Gesamte Serie löschen */}
+              {series && (
+                <button
+                  onClick={async () => {
+                    const { deleteSeries } = await import('@/lib/supabase');
+                    const success = await deleteSeries(series.id);
+                    if (success && onSeriesDelete) {
+                      onSeriesDelete(series.id);
+                    }
+                    setShowSeriesCancelModal(false);
+                  }}
+                  className="w-full py-3 px-4 text-sm text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Gesamte Serie löschen
+                </button>
+              )}
+
+              <button
+                onClick={() => setShowSeriesCancelModal(false)}
+                className="w-full py-2 px-4 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                Abbrechen
               </button>
             </div>
           </div>

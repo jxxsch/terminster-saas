@@ -4,11 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   createAppointment,
-  createSeries,
+  createSeriesWithAppointments,
+  createStaffTimeOff,
+  deleteSeries,
   searchCustomers,
   formatPrice,
   formatDuration,
-  getAppointments,
   Appointment,
   Series,
   TeamMember,
@@ -19,10 +20,11 @@ import {
 const DAY_NAMES = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 const MONTH_NAMES = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 
-interface SeriesConflict {
-  date: string;
-  formattedDate: string;
-  customerName: string;
+interface SeriesConflictResult {
+  createdDates: string[];
+  skippedDates: string[];
+  created: number;
+  skipped: number;
 }
 
 interface AddAppointmentModalProps {
@@ -32,9 +34,11 @@ interface AddAppointmentModalProps {
   team: TeamMember[];
   services: Service[];
   existingAppointments: Appointment[];
+  allTimeSlots?: string[];
   onClose: () => void;
   onCreated: (appointment: Appointment) => void;
   onSeriesCreated?: (series: Series) => void;
+  onBlockCreated?: () => void;
 }
 
 export function AddAppointmentModal({
@@ -44,16 +48,23 @@ export function AddAppointmentModal({
   team,
   services,
   existingAppointments,
+  allTimeSlots = [],
   onClose,
   onCreated,
   onSeriesCreated,
+  onBlockCreated,
 }: AddAppointmentModalProps) {
   // Berechnungen vor States
   const dateObj = new Date(date);
   const formattedDate = `${DAY_NAMES[dateObj.getDay()]}, ${dateObj.getDate()}. ${MONTH_NAMES[dateObj.getMonth()]}`;
   const dayOfWeek = dateObj.getDay() === 0 ? 7 : dateObj.getDay(); // 1=Mo, ..., 6=Sa, 7=So
 
-  const [mode, setMode] = useState<'appointment' | 'pause'>('appointment');
+  // Verfügbare Endzeiten für Blockierung (alle Slots ab timeSlot)
+  const blockEndOptions = allTimeSlots.filter(s => s >= timeSlot);
+
+  const [mode, setMode] = useState<'appointment' | 'pause' | 'block'>('appointment');
+  const [blockEndTime, setBlockEndTime] = useState<string>(blockEndOptions[blockEndOptions.length - 1] || timeSlot);
+  const [blockReason, setBlockReason] = useState<string>('Krank');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
@@ -72,76 +83,14 @@ export function AddAppointmentModal({
   const [emailAccountStatus, setEmailAccountStatus] = useState<'checking' | 'has_account' | 'available' | null>(null);
   const [activeSearchField, setActiveSearchField] = useState<'name' | 'phone' | null>(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
-  const [conflicts, setConflicts] = useState<SeriesConflict[]>([]);
-  const [pendingSeriesData, setPendingSeriesData] = useState<{
-    type: 'series' | 'pause';
-    days: number[];
-  } | null>(null);
+  const [conflictResult, setConflictResult] = useState<SeriesConflictResult | null>(null);
+  const pendingSeriesRef = useRef<Series | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const phoneInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // Get barber name from team
   const barberName = team.find(t => t.id === barberId)?.name || 'Unbekannt';
-
-  // Hilfsfunktion: Prüft Konflikte für eine Serie (lädt zukünftige Termine aus DB)
-  const checkSeriesConflicts = async (daysToCheck: number[], intervalType: 'weekly' | 'biweekly' | 'monthly'): Promise<SeriesConflict[]> => {
-    const foundConflicts: SeriesConflict[] = [];
-    const startDate = new Date(date);
-
-    // Lade Termine für die nächsten 6 Monate
-    const endDate = new Date(startDate);
-    endDate.setMonth(endDate.getMonth() + 6);
-
-    const futureAppointments = await getAppointments(
-      startDate.toISOString().split('T')[0],
-      endDate.toISOString().split('T')[0]
-    );
-
-    // Prüfe alle existierenden Termine für diesen Barber und Zeitslot
-    futureAppointments
-      .filter(apt => apt.barber_id === barberId && apt.time_slot === timeSlot && apt.status !== 'cancelled')
-      .forEach(apt => {
-        const aptDate = new Date(apt.date);
-        const aptDayOfWeek = aptDate.getDay() === 0 ? 7 : aptDate.getDay();
-
-        // Prüfe ob der Tag in der Serie enthalten ist
-        if (daysToCheck.includes(aptDayOfWeek)) {
-          // Prüfe ob das Datum nach dem Startdatum liegt
-          if (aptDate >= startDate) {
-            // Bei wöchentlich: jede Woche
-            // Bei 14-tägig: alle 2 Wochen
-            // Bei monatlich: gleicher Wochentag pro Monat
-            const weeksDiff = Math.floor((aptDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
-
-            let isInSeries = false;
-            if (intervalType === 'weekly') {
-              isInSeries = true;
-            } else if (intervalType === 'biweekly') {
-              isInSeries = weeksDiff % 2 === 0;
-            } else if (intervalType === 'monthly') {
-              // Vereinfacht: Gleicher Wochentag
-              isInSeries = true;
-            }
-
-            if (isInSeries) {
-              foundConflicts.push({
-                date: apt.date,
-                formattedDate: aptDate.toLocaleDateString('de-DE', {
-                  weekday: 'short',
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric'
-                }),
-                customerName: apt.customer_name || 'Unbekannt',
-              });
-            }
-          }
-        }
-      });
-
-    return foundConflicts.sort((a, b) => a.date.localeCompare(b.date));
-  };
 
   // Debounced Kundensuche (Name oder Telefon)
   useEffect(() => {
@@ -236,19 +185,21 @@ export function AddAppointmentModal({
     nameInputRef.current?.focus();
   };
 
-  // Funktion zum tatsächlichen Erstellen der Serie (nach Konflikt-Bestätigung)
+  // Funktion zum Erstellen der Serie mit echten Appointment-Rows (52 Wochen)
   const executeSeriesCreation = async (type: 'series' | 'pause', days: number[]) => {
     setIsSubmitting(true);
     setError('');
     setShowConflictModal(false);
 
     if (type === 'pause') {
-      // Pausen-Serien erstellen
+      // Pausen-Serien erstellen (pro Tag eine Serie mit echten Appointments)
       let lastSeries: Series | null = null;
       let hasError = false;
+      let totalCreated = 0;
+      let totalSkipped = 0;
 
       for (const day of days) {
-        const newSeries = await createSeries({
+        const result = await createSeriesWithAppointments({
           barber_id: barberId,
           day_of_week: day,
           time_slot: timeSlot,
@@ -259,26 +210,41 @@ export function AddAppointmentModal({
           start_date: date,
           end_date: null,
           interval_type: 'weekly',
-        });
+        }, true);
 
-        if (newSeries) {
-          lastSeries = newSeries;
+        if (result.series) {
+          lastSeries = result.series;
+          totalCreated += result.appointmentsCreated;
+          totalSkipped += result.appointmentsSkipped;
         } else {
           hasError = true;
         }
       }
 
-      if (lastSeries && onSeriesCreated) {
-        onSeriesCreated(lastSeries);
-      } else if (hasError) {
+      if (!lastSeries && hasError) {
         setError('Fehler beim Erstellen der Pause-Serie');
         setIsSubmitting(false);
+        return;
+      }
+
+      if (totalSkipped > 0 && lastSeries) {
+        setConflictResult({
+          createdDates: [], // Pausen-Serien sammeln keine Einzeldaten
+          skippedDates: [],
+          created: totalCreated,
+          skipped: totalSkipped,
+        });
+        pendingSeriesRef.current = lastSeries;
+        setIsSubmitting(false);
+        setShowConflictModal(true);
+      } else if (lastSeries && onSeriesCreated) {
+        onSeriesCreated(lastSeries);
       }
     } else {
-      // Normale Serie erstellen
-      const newSeries = await createSeries({
+      // Normale Serie erstellen mit echten Appointments
+      const result = await createSeriesWithAppointments({
         barber_id: barberId,
-        day_of_week: days[0], // Bei normaler Serie nur ein Tag
+        day_of_week: days[0],
         time_slot: timeSlot,
         service_id: serviceId,
         customer_name: customerName.trim(),
@@ -287,34 +253,80 @@ export function AddAppointmentModal({
         start_date: date,
         end_date: null,
         interval_type: intervalType,
-      });
+      }, false);
 
-      if (newSeries && onSeriesCreated) {
-        onSeriesCreated(newSeries);
-      } else {
+      if (!result.series) {
         setError('Fehler beim Erstellen der Serie');
         setIsSubmitting(false);
+        return;
+      }
+
+      if (result.appointmentsSkipped > 0) {
+        // Konflikte vorhanden: Modal zeigen, Serie-Callback verzögern
+        setConflictResult({
+          createdDates: result.createdDates,
+          skippedDates: result.skippedDates,
+          created: result.appointmentsCreated,
+          skipped: result.appointmentsSkipped,
+        });
+        pendingSeriesRef.current = result.series;
+        setIsSubmitting(false);
+        setShowConflictModal(true);
+      } else if (onSeriesCreated) {
+        // Keine Konflikte: direkt weiter
+        onSeriesCreated(result.series);
       }
     }
   };
 
-  // Handler für "Verstanden" im Konflikt-Modal
-  const handleConfirmWithConflicts = () => {
-    if (pendingSeriesData) {
-      executeSeriesCreation(pendingSeriesData.type, pendingSeriesData.days);
+  // Handler für "Verstanden" im Konflikt-Info-Modal (post-hoc, Serie wurde bereits erstellt)
+  const handleDismissConflicts = () => {
+    setShowConflictModal(false);
+    setConflictResult(null);
+    // Jetzt erst die Serie an den Parent melden und Modal schließen
+    if (pendingSeriesRef.current && onSeriesCreated) {
+      onSeriesCreated(pendingSeriesRef.current);
+      pendingSeriesRef.current = null;
     }
   };
 
-  // Handler für "Abbrechen" im Konflikt-Modal
-  const handleCancelConflicts = () => {
+  // Handler für "Abbrechen" – Serie rückgängig machen
+  const handleCancelConflicts = async () => {
+    if (pendingSeriesRef.current) {
+      await deleteSeries(pendingSeriesRef.current.id);
+      pendingSeriesRef.current = null;
+    }
     setShowConflictModal(false);
-    setConflicts([]);
-    setPendingSeriesData(null);
-    setIsSubmitting(false);
+    setConflictResult(null);
+    onClose();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Block mode - Zeitraum blockieren via staff_time_off
+    if (mode === 'block') {
+      setIsSubmitting(true);
+      setError('');
+
+      const result = await createStaffTimeOff({
+        staff_id: barberId,
+        start_date: date,
+        end_date: date,
+        start_time: timeSlot,
+        end_time: blockEndTime,
+        reason: blockReason,
+      });
+
+      if (result) {
+        onBlockCreated?.();
+        onClose();
+      } else {
+        setError('Fehler beim Erstellen der Blockierung');
+        setIsSubmitting(false);
+      }
+      return;
+    }
 
     // Pause mode - no name validation needed
     if (mode === 'pause') {
@@ -322,19 +334,7 @@ export function AddAppointmentModal({
       setError('');
 
       if (isPauseSeries && pauseDays.length > 0) {
-        // Prüfe auf Konflikte (lädt zukünftige Termine aus DB)
-        const foundConflicts = await checkSeriesConflicts(pauseDays, 'weekly');
-
-        if (foundConflicts.length > 0) {
-          // Zeige Konflikt-Modal
-          setConflicts(foundConflicts);
-          setPendingSeriesData({ type: 'pause', days: pauseDays });
-          setShowConflictModal(true);
-          setIsSubmitting(false);
-          return;
-        }
-
-        // Keine Konflikte - direkt erstellen
+        // Direkt erstellen - Konflikte werden beim Insert automatisch übersprungen
         await executeSeriesCreation('pause', pauseDays);
         return;
       }
@@ -352,6 +352,7 @@ export function AddAppointmentModal({
         status: 'confirmed',
         source: 'manual',
         series_id: null,
+        is_pause: true,
       });
 
       if (result.success && result.appointment) {
@@ -388,19 +389,7 @@ export function AddAppointmentModal({
     setError('');
 
     if (isSeries) {
-      // Prüfe auf Konflikte (lädt zukünftige Termine aus DB)
-      const foundConflicts = await checkSeriesConflicts([dayOfWeek], intervalType);
-
-      if (foundConflicts.length > 0) {
-        // Zeige Konflikt-Modal
-        setConflicts(foundConflicts);
-        setPendingSeriesData({ type: 'series', days: [dayOfWeek] });
-        setShowConflictModal(true);
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Keine Konflikte - direkt erstellen
+      // Direkt erstellen - Konflikte werden beim Insert automatisch übersprungen
       await executeSeriesCreation('series', [dayOfWeek]);
       return;
     } else {
@@ -417,6 +406,7 @@ export function AddAppointmentModal({
         status: 'confirmed',
         source: 'manual',
         series_id: null,
+        is_pause: false,
       });
 
       if (result.success && result.appointment) {
@@ -473,7 +463,7 @@ export function AddAppointmentModal({
         <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 z-10">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold text-gray-900">
-              {mode === 'pause' ? 'Pause eintragen' : 'Neuer Termin'}
+              {mode === 'block' ? 'Blockierung' : mode === 'pause' ? 'Pause eintragen' : 'Neuer Termin'}
             </h2>
             <button
               onClick={onClose}
@@ -515,6 +505,20 @@ export function AddAppointmentModal({
               </svg>
               Pause
             </button>
+            <button
+              type="button"
+              onClick={() => setMode('block')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                mode === 'block'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
+              Blockierung
+            </button>
           </div>
         </div>
 
@@ -529,8 +533,56 @@ export function AddAppointmentModal({
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Pause Mode - Simplified View */}
-            {mode === 'pause' ? (
+            {/* Block Mode */}
+            {mode === 'block' ? (
+              <div className="space-y-4">
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center">
+                  <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-red-100 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                    </svg>
+                  </div>
+                  <h3 className="text-sm font-medium text-gray-900 mb-1">Zeitraum blockieren</h3>
+                  <p className="text-xs text-gray-500">
+                    Slots werden für Online-Buchungen und Termine gesperrt
+                  </p>
+                </div>
+
+                {/* Bis-Endzeit */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1.5">Blockiert bis</label>
+                  <select
+                    value={blockEndTime}
+                    onChange={(e) => setBlockEndTime(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black focus:border-gold focus:outline-none transition-colors"
+                  >
+                    {blockEndOptions.map((s) => (
+                      <option key={s} value={s}>
+                        {s} Uhr{s === blockEndOptions[blockEndOptions.length - 1] ? ' (Rest des Tages)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1.5 text-[10px] text-gray-400">
+                    {timeSlot} – {blockEndTime} Uhr ({blockEndOptions.filter(s => s >= timeSlot && s <= blockEndTime).length} Slots)
+                  </p>
+                </div>
+
+                {/* Grund */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1.5">Grund</label>
+                  <select
+                    value={blockReason}
+                    onChange={(e) => setBlockReason(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black focus:border-gold focus:outline-none transition-colors"
+                  >
+                    <option value="Krank">Krank</option>
+                    <option value="Arzttermin">Arzttermin</option>
+                    <option value="Privat">Privat</option>
+                    <option value="Sonstiges">Sonstiges</option>
+                  </select>
+                </div>
+              </div>
+            ) : mode === 'pause' ? (
               <div className="space-y-4">
                 <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 text-center">
                   <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-orange-100 flex items-center justify-center">
@@ -982,7 +1034,9 @@ export function AddAppointmentModal({
                   </>
                 ) : (
                   <span>
-                    {mode === 'pause'
+                    {mode === 'block'
+                      ? 'Blockierung speichern'
+                      : mode === 'pause'
                       ? (isPauseSeries ? 'Pause-Serie speichern' : 'Pause eintragen')
                       : isSeries ? 'Serie speichern' : 'Speichern'}
                   </span>
@@ -994,53 +1048,64 @@ export function AddAppointmentModal({
       </div>
 
       {/* Konflikt-Modal */}
-      {showConflictModal && typeof document !== 'undefined' && createPortal(
+      {showConflictModal && conflictResult && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={handleCancelConflicts} />
-          <div className="relative bg-white rounded-2xl shadow-xl w-[400px] max-w-[calc(100vw-2rem)] p-5">
-            <div className="flex items-start gap-4">
-              {/* Icon */}
+          <div className="absolute inset-0 bg-black/50" onClick={handleDismissConflicts} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-[440px] max-w-[calc(100vw-2rem)] p-5">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-amber-100 text-amber-600">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-semibold text-slate-900">Termine bereits belegt</h3>
-                <p className="text-sm text-slate-500 mt-1">
-                  {conflicts.length} {conflicts.length === 1 ? 'Termin wird' : 'Termine werden'} übersprungen
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">Konflikte erkannt</h3>
+                <p className="text-sm text-slate-500">
+                  {conflictResult.skipped} Termin{conflictResult.skipped !== 1 ? 'e' : ''} übersprungen
                 </p>
-
-                {/* Konflikt-Liste */}
-                <div className="mt-4 max-h-48 overflow-y-auto space-y-2">
-                  {conflicts.map((conflict, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg"
-                    >
-                      <span className="text-sm font-medium text-slate-900">{conflict.formattedDate}</span>
-                      <span className="text-xs text-slate-500">{conflict.customerName}</span>
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
 
+            {/* Scrollbare Konflikt-Liste */}
+            <div className="max-h-64 overflow-y-auto">
+              {conflictResult.skippedDates.length > 0 ? (
+                <div className="space-y-1">
+                  {conflictResult.skippedDates.map((dateStr) => {
+                    const d = new Date(dateStr);
+                    const formatted = `${DAY_NAMES[d.getDay()]}, ${d.getDate()}. ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+                    return (
+                      <div key={dateStr} className="flex items-center px-3 py-1.5 bg-amber-50 rounded-lg">
+                        <svg className="w-3.5 h-3.5 text-amber-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs text-amber-800">{formatted}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="px-3 py-2 bg-amber-50 rounded-lg">
+                  <span className="text-sm text-amber-800">
+                    {conflictResult.skipped} Termin(e) übersprungen wegen Konflikten
+                  </span>
+                </div>
+              )}
+            </div>
+
             {/* Buttons */}
-            <div className="flex justify-end gap-2 mt-5">
+            <div className="flex justify-end gap-3 mt-5">
               <button
                 onClick={handleCancelConflicts}
-                className="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium rounded-lg transition-colors border border-gray-200 text-gray-600 hover:bg-gray-50"
               >
                 Abbrechen
               </button>
               <button
-                onClick={handleConfirmWithConflicts}
+                onClick={handleDismissConflicts}
                 className="px-4 py-2 text-sm font-medium rounded-lg transition-colors bg-gold text-white hover:bg-gold/90"
               >
-                Trotzdem speichern
+                Verstanden
               </button>
             </div>
           </div>

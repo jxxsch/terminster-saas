@@ -144,6 +144,7 @@ export interface Appointment {
   status: 'confirmed' | 'cancelled';
   source: 'online' | 'manual';
   series_id: string | null;
+  is_pause: boolean;
   created_at: string;
   cancelled_by?: 'customer' | 'barber' | null;
   cancelled_at?: string | null;
@@ -161,6 +162,7 @@ export interface Series {
   start_date: string;
   end_date: string | null;
   interval_type: 'weekly' | 'biweekly' | 'monthly'; // Wiederholungsintervall
+  last_generated_date: string | null;
   created_at: string;
 }
 
@@ -332,37 +334,7 @@ export async function getAppointments(startDate: string, endDate: string): Promi
     return [];
   }
 
-  // Abfrage 2: Stornierte Termine MIT series_id (Serien-Ausnahmen)
-  // Diese werden benötigt, damit die Serie für diesen Tag nicht angezeigt wird
-  const { data: cancelledSeriesData, error: cancelledError } = await supabase
-    .from('appointments')
-    .select('*')
-    .gte('date', startDate)
-    .lte('date', endDate)
-    .eq('status', 'cancelled')
-    .not('series_id', 'is', null);
-
-  if (cancelledError) {
-    console.error('Error fetching cancelled series appointments:', cancelledError);
-    // Gib trotzdem die aktiven Termine zurück
-    return activeData || [];
-  }
-
-  // Kombiniere beide Ergebnisse (ohne Duplikate)
-  const allAppointments = [...(activeData || [])];
-  const existingIds = new Set(allAppointments.map(a => a.id));
-
-  for (const apt of (cancelledSeriesData || [])) {
-    if (!existingIds.has(apt.id)) {
-      allAppointments.push(apt);
-    }
-  }
-
-  // Sortiere nach Datum und Zeit
-  return allAppointments.sort((a, b) => {
-    if (a.date !== b.date) return a.date.localeCompare(b.date);
-    return a.time_slot.localeCompare(b.time_slot);
-  });
+  return activeData || [];
 }
 
 export async function createAppointment(appointment: Omit<Appointment, 'id' | 'created_at'>): Promise<{
@@ -580,6 +552,18 @@ export async function createSeries(series: Omit<Series, 'id' | 'created_at'>): P
 }
 
 export async function deleteSeries(id: string): Promise<boolean> {
+  // 1. Alle zugehörigen Appointments löschen
+  const { error: aptError } = await supabase
+    .from('appointments')
+    .delete()
+    .eq('series_id', id);
+
+  if (aptError) {
+    console.error('Error deleting series appointments:', aptError);
+    return false;
+  }
+
+  // 2. Serie selbst löschen
   const { error } = await supabase
     .from('series')
     .delete()
@@ -608,6 +592,306 @@ export async function updateSeries(id: string, updates: Partial<Series>): Promis
   }
 
   return data;
+}
+
+// ============================================
+// SERIES APPOINTMENTS - Echte Termine generieren
+// ============================================
+
+export interface SeriesGenerationResult {
+  created: number;
+  skipped: number;
+  total: number;
+  createdDates: string[];  // Erfolgreich erstellte Daten
+  skippedDates: string[];  // Übersprungene Daten (Konflikte)
+}
+
+/**
+ * Generiert echte Appointment-Rows für eine Serie.
+ * Nutzt die PostgreSQL-Funktion batch_insert_series_appointments für 1 DB-Roundtrip.
+ */
+export async function generateSeriesAppointments(
+  series: Series,
+  fromDate: string,
+  weeksAhead: number = 52
+): Promise<SeriesGenerationResult> {
+  const appointments: Record<string, unknown>[] = [];
+  const endLimit = new Date(fromDate);
+  endLimit.setDate(endLimit.getDate() + weeksAhead * 7);
+  const endLimitStr = endLimit.toISOString().split('T')[0];
+
+  // Effektives Enddatum: series.end_date oder weeksAhead
+  const effectiveEnd = series.end_date && series.end_date < endLimitStr
+    ? series.end_date
+    : endLimitStr;
+
+  // Startdatum finden: nächstes Datum mit passendem Wochentag ab fromDate
+  const from = new Date(fromDate);
+  // day_of_week: 1=Mo, 2=Di, ..., 6=Sa, 7=So
+  // JS getDay(): 0=So, 1=Mo, ..., 6=Sa
+  const targetJsDay = series.day_of_week === 7 ? 0 : series.day_of_week;
+
+  let current = new Date(from);
+  // Zum nächsten passenden Wochentag springen
+  while (current.getDay() !== targetJsDay) {
+    current.setDate(current.getDate() + 1);
+  }
+
+  // Wenn series.start_date nach current liegt, dort starten
+  const seriesStart = new Date(series.start_date);
+  if (seriesStart > current) {
+    current = new Date(seriesStart);
+    while (current.getDay() !== targetJsDay) {
+      current.setDate(current.getDate() + 1);
+    }
+  }
+
+  // Für biweekly: Referenzpunkt ist start_date der Serie
+  const seriesStartTime = new Date(series.start_date).getTime();
+
+  const isPause = series.customer_name.toLowerCase().includes('pause');
+
+  while (current.toISOString().split('T')[0] <= effectiveEnd) {
+    const dateStr = current.toISOString().split('T')[0];
+
+    let shouldGenerate = false;
+    if (series.interval_type === 'weekly') {
+      shouldGenerate = true;
+    } else if (series.interval_type === 'biweekly') {
+      const diffDays = Math.round((current.getTime() - seriesStartTime) / (24 * 60 * 60 * 1000));
+      const diffWeeks = Math.floor(diffDays / 7);
+      shouldGenerate = diffWeeks >= 0 && diffWeeks % 2 === 0;
+    } else if (series.interval_type === 'monthly') {
+      const startDay = parseInt(series.start_date.split('-')[2], 10);
+      shouldGenerate = current.getDate() === startDay;
+    }
+
+    if (shouldGenerate) {
+      appointments.push({
+        barber_id: series.barber_id,
+        date: dateStr,
+        time_slot: series.time_slot,
+        service_id: series.service_id || null,
+        customer_name: series.customer_name,
+        customer_phone: series.customer_phone || '',
+        customer_email: series.customer_email || '',
+        customer_id: '',
+        status: 'confirmed',
+        source: 'manual',
+        series_id: series.id,
+        is_pause: isPause,
+      });
+    }
+
+    // Nächstes Datum
+    if (series.interval_type === 'monthly') {
+      current.setMonth(current.getMonth() + 1);
+    } else {
+      current.setDate(current.getDate() + 7);
+    }
+  }
+
+  if (appointments.length === 0) {
+    return { created: 0, skipped: 0, total: 0, createdDates: [], skippedDates: [] };
+  }
+
+  // Batch-Insert via RPC
+  const { data, error } = await supabase.rpc('batch_insert_series_appointments', {
+    appointments_json: appointments,
+  });
+
+  if (error) {
+    console.error('Error generating series appointments:', error);
+    return { created: 0, skipped: 0, total: appointments.length, createdDates: [], skippedDates: [] };
+  }
+
+  const result = data as {
+    inserted: number;
+    skipped: number;
+    total: number;
+    inserted_dates: string[];
+    skipped_dates: string[];
+  };
+
+  return {
+    created: result.inserted,
+    skipped: result.skipped,
+    total: result.total,
+    createdDates: result.inserted_dates || [],
+    skippedDates: result.skipped_dates || [],
+  };
+}
+
+/**
+ * Erstellt eine Serie und generiert sofort 52 Wochen echte Appointment-Rows.
+ */
+export async function createSeriesWithAppointments(
+  seriesData: Omit<Series, 'id' | 'created_at' | 'last_generated_date'>,
+  isPause: boolean = false
+): Promise<{
+  series: Series | null;
+  appointmentsCreated: number;
+  appointmentsSkipped: number;
+  createdDates: string[];
+  skippedDates: string[];
+}> {
+  // 1. Serie erstellen
+  const series = await createSeries({
+    ...seriesData,
+    last_generated_date: null,
+  });
+
+  if (!series) {
+    return { series: null, appointmentsCreated: 0, appointmentsSkipped: 0, createdDates: [], skippedDates: [] };
+  }
+
+  // Wenn Pause, customer_name entsprechend markieren
+  const effectiveSeries = isPause
+    ? { ...series, customer_name: series.customer_name.toLowerCase().includes('pause') ? series.customer_name : `Pause - ${series.customer_name}` }
+    : series;
+
+  // 2. Echte Termine generieren (52 Wochen ab start_date)
+  const today = new Date().toISOString().split('T')[0];
+  const fromDate = series.start_date > today ? series.start_date : today;
+
+  const genResult = await generateSeriesAppointments(
+    effectiveSeries.customer_name !== series.customer_name ? effectiveSeries : series,
+    fromDate,
+    52
+  );
+
+  // 3. last_generated_date aktualisieren
+  const endLimit = new Date(fromDate);
+  endLimit.setDate(endLimit.getDate() + 52 * 7);
+  const lastDate = endLimit.toISOString().split('T')[0];
+
+  await updateSeries(series.id, { last_generated_date: lastDate } as Partial<Series>);
+
+  invalidateCache('series');
+
+  return {
+    series,
+    appointmentsCreated: genResult.created,
+    appointmentsSkipped: genResult.skipped,
+    createdDates: genResult.createdDates,
+    skippedDates: genResult.skippedDates,
+  };
+}
+
+/**
+ * Storniert alle zukünftigen Termine einer Serie ab einem bestimmten Datum.
+ * Setzt end_date auf der Serie und löscht zukünftige Appointment-Rows.
+ */
+export async function cancelSeriesFuture(
+  seriesId: string,
+  fromDate: string
+): Promise<{ success: boolean; deletedCount: number }> {
+  // 1. Serie end_date setzen
+  const { error: updateError } = await supabase
+    .from('series')
+    .update({ end_date: fromDate })
+    .eq('id', seriesId);
+
+  if (updateError) {
+    console.error('Error updating series end_date:', updateError);
+    return { success: false, deletedCount: 0 };
+  }
+
+  // 2. Alle zukünftigen confirmed Appointments dieser Serie löschen
+  const { data: deleted, error: deleteError } = await supabase
+    .from('appointments')
+    .delete()
+    .eq('series_id', seriesId)
+    .gte('date', fromDate)
+    .eq('status', 'confirmed')
+    .select('id');
+
+  if (deleteError) {
+    console.error('Error deleting future series appointments:', deleteError);
+    return { success: false, deletedCount: 0 };
+  }
+
+  invalidateCache('series');
+
+  return { success: true, deletedCount: deleted?.length || 0 };
+}
+
+/**
+ * Verlängert eine Serie um weitere Wochen (für Cron-Job).
+ * Generiert Termine von last_generated_date bis today + 52 Wochen.
+ */
+export async function extendSeriesAppointments(
+  seriesId: string
+): Promise<SeriesGenerationResult> {
+  // Serie laden
+  const { data: series, error } = await supabase
+    .from('series')
+    .select('*')
+    .eq('id', seriesId)
+    .single();
+
+  if (error || !series) {
+    console.error('Error loading series for extension:', error);
+    return { created: 0, skipped: 0, total: 0, createdDates: [], skippedDates: [] };
+  }
+
+  // Von wo aus generieren?
+  const today = new Date().toISOString().split('T')[0];
+  const fromDate = series.last_generated_date || today;
+
+  const result = await generateSeriesAppointments(series as Series, fromDate, 52);
+
+  // last_generated_date aktualisieren
+  const endLimit = new Date(today);
+  endLimit.setDate(endLimit.getDate() + 52 * 7);
+  const lastDate = endLimit.toISOString().split('T')[0];
+
+  await updateSeries(seriesId, { last_generated_date: lastDate } as Partial<Series>);
+
+  return result;
+}
+
+/**
+ * Ändert den Rhythmus einer Serie. Löscht zukünftige Appointments und regeneriert.
+ */
+export async function updateSeriesRhythm(
+  seriesId: string,
+  newIntervalType: 'weekly' | 'biweekly' | 'monthly'
+): Promise<SeriesGenerationResult> {
+  const today = new Date().toISOString().split('T')[0];
+
+  // 1. Serie updaten
+  await updateSeries(seriesId, { interval_type: newIntervalType } as Partial<Series>);
+
+  // 2. Alle zukünftigen Appointments löschen
+  await supabase
+    .from('appointments')
+    .delete()
+    .eq('series_id', seriesId)
+    .gte('date', today)
+    .eq('status', 'confirmed');
+
+  // 3. Serie neu laden und regenerieren
+  const { data: series, error } = await supabase
+    .from('series')
+    .select('*')
+    .eq('id', seriesId)
+    .single();
+
+  if (error || !series) {
+    return { created: 0, skipped: 0, total: 0, createdDates: [], skippedDates: [] };
+  }
+
+  const result = await generateSeriesAppointments(series as Series, today, 52);
+
+  // last_generated_date aktualisieren
+  const endLimit = new Date(today);
+  endLimit.setDate(endLimit.getDate() + 52 * 7);
+  await updateSeries(seriesId, { last_generated_date: endLimit.toISOString().split('T')[0] } as Partial<Series>);
+
+  invalidateCache('series');
+
+  return result;
 }
 
 // ============================================
@@ -1260,7 +1544,18 @@ export interface StaffTimeOff {
   start_date: string;
   end_date: string;
   reason: string | null;
+  start_time: string | null;  // NULL = ganztägig, "14:00" = ab 14:00
+  end_time: string | null;    // NULL = ganztägig, "18:30" = bis 18:30
   created_at: string;
+}
+
+// Prüft ob ein Slot durch eine (partielle) Blockierung betroffen ist
+export function isSlotBlockedByTimeOff(
+  timeOff: StaffTimeOff,
+  slotTime: string
+): boolean {
+  if (!timeOff.start_time || !timeOff.end_time) return true; // Ganztägig
+  return slotTime >= timeOff.start_time && slotTime <= timeOff.end_time;
 }
 
 export async function getStaffTimeOff(): Promise<StaffTimeOff[]> {

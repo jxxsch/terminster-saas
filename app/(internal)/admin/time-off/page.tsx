@@ -106,6 +106,8 @@ export default function TimeOffPage() {
         start_date: formData.start_date,
         end_date: formData.end_date,
         reason: formData.reason || null,
+        start_time: null,
+        end_time: null,
       });
 
       if (newTimeOff) {

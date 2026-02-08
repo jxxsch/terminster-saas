@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   sendBookingConfirmation,
   sendAppointmentReminder,
+  sendRescheduleConfirmation,
   formatDateForEmail,
   BookingEmailData,
   ReminderEmailData,
+  RescheduleEmailData,
 } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
@@ -56,6 +58,30 @@ export async function POST(request: NextRequest) {
           appointmentId: data.appointmentId,
         };
         result = await sendAppointmentReminder(reminderData);
+        break;
+      }
+
+      case 'reschedule': {
+        const rescheduleData: RescheduleEmailData = {
+          customerName: data.customerName,
+          customerEmail: data.customerEmail,
+          oldBarberName: data.oldBarberName,
+          oldBarberImage: data.oldBarberImage,
+          oldImagePosition: data.oldImagePosition,
+          oldDate: data.oldDate,
+          oldTime: data.oldTime,
+          newBarberName: data.newBarberName,
+          newBarberImage: data.newBarberImage,
+          newImagePosition: data.newImagePosition,
+          newDate: data.newDate,
+          newTime: data.newTime,
+          serviceName: data.serviceName,
+          duration: data.duration,
+          price: data.price,
+          appointmentId: data.appointmentId,
+          barberChanged: data.barberChanged,
+        };
+        result = await sendRescheduleConfirmation(rescheduleData);
         break;
       }
 

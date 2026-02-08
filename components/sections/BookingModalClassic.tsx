@@ -295,14 +295,14 @@ function findAlternatives(
     return true;
   };
 
-  // Helper: Prüfe ob Barber an Tag verfügbar ist
+  // Helper: Prüfe ob Barber an Tag verfügbar ist (ganztägig)
   const isBarberAvailable = (barberId: string, dateStr: string): boolean => {
     const barber = team.find(b => b.id === barberId);
     if (!barber) return false;
 
-    // Urlaub?
+    // Ganztägiger Urlaub? (nur Einträge ohne start_time)
     const onTimeOff = staffTimeOff.some(
-      off => off.staff_id === barberId && off.start_date <= dateStr && off.end_date >= dateStr
+      off => off.staff_id === barberId && off.start_date <= dateStr && off.end_date >= dateStr && !off.start_time
     );
     if (onTimeOff) return false;
 
@@ -424,12 +424,12 @@ function findBarberAlternatives(
     return true;
   };
 
-  // Helper: Prüfe ob Barber an Tag verfügbar ist
+  // Helper: Prüfe ob Barber an Tag verfügbar ist (ganztägig)
   const isBarberAvailableOnDay = (bId: string, dateStr: string): boolean => {
     const b = team.find(t => t.id === bId);
     if (!b) return false;
     const onTimeOff = staffTimeOff.some(
-      off => off.staff_id === bId && off.start_date <= dateStr && off.end_date >= dateStr
+      off => off.staff_id === bId && off.start_date <= dateStr && off.end_date >= dateStr && !off.start_time
     );
     if (onTimeOff) return false;
     if (isBarberFreeDay(b, dateStr)) return false;
@@ -532,9 +532,9 @@ function findNextAvailableDate(
     // Feiertag (ohne Sonderöffnung)?
     if (isHoliday(checkDateStr, bundesland) && !openHolidays.some(oh => oh.date === checkDateStr)) continue;
 
-    // Barber im Urlaub?
+    // Barber im Urlaub? (ganztägig)
     const onTimeOff = staffTimeOff.some(
-      off => off.staff_id === barberId && off.start_date <= checkDateStr && off.end_date >= checkDateStr
+      off => off.staff_id === barberId && off.start_date <= checkDateStr && off.end_date >= checkDateStr && !off.start_time
     );
     if (onTimeOff) continue;
 
@@ -921,6 +921,7 @@ export function BookingModalClassic({ isOpen, onClose, preselectedBarber, passwo
       status: 'confirmed',
       source: 'online',
       series_id: null,
+      is_pause: false,
     });
 
     setIsSubmitting(false);
@@ -2071,8 +2072,16 @@ export function BookingModalClassic({ isOpen, onClose, preselectedBarber, passwo
                     const selectedBarberData2 = team.find(b => b.id === selectedBarber);
                     const barberUnavailable = selectedBarberData2 && selectedDay && (
                       isBarberFreeDay(selectedBarberData2, selectedDay) ||
-                      staffTimeOff.some(off => off.staff_id === selectedBarber && off.start_date <= selectedDay && off.end_date >= selectedDay)
+                      staffTimeOff.some(off => off.staff_id === selectedBarber && off.start_date <= selectedDay && off.end_date >= selectedDay && !off.start_time)
                     );
+
+                    // Partielle Blockierungen für Slot-Filter
+                    const partialBlocks2 = selectedDay ? staffTimeOff.filter(off =>
+                      off.staff_id === selectedBarber &&
+                      off.start_date <= selectedDay &&
+                      off.end_date >= selectedDay &&
+                      off.start_time != null && off.end_time != null
+                    ) : [];
 
                     const availableSlots = barberUnavailable ? [] : getAvailableSlots(
                       selectedBarber,
@@ -2081,6 +2090,8 @@ export function BookingModalClassic({ isOpen, onClose, preselectedBarber, passwo
                       bookedAppointments,
                       selectedDayData?.openSundayOpenTime,
                       selectedDayData?.openSundayCloseTime
+                    ).filter(slot =>
+                      !partialBlocks2.some(block => block.start_time && block.end_time && slot >= block.start_time && slot <= block.end_time)
                     );
 
                     // Wenn keine Slots verfügbar sind, zeige Alternativen

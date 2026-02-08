@@ -8,6 +8,7 @@ import { DragProvider, BarberHeaderDropInfo } from './DragContext';
 import { DraggableSlot } from './DraggableSlot';
 import { DroppableCell } from './DroppableCell';
 import { MoveToBarberModal } from './MoveToBarberModal';
+import { BlockedSlot } from './BlockedSlot';
 import {
   getAppointments,
   getSeries,
@@ -15,6 +16,7 @@ import {
   getCalendarServices,
   getStaffTimeOffForDateRange,
   deleteAppointment,
+  deleteStaffTimeOff,
   createAppointment,
   isBarberFreeDay,
   getFreeDayExceptions,
@@ -27,8 +29,10 @@ import {
   StaffTimeOff,
   FreeDayException,
   OpenSunday,
-  OpenSundayStaff
+  OpenSundayStaff,
+  formatPrice,
 } from '@/lib/supabase';
+import { sendRescheduleEmail } from '@/lib/email-client';
 import { SelectionToolbar, SelectionFilter } from './SelectionToolbar';
 import { UndoToast } from './UndoToast';
 import { useRealtimeAppointments } from '@/hooks/useRealtimeAppointments';
@@ -235,45 +239,12 @@ export function WeekView({
     return map;
   }, [appointments]);
 
-  // Generate series appointments for the week (mit Intervall-Unterstützung)
-  const seriesAppointments = useMemo(() => {
+  // Lookup-Map: series_id → Series (für Popup-Details bei Serien-Terminen)
+  const seriesLookup = useMemo(() => {
     const map = new Map<string, Series>();
-    series.forEach(s => {
-      weekDays.forEach(day => {
-        const dayOfWeek = day.date.getDay() === 0 ? 7 : day.date.getDay();
-        if (s.day_of_week === dayOfWeek) {
-          if (s.start_date <= day.dateStr && (!s.end_date || s.end_date >= day.dateStr)) {
-            const intervalType = s.interval_type || 'weekly';
-            let shouldShow = false;
-
-            if (intervalType === 'weekly') {
-              // Jede Woche
-              shouldShow = true;
-            } else if (intervalType === 'biweekly') {
-              // Alle 2 Wochen: Berechne Wochen seit Startdatum (UTC-basiert)
-              const startParts = s.start_date.split('-').map(Number);
-              const currentParts = day.dateStr.split('-').map(Number);
-              const startUtc = Date.UTC(startParts[0], startParts[1] - 1, startParts[2]);
-              const currentUtc = Date.UTC(currentParts[0], currentParts[1] - 1, currentParts[2]);
-              const diffDays = Math.round((currentUtc - startUtc) / (24 * 60 * 60 * 1000));
-              const diffWeeks = Math.floor(diffDays / 7);
-              shouldShow = diffWeeks >= 0 && diffWeeks % 2 === 0;
-            } else if (intervalType === 'monthly') {
-              // Monatlich: Gleicher Tag des Monats wie Startdatum
-              const startDay = parseInt(s.start_date.split('-')[2], 10);
-              shouldShow = day.date.getDate() === startDay;
-            }
-
-            if (shouldShow) {
-              const key = `${s.barber_id}-${day.dateStr}-${s.time_slot}`;
-              map.set(key, s);
-            }
-          }
-        }
-      });
-    });
+    series.forEach(s => map.set(s.id, s));
     return map;
-  }, [series, weekDays]);
+  }, [series]);
 
   // Toolbar-Filter: Direkte Auswahl (ersetzt vorherige Auswahl)
   useEffect(() => {
@@ -313,7 +284,7 @@ export function WeekView({
 
     const newSelection = new Set<string>();
 
-    // Normale Termine
+    // Alle Termine (inkl. Serien-Termine, die jetzt als echte Appointments existieren)
     currentDayAppointments.forEach(apt => {
       // Barber-Filter
       if (selectionFilter.barberId !== 'all' && apt.barber_id !== selectionFilter.barberId) {
@@ -326,42 +297,9 @@ export function WeekView({
       newSelection.add(apt.id);
     });
 
-    // Serientermine (nur wenn kein normaler Termin an dieser Stelle existiert)
-    seriesAppointments.forEach((seriesItem, key) => {
-      // Key format: "barber_id-date-time_slot"
-      // Da barber_id (UUID) und date beide Bindestriche enthalten,
-      // extrahieren wir das Datum über die bekannten Teile
-      const barberId = seriesItem.barber_id;
-      const timeSlot = seriesItem.time_slot;
-      // Key: "uuid-date-time" -> date ist zwischen barber_id und time_slot
-      const date = key.slice(barberId.length + 1, -(timeSlot.length + 1));
-
-      // Nur für den aktuellen Tag
-      if (date !== selectedDayData.dateStr) return;
-
-      // Prüfe ob bereits ein normaler Termin existiert
-      const hasAppointment = currentDayAppointments.some(
-        apt => apt.barber_id === seriesItem.barber_id && apt.time_slot === seriesItem.time_slot
-      );
-      if (hasAppointment) return;
-
-      // Barber-Filter
-      if (selectionFilter.barberId !== 'all' && seriesItem.barber_id !== selectionFilter.barberId) {
-        return;
-      }
-      // Zeit-Filter
-      if (!matchesTimeFilter(seriesItem.time_slot)) {
-        return;
-      }
-
-      // Serie-ID mit Datum kombinieren für eindeutige Identifikation
-      const seriesKey = `series_${seriesItem.id}_${date}`;
-      newSelection.add(seriesKey);
-    });
-
     // Auswahl direkt setzen (ersetzt vorherige Auswahl)
     onSelectedAppointmentsChange(newSelection);
-  }, [selectionMode, selectionFilter, appointments, seriesAppointments, weekDays, selectedDay, onSelectedAppointmentsChange]);
+  }, [selectionMode, selectionFilter, appointments, weekDays, selectedDay, onSelectedAppointmentsChange]);
 
   // Create services lookup map
   const servicesMap = useMemo(() => {
@@ -372,13 +310,14 @@ export function WeekView({
     return map;
   }, [services]);
 
-  // Helper: Prüfe ob Barber an einem Tag abwesend ist (Urlaub, freier Tag oder nicht für Sonntag eingeteilt)
-  const isBarberOffOnDate = (barberId: string, dateStr: string): StaffTimeOff | undefined => {
-    // Prüfe erst Urlaub
+  // Helper: Prüfe ob Barber GANZTÄGIG abwesend ist (für Column-Header)
+  const getFullDayOff = (barberId: string, dateStr: string): StaffTimeOff | undefined => {
+    // Prüfe ganztägigen Urlaub (nur Einträge ohne start_time)
     const timeOff = staffTimeOff.find(
       off => off.staff_id === barberId &&
              off.start_date <= dateStr &&
-             off.end_date >= dateStr
+             off.end_date >= dateStr &&
+             !off.start_time // NUR ganztägige Einträge
     );
     if (timeOff) return timeOff;
 
@@ -387,20 +326,19 @@ export function WeekView({
     const isSunday = date.getDay() === 0;
 
     if (isSunday) {
-      // Prüfe ob es ein verkaufsoffener Sonntag ist
       const openSunday = openSundays.find(os => os.date === dateStr);
       if (!openSunday) {
-        // Kein verkaufsoffener Sonntag → Barber nicht verfügbar
         return {
           id: 'sunday-closed',
           staff_id: barberId,
           start_date: dateStr,
           end_date: dateStr,
           reason: 'Sonntag',
+          start_time: null,
+          end_time: null,
           created_at: '',
         };
       }
-      // Verkaufsoffener Sonntag: Prüfe ob Barber eingeteilt ist
       const isBarberAssigned = openSundayStaff.some(
         s => s.open_sunday_id === openSunday.id && s.staff_id === barberId
       );
@@ -411,6 +349,8 @@ export function WeekView({
           start_date: dateStr,
           end_date: dateStr,
           reason: 'Nicht eingeteilt',
+          start_time: null,
+          end_time: null,
           created_at: '',
         };
       }
@@ -427,6 +367,8 @@ export function WeekView({
         start_date: dateStr,
         end_date: dateStr,
         reason: 'Ersatztag',
+        start_time: null,
+        end_time: null,
         created_at: '',
       };
     }
@@ -434,7 +376,6 @@ export function WeekView({
     // Prüfe freien Tag
     const barber = team.find(b => b.id === barberId);
     if (barber && isBarberFreeDay(barber, dateStr)) {
-      // Prüfe ob es eine Ausnahme gibt (dann arbeitet er doch)
       const hasException = freeDayExceptions.some(
         ex => ex.staff_id === barberId && ex.date === dateStr
       );
@@ -445,6 +386,8 @@ export function WeekView({
           start_date: dateStr,
           end_date: dateStr,
           reason: 'Frei',
+          start_time: null,
+          end_time: null,
           created_at: '',
         };
       }
@@ -453,11 +396,52 @@ export function WeekView({
     return undefined;
   };
 
+  // Helper: Prüfe ob ein einzelner Slot blockiert ist (ganztägig ODER partiell)
+  const getSlotBlock = (barberId: string, dateStr: string, slotTime: string): StaffTimeOff | undefined => {
+    // Ganztägig?
+    const fullDay = getFullDayOff(barberId, dateStr);
+    if (fullDay) return fullDay;
+
+    // Partielle Blocks
+    return staffTimeOff.find(
+      off => off.staff_id === barberId &&
+             off.start_date <= dateStr &&
+             off.end_date >= dateStr &&
+             off.start_time != null &&
+             off.end_time != null &&
+             slotTime >= off.start_time &&
+             slotTime <= off.end_time
+    );
+  };
+
+  // Rückwärtskompatibel: isBarberOffOnDate = getFullDayOff
+  const isBarberOffOnDate = getFullDayOff;
+
+  // Helper: Prüfe ob ein Zeitslot vergangen ist (Slot-genaue Prüfung)
+  // Heute 12:32 → 12:00-Slot ist past, 12:30-Slot ist current (nicht past)
+  const isSlotPast = (dateStr: string, slotTime: string): boolean => {
+    const now = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const check = new Date(dateStr + 'T00:00:00');
+    // Vergangener Tag → alle Slots past
+    if (check < today) return true;
+    // Zukünftiger Tag → kein Slot past
+    if (check > today) return false;
+    // Heute → vergleiche Zeitslot mit aktuellem Slot
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const currentSlot = `${String(hours).padStart(2, '0')}:${minutes < 30 ? '00' : '30'}`;
+    return slotTime < currentSlot;
+  };
+
   const handleSlotClick = (barberId: string, dateStr: string, timeSlot: string) => {
     // Keine Termine an Feiertagen
     if (closedReason) return;
     // Im Selection Mode nicht öffnen
     if (selectionMode) return;
+    // Keine neuen Termine in der Vergangenheit
+    if (isSlotPast(dateStr, timeSlot)) return;
     setSelectedSlot({ barberId, date: dateStr, timeSlot });
   };
 
@@ -512,46 +496,14 @@ export function WeekView({
     const createdCancellations: string[] = [];
 
     for (const id of idsToDelete) {
-      // Prüfe ob es ein Serientermin ist (Format: series_<seriesId>_<date>)
-      if (id.startsWith('series_')) {
-        const parts = id.split('_');
-        // Format: series_<uuid>_<date> - UUID kann Bindestriche enthalten
-        const seriesId = parts.slice(1, -1).join('_'); // Alles zwischen "series_" und letztem "_"
-        const date = parts[parts.length - 1]; // Letzter Teil ist das Datum
-
-        // Finde den Serientermin in der Map
-        const seriesItem = Array.from(seriesAppointments.values()).find(s => s.id === seriesId);
-        if (seriesItem) {
-          // Erstelle einen stornierten Termin für dieses spezifische Datum
-          const result = await createAppointment({
-            barber_id: seriesItem.barber_id,
-            date: date,
-            time_slot: seriesItem.time_slot,
-            service_id: seriesItem.service_id,
-            customer_name: seriesItem.customer_name,
-            customer_phone: seriesItem.customer_phone || null,
-            customer_email: null,
-            customer_id: null,
-            source: 'manual',
-            status: 'cancelled',
-            series_id: seriesItem.id,
-          });
-
-          if (result.success && result.appointment) {
-            handleNewAppointmentFromSeries(result.appointment);
-            createdCancellations.push(result.appointment.id);
-          }
-        }
-      } else {
-        // Normaler Termin - speichern vor dem Löschen
-        const appointmentToDelete = appointments.find(apt => apt.id === id);
-        if (appointmentToDelete) {
-          deletedAppointments.push(appointmentToDelete);
-        }
-        const success = await deleteAppointment(id);
-        if (success) {
-          handleAppointmentDeletedInternal(id);
-        }
+      // Alle Termine sind jetzt echte Appointments (inkl. Serien)
+      const appointmentToDelete = appointments.find(apt => apt.id === id);
+      if (appointmentToDelete) {
+        deletedAppointments.push(appointmentToDelete);
+      }
+      const success = await deleteAppointment(id);
+      if (success) {
+        handleAppointmentDeletedInternal(id);
       }
     }
 
@@ -586,6 +538,7 @@ export function WeekView({
         source: apt.source,
         status: apt.status,
         series_id: apt.series_id || null,
+        is_pause: false,
       });
       if (result.success && result.appointment) {
         setAppointments(prev => [...prev, result.appointment!]);
@@ -611,6 +564,24 @@ export function WeekView({
     setDeletedItems(null);
     setShowUndoToast(false);
   }, []);
+
+  // Block (Teilzeit-Blockierung) löschen
+  const handleDeleteBlock = async (blockId: string) => {
+    await deleteStaffTimeOff(blockId);
+    const startDate = weekDays[0].dateStr;
+    const endDate = weekDays[weekDays.length - 1].dateStr;
+    const updated = await getStaffTimeOffForDateRange(startDate, endDate);
+    setStaffTimeOff(updated);
+  };
+
+  // Callback wenn ein Block erstellt wurde
+  const handleBlockCreated = async () => {
+    const startDate = weekDays[0].dateStr;
+    const endDate = weekDays[weekDays.length - 1].dateStr;
+    const updated = await getStaffTimeOffForDateRange(startDate, endDate);
+    setStaffTimeOff(updated);
+    setSelectedSlot(null);
+  };
 
   const handleCloseModal = () => {
     setSelectedSlot(null);
@@ -649,8 +620,9 @@ export function WeekView({
     setAppointments(prev => prev.map(apt => apt.id === updated.id ? updated : apt));
   };
 
-  const handleSeriesDeleted = (id: string) => {
-    setSeries(prev => prev.filter(s => s.id !== id));
+  const handleSeriesDeleted = (seriesId: string) => {
+    setSeries(prev => prev.filter(s => s.id !== seriesId));
+    setAppointments(prev => prev.filter(a => a.series_id !== seriesId));
   };
 
   const handleSeriesUpdated = (updated: Series) => {
@@ -676,7 +648,34 @@ export function WeekView({
     setMoveToBarberInfo(null); // Modal schließen nach erfolgreichem Drop
     setToast({ message: 'Termin verschoben', type: 'success' });
     setTimeout(() => setToast(null), 3000);
-  }, []);
+
+    // Terminverschiebungs-E-Mail senden (fire-and-forget)
+    if (newAppointment.customer_email && !newAppointment.is_pause) {
+      const oldBarber = team.find(t => t.id === oldAppointment.barber_id);
+      const newBarber = team.find(t => t.id === newAppointment.barber_id);
+      const service = newAppointment.service_id ? servicesMap[newAppointment.service_id] : null;
+
+      sendRescheduleEmail({
+        customerName: newAppointment.customer_name,
+        customerEmail: newAppointment.customer_email,
+        oldBarberName: oldBarber?.name || 'Barber',
+        oldBarberImage: oldBarber?.image || undefined,
+        oldImagePosition: oldBarber?.image_position || undefined,
+        oldDate: oldAppointment.date,
+        oldTime: oldAppointment.time_slot,
+        newBarberName: newBarber?.name || 'Barber',
+        newBarberImage: newBarber?.image || undefined,
+        newImagePosition: newBarber?.image_position || undefined,
+        newDate: newAppointment.date,
+        newTime: newAppointment.time_slot,
+        serviceName: service?.name || 'Termin',
+        duration: service?.duration || 30,
+        price: service ? formatPrice(service.price) : '0,00 €',
+        appointmentId: newAppointment.id,
+        barberChanged: oldAppointment.barber_id !== newAppointment.barber_id,
+      }).catch(err => console.error('Reschedule email failed:', err));
+    }
+  }, [team, servicesMap]);
 
   const handleMoveError = useCallback((error: string) => {
     setToast({ message: error, type: 'error' });
@@ -783,7 +782,7 @@ export function WeekView({
 
         {/* Schedule Grid - Table-Layout für durchgehende Linien */}
         <div className={`bg-white rounded-lg border border-gray-200 shadow-sm flex-1 min-h-0 overflow-hidden relative ${isClosed ? 'grayscale opacity-40' : ''}`}>
-          <div className="absolute inset-0 overflow-auto">
+          <div className="absolute inset-0 overflow-x-auto overflow-y-hidden">
             {/* Mobile: min-width basierend auf Barber-Anzahl, damit horizontal gescrollt werden kann */}
             <table
               className="w-full h-full border-collapse select-none"
@@ -807,15 +806,7 @@ export function WeekView({
                       apt.barber_id === barber.id &&
                       apt.date === currentDay.dateStr &&
                       selectedAppointments.has(apt.id)
-                    ) ||
-                    // Serientermine
-                    Array.from(seriesAppointments.entries()).some(([key, s]) => {
-                      if (s.barber_id !== barber.id) return false;
-                      const date = key.slice(s.barber_id.length + 1, -(s.time_slot.length + 1));
-                      if (date !== currentDay.dateStr) return false;
-                      const seriesKey = `series_${s.id}_${date}`;
-                      return selectedAppointments.has(seriesKey);
-                    })
+                    )
                   );
                   const isBarberHighlighted = selectionMode && (selectionFilter.barberId === barber.id || hasSelectedAppointments);
                   return (
@@ -922,9 +913,12 @@ export function WeekView({
                     const key = `${barber.id}-${currentDay.dateStr}-${slot}`;
                     const dropId = `droppable|${barber.id}|${currentDay.dateStr}|${slot}`;
                     const appointment = appointmentMap.get(key);
-                    const seriesItem = seriesAppointments.get(key);
+                    const seriesItem = appointment?.series_id ? seriesLookup.get(appointment.series_id) || null : null;
                     const barberTimeOff = isBarberOffOnDate(barber.id, currentDay.dateStr);
+                    const slotBlock = getSlotBlock(barber.id, currentDay.dateStr, slot);
+                    const isPartialBlock = slotBlock && slotBlock.start_time != null;
                     const isLastBarber = barberIndex === team.length - 1;
+                    const isPast = isSlotPast(currentDay.dateStr, slot);
 
                     return (
                       <td
@@ -939,12 +933,12 @@ export function WeekView({
                           ...(isLastBarber && { borderRightWidth: '1px', borderRightColor: 'rgb(248, 113, 113)' })
                         } : undefined}
                       >
-                        <DroppableCell id={dropId} disabled={!!barberTimeOff || isClosed}>
+                        <DroppableCell id={dropId} disabled={!!barberTimeOff || !!slotBlock || isClosed || isPast}>
                           {appointment && appointment.status === 'confirmed' ? (
-                            <DraggableSlot id={appointment.id} disabled={selectionMode}>
+                            <DraggableSlot id={appointment.id} disabled={selectionMode || isPast}>
                               <AppointmentSlot
                                 appointment={appointment}
-                                series={seriesItem}
+                                series={seriesItem || undefined}
                                 barberId={barber.id}
                                 date={currentDay.dateStr}
                                 timeSlot={slot}
@@ -962,81 +956,41 @@ export function WeekView({
                                 isSelected={selectedAppointments.has(appointment.id)}
                                 onToggleSelect={(shiftKey) => handleSelectAppointment(appointment.id, barber.id, shiftKey)}
                                 formatName={formatName}
+                                isPast={isPast}
                               />
                             </DraggableSlot>
+                          ) : !appointment && isPartialBlock ? (
+                            <BlockedSlot
+                              block={slotBlock}
+                              slotTime={slot}
+                              isPast={isPast}
+                              onBlockChanged={handleBlockCreated}
+                            />
                           ) : (
-                            (() => {
-                              // Wenn ein stornierter Termin existiert, der zur Serie gehört,
-                              // dann die Serie für diesen Tag NICHT anzeigen (Ausnahme)
-                              // Stattdessen einen leeren, klickbaren Slot rendern
-                              if (appointment?.status === 'cancelled' && appointment?.series_id && seriesItem) {
-                                return (
-                                  <AppointmentSlot
-                                    appointment={undefined}
-                                    series={undefined}
-                                    barberId={barber.id}
-                                    date={currentDay.dateStr}
-                                    timeSlot={slot}
-                                    servicesMap={servicesMap}
-                                    onClick={() => handleSlotClick(barber.id, currentDay.dateStr, slot)}
-                                    onDelete={handleAppointmentDeleted}
-                                    onUpdate={handleAppointmentUpdated}
-                                    onSeriesDelete={handleSeriesDeleted}
-                                    onSeriesUpdate={handleSeriesUpdated}
-                                    onAppointmentCreated={handleNewAppointmentFromSeries}
-                                    onSeriesSingleCancelled={handleSeriesSingleCancelled}
-                                    isDisabled={!!barberTimeOff}
-                                    disabledReason={barberTimeOff?.reason || undefined}
-                                    selectionMode={selectionMode}
-                                    isSelected={false}
-                                    formatName={formatName}
-                                  />
-                                );
-                              }
-
-                              // Für Serientermine: seriesKey berechnen
-                              const seriesKey = seriesItem ? `series_${seriesItem.id}_${currentDay.dateStr}` : null;
-                              // Für Pause-Serien: DraggableSlot verwenden
-                              const isPauseSeries = seriesItem?.customer_name?.includes('Pause');
-                              const pauseDragId = isPauseSeries && seriesItem ? `series-pause|${seriesItem.id}|${currentDay.dateStr}` : null;
-
-                              const slotContent = (
-                                <AppointmentSlot
-                                  appointment={appointment}
-                                  series={seriesItem}
-                                  barberId={barber.id}
-                                  date={currentDay.dateStr}
-                                  timeSlot={slot}
-                                  servicesMap={servicesMap}
-                                  onClick={() => handleSlotClick(barber.id, currentDay.dateStr, slot)}
-                                  onDelete={handleAppointmentDeleted}
-                                  onUpdate={handleAppointmentUpdated}
-                                  onSeriesDelete={handleSeriesDeleted}
-                                  onSeriesUpdate={handleSeriesUpdated}
-                                  onAppointmentCreated={handleNewAppointmentFromSeries}
-                                  onSeriesSingleCancelled={handleSeriesSingleCancelled}
-                                  isDisabled={!!barberTimeOff}
-                                  disabledReason={barberTimeOff?.reason || undefined}
-                                  selectionMode={selectionMode}
-                                  isSelected={appointment ? selectedAppointments.has(appointment.id) : (seriesKey ? selectedAppointments.has(seriesKey) : false)}
-                                  onToggleSelect={appointment
-                                    ? (shiftKey) => handleSelectAppointment(appointment.id, barber.id, shiftKey)
-                                    : (seriesKey ? (shiftKey) => handleSelectAppointment(seriesKey, barber.id, shiftKey) : undefined)}
-                                  formatName={formatName}
-                                />
-                              );
-
-                              // Wrap Pause-Serien in DraggableSlot
-                              if (pauseDragId && !selectionMode) {
-                                return (
-                                  <DraggableSlot id={pauseDragId} disabled={false}>
-                                    {slotContent}
-                                  </DraggableSlot>
-                                );
-                              }
-
-                              return slotContent;
-                            })()
+                            <AppointmentSlot
+                              appointment={appointment}
+                              series={seriesItem || undefined}
+                              barberId={barber.id}
+                              date={currentDay.dateStr}
+                              timeSlot={slot}
+                              servicesMap={servicesMap}
+                              onClick={() => handleSlotClick(barber.id, currentDay.dateStr, slot)}
+                              onDelete={handleAppointmentDeleted}
+                              onUpdate={handleAppointmentUpdated}
+                              onSeriesDelete={handleSeriesDeleted}
+                              onSeriesUpdate={handleSeriesUpdated}
+                              onAppointmentCreated={handleNewAppointmentFromSeries}
+                              onSeriesSingleCancelled={handleSeriesSingleCancelled}
+                              isDisabled={!!barberTimeOff}
+                              disabledReason={barberTimeOff?.reason || undefined}
+                              selectionMode={selectionMode}
+                              isSelected={appointment ? selectedAppointments.has(appointment.id) : false}
+                              onToggleSelect={appointment
+                                ? (shiftKey) => handleSelectAppointment(appointment.id, barber.id, shiftKey)
+                                : undefined}
+                              formatName={formatName}
+                              isPast={isPast}
+                            />
                           )}
                         </DroppableCell>
                       </td>
@@ -1089,6 +1043,10 @@ export function WeekView({
             <span>Pause</span>
           </div>
           <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-gray-200/60 border border-gray-300"></div>
+            <span>Blockiert</span>
+          </div>
+          <div className="flex items-center gap-1.5">
             <svg className="w-2.5 h-2.5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
             </svg>
@@ -1105,9 +1063,11 @@ export function WeekView({
             team={team}
             services={services}
             existingAppointments={appointments}
+            allTimeSlots={ALL_TIME_SLOTS}
             onClose={handleCloseModal}
             onCreated={handleAppointmentCreated}
             onSeriesCreated={handleSeriesCreated}
+            onBlockCreated={handleBlockCreated}
           />
         )}
 

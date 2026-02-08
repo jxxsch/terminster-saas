@@ -19,7 +19,9 @@ import {
   Service,
   StaffTimeOff,
   ClosedDate,
+  formatPrice,
 } from '@/lib/supabase';
+import { sendRescheduleEmail } from '@/lib/email-client';
 
 // Generiere alle Zeitslots von 9:00 bis 20:00 (30-Minuten-Intervalle)
 function generateAllTimeSlots(): string[] {
@@ -233,7 +235,36 @@ export function FullWeekView({ monday }: FullWeekViewProps) {
     setAppointments(prev => prev.map(apt => apt.id === oldAppointment.id ? newAppointment : apt));
     setToast({ message: 'Termin verschoben', type: 'success' });
     setTimeout(() => setToast(null), 3000);
-  }, []);
+
+    // Terminverschiebungs-E-Mail senden (fire-and-forget)
+    if (newAppointment.customer_email && !newAppointment.is_pause) {
+      const oldBarber = team.find(t => t.id === oldAppointment.barber_id);
+      const newBarber = team.find(t => t.id === newAppointment.barber_id);
+      const svcMap: Record<string, Service> = {};
+      services.forEach(s => { svcMap[s.id] = s; });
+      const service = newAppointment.service_id ? svcMap[newAppointment.service_id] : null;
+
+      sendRescheduleEmail({
+        customerName: newAppointment.customer_name,
+        customerEmail: newAppointment.customer_email,
+        oldBarberName: oldBarber?.name || 'Barber',
+        oldBarberImage: oldBarber?.image || undefined,
+        oldImagePosition: oldBarber?.image_position || undefined,
+        oldDate: oldAppointment.date,
+        oldTime: oldAppointment.time_slot,
+        newBarberName: newBarber?.name || 'Barber',
+        newBarberImage: newBarber?.image || undefined,
+        newImagePosition: newBarber?.image_position || undefined,
+        newDate: newAppointment.date,
+        newTime: newAppointment.time_slot,
+        serviceName: service?.name || 'Termin',
+        duration: service?.duration || 30,
+        price: service ? formatPrice(service.price) : '0,00 €',
+        appointmentId: newAppointment.id,
+        barberChanged: oldAppointment.barber_id !== newAppointment.barber_id,
+      }).catch(err => console.error('Reschedule email failed:', err));
+    }
+  }, [team, services]);
 
   const handleSeriesUpdated = useCallback((updated: Series) => {
     setSeries(prev => prev.map(s => s.id === updated.id ? updated : s));
