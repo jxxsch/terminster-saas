@@ -248,11 +248,14 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
       // Customer-Daten im AuthContext aktualisieren
       await refreshCustomer();
 
+      setIsSubmitting(false);
+
       // Erfolg - CustomerPortal öffnen
       onSuccess?.();
     } catch (err) {
       console.error('Password setup error:', err);
       setError('Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
+    } finally {
       setIsSubmitting(false);
     }
   };
