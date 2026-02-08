@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const supabase = createAdminClient();
 
     // Prüfen ob bereits ein Auth-User mit dieser E-Mail existiert
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const { data: existingUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
     const existingAuthUser = existingUsers?.users?.find(
       (u) => u.email?.toLowerCase() === email.toLowerCase()
     );
@@ -65,6 +65,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (createError) {
+      // "already been registered" = Auth-User existiert bereits (listUsers hat ihn wegen Paginierung nicht gefunden)
+      if (createError.message.includes('already been registered') || createError.message.includes('already exists')) {
+        return NextResponse.json(
+          { error: 'Ein Konto mit dieser E-Mail existiert bereits' },
+          { status: 409 }
+        );
+      }
       console.error('Create user error:', createError);
       return NextResponse.json(
         { error: createError.message },

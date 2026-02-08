@@ -33,15 +33,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Auth-User löschen (falls vorhanden)
+    // 2. Auth-User löschen (über auth_id oder E-Mail-Suche)
+    let authDeleted = false;
     if (customer.auth_id) {
       const { error: authDeleteError } = await supabase.auth.admin.deleteUser(
         customer.auth_id
       );
-
       if (authDeleteError) {
         console.error('Auth user delete error:', authDeleteError);
-        // Weitermachen auch wenn Auth-Löschung fehlschlägt
+      } else {
+        authDeleted = true;
+      }
+    }
+
+    // Fallback: Auth-User über E-Mail suchen und löschen (falls auth_id fehlte oder Löschung fehlschlug)
+    if (!authDeleted && customer.email) {
+      const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+      const authUser = users?.find(
+        (u) => u.email?.toLowerCase() === customer.email?.toLowerCase()
+      );
+      if (authUser) {
+        const { error: fallbackDeleteError } = await supabase.auth.admin.deleteUser(authUser.id);
+        if (fallbackDeleteError) {
+          console.error('Auth user fallback delete error:', fallbackDeleteError);
+        }
       }
     }
 
