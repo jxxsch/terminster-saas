@@ -237,6 +237,15 @@ export function BarberWeekView({
     enabled: !isLoading,
   });
 
+  // Polling-Fallback: Alle 15 Sekunden Termine neu laden (falls Realtime ausfällt)
+  useEffect(() => {
+    if (isLoading) return;
+    const interval = setInterval(() => {
+      refreshAppointments();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [refreshAppointments, isLoading]);
+
   // Get currently selected barber
   const selectedBarber = useMemo(() => {
     return team.find(b => b.id === selectedBarberId) || null;

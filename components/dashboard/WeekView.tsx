@@ -197,6 +197,15 @@ export function WeekView({
     enabled: weekDays.length > 0,
   });
 
+  // Polling-Fallback: Alle 15 Sekunden Termine neu laden (falls Realtime ausfällt)
+  useEffect(() => {
+    if (weekDays.length === 0) return;
+    const interval = setInterval(() => {
+      refreshAppointments();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [refreshAppointments, weekDays.length]);
+
   // Load all data
   useEffect(() => {
     async function loadData() {
