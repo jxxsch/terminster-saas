@@ -462,25 +462,20 @@ export function BarberWeekView({
     setIsDeletingMultiple(true);
 
     const idsToDelete = Array.from(selectedAppointments);
-    const deletedAppointments: Appointment[] = [];
-    const createdCancellations: string[] = [];
+    const deletedAppointmentsCopy = idsToDelete
+      .map(id => appointments.find(apt => apt.id === id))
+      .filter(Boolean) as Appointment[];
 
-    for (const id of idsToDelete) {
-      // Alle Termine sind jetzt echte Appointments (inkl. Serien)
-      const appointmentToDelete = appointments.find(apt => apt.id === id);
-      if (appointmentToDelete) {
-        deletedAppointments.push(appointmentToDelete);
-      }
-      const success = await deleteAppointment(id);
-      if (success) {
-        handleAppointmentDeletedInternal(id);
-      }
-    }
+    // Sofort alle aus UI entfernen
+    setAppointments(prev => prev.filter(apt => !selectedAppointments.has(apt.id)));
+
+    // Parallel aus DB löschen
+    await Promise.all(idsToDelete.map(id => deleteAppointment(id)));
 
     // Für Undo speichern
     setDeletedItems({
-      appointments: deletedAppointments,
-      seriesCancellations: createdCancellations,
+      appointments: deletedAppointmentsCopy,
+      seriesCancellations: [],
     });
 
     setIsDeletingMultiple(false);

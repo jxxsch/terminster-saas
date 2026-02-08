@@ -61,12 +61,28 @@ function getMondayOfWeek(weekOffset: number): Date {
   return monday;
 }
 
+// Ab Samstag Ladenschluss (19:00) oder Sonntag → nächste Woche Montag
+function getEffectiveToday(): { weekOffset: number; dayIndex: number } {
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=So, 1=Mo, ..., 6=Sa
+
+  if (dayOfWeek === 0) {
+    return { weekOffset: 1, dayIndex: 0 };
+  }
+
+  if (dayOfWeek === 6 && now.getHours() >= 19) {
+    return { weekOffset: 1, dayIndex: 0 };
+  }
+
+  return { weekOffset: 0, dayIndex: dayOfWeek - 1 };
+}
+
 export default function DashboardPage() {
   const logoUrl = useLogoUrl();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+  const [currentWeekOffset, setCurrentWeekOffset] = useState(() => getEffectiveToday().weekOffset);
   const [selectedDay, setSelectedDay] = useState(0);
   const [closedDates, setClosedDates] = useState<ClosedDate[]>([]);
   const [openSundays, setOpenSundays] = useState<OpenSunday[]>([]);
@@ -188,22 +204,21 @@ export default function DashboardPage() {
   }, [monday, closedDates, openSundays, tDays]);
 
   useEffect(() => {
-    if (currentWeekOffset === 0) {
+    const effective = getEffectiveToday();
+    setCurrentWeekOffset(effective.weekOffset);
+
+    if (effective.weekOffset === 0) {
       const todayIndex = weekDays.findIndex(d => d.isToday);
       if (todayIndex !== -1) {
         const today = weekDays[todayIndex];
-        // Wenn heute Sonntag ist und kein verkaufsoffener Sonntag, zum nächsten offenen Tag wechseln
         if (today.isSunday) {
-          // Nächste Woche, Montag (oder nächster offener Tag)
           setCurrentWeekOffset(1);
-          setSelectedDay(0); // Montag der nächsten Woche
+          setSelectedDay(0);
         } else if (today.isClosed) {
-          // Wenn heute geschlossen ist (Feiertag), nächsten offenen Tag finden
           const nextOpenDay = weekDays.findIndex((d, i) => i > todayIndex && !d.isSunday && !d.isClosed);
           if (nextOpenDay !== -1) {
             setSelectedDay(nextOpenDay);
           } else {
-            // Kein offener Tag mehr diese Woche, nächste Woche Montag
             setCurrentWeekOffset(1);
             setSelectedDay(0);
           }
@@ -211,6 +226,8 @@ export default function DashboardPage() {
           setSelectedDay(todayIndex);
         }
       }
+    } else {
+      setSelectedDay(effective.dayIndex);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -504,18 +521,16 @@ export default function DashboardPage() {
           {/* Heute Button - Mobile */}
           <button
             onClick={() => {
-              setCurrentWeekOffset(0);
-              const today = new Date();
-              const dayOfWeek = today.getDay();
-              const todayIndex = dayOfWeek === 0 ? 0 : dayOfWeek - 1;
-              setSelectedDay(todayIndex);
+              const effective = getEffectiveToday();
+              setCurrentWeekOffset(effective.weekOffset);
+              setSelectedDay(effective.dayIndex);
             }}
             className={`flex-shrink-0 px-2 py-1.5 text-[10px] font-bold rounded-lg transition-all ${
-              currentWeekOffset !== 0 || !weekDays[selectedDay]?.isToday
+              currentWeekOffset !== getEffectiveToday().weekOffset || selectedDay !== getEffectiveToday().dayIndex
                 ? 'bg-gold/20 text-gold'
                 : 'bg-slate-100 text-slate-400'
             }`}
-            disabled={currentWeekOffset === 0 && weekDays[selectedDay]?.isToday}
+            disabled={currentWeekOffset === getEffectiveToday().weekOffset && selectedDay === getEffectiveToday().dayIndex}
           >
             Heute
           </button>
@@ -738,18 +753,16 @@ export default function DashboardPage() {
           {/* Heute Button */}
           <button
             onClick={() => {
-              setCurrentWeekOffset(0);
-              const today = new Date();
-              const dayOfWeek = today.getDay();
-              const todayIndex = dayOfWeek === 0 ? 0 : dayOfWeek - 1;
-              setSelectedDay(todayIndex);
+              const effective = getEffectiveToday();
+              setCurrentWeekOffset(effective.weekOffset);
+              setSelectedDay(effective.dayIndex);
             }}
             className={`ml-1 px-4 py-2 text-xs font-bold rounded-xl transition-all ${
-              currentWeekOffset !== 0 || !weekDays[selectedDay]?.isToday
+              currentWeekOffset !== getEffectiveToday().weekOffset || selectedDay !== getEffectiveToday().dayIndex
                 ? 'bg-gold/20 text-gold hover:bg-gold/30'
                 : 'bg-slate-100 text-slate-400 cursor-default'
             }`}
-            disabled={currentWeekOffset === 0 && weekDays[selectedDay]?.isToday}
+            disabled={currentWeekOffset === getEffectiveToday().weekOffset && selectedDay === getEffectiveToday().dayIndex}
           >
             {t('today')}
           </button>

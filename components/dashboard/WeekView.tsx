@@ -501,25 +501,20 @@ export function WeekView({
     setIsDeletingMultiple(true);
 
     const idsToDelete = Array.from(selectedAppointments);
-    const deletedAppointments: Appointment[] = [];
-    const createdCancellations: string[] = [];
+    const deletedAppointmentsCopy = idsToDelete
+      .map(id => appointments.find(apt => apt.id === id))
+      .filter(Boolean) as Appointment[];
 
-    for (const id of idsToDelete) {
-      // Alle Termine sind jetzt echte Appointments (inkl. Serien)
-      const appointmentToDelete = appointments.find(apt => apt.id === id);
-      if (appointmentToDelete) {
-        deletedAppointments.push(appointmentToDelete);
-      }
-      const success = await deleteAppointment(id);
-      if (success) {
-        handleAppointmentDeletedInternal(id);
-      }
-    }
+    // Sofort alle aus UI entfernen
+    setAppointments(prev => prev.filter(apt => !selectedAppointments.has(apt.id)));
+
+    // Parallel aus DB löschen
+    await Promise.all(idsToDelete.map(id => deleteAppointment(id)));
 
     // Für Undo speichern
     setDeletedItems({
-      appointments: deletedAppointments,
-      seriesCancellations: createdCancellations,
+      appointments: deletedAppointmentsCopy,
+      seriesCancellations: [],
     });
 
     setIsDeletingMultiple(false);
@@ -712,12 +707,13 @@ export function WeekView({
 
     // Kopiere für Undo
     const deletedAppointmentsCopy = [...barberAppointments];
+    const idsToDelete = barberAppointments.map(apt => apt.id);
 
-    // Lösche alle Termine
-    for (const apt of barberAppointments) {
-      await deleteAppointment(apt.id);
-      handleAppointmentDeletedInternal(apt.id);
-    }
+    // Sofort alle aus UI entfernen
+    setAppointments(prev => prev.filter(apt => !idsToDelete.includes(apt.id)));
+
+    // Parallel aus DB löschen
+    await Promise.all(idsToDelete.map(id => deleteAppointment(id)));
 
     // Für Undo speichern
     setDeletedItems({
