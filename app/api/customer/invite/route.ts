@@ -128,6 +128,45 @@ export async function POST(request: NextRequest) {
       console.warn('Could not modify activation URL');
     }
 
+    // Customer-ID ermitteln (vom DB-Trigger erstellt/verknüpft)
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('auth_id', authUserId)
+      .single();
+
+    // Bestehende Termine dem neuen Konto zuordnen (per E-Mail, Telefon oder Name)
+    if (customer?.id) {
+      const fullName = `${firstName} ${lastName}`.trim();
+      const conditions = [];
+
+      // E-Mail-Match
+      conditions.push(`customer_email.ilike.${email.toLowerCase()}`);
+
+      // Telefon-Match (falls vorhanden)
+      if (phone?.trim()) {
+        conditions.push(`customer_phone.eq.${phone.trim()}`);
+      }
+
+      // Name-Match
+      if (fullName) {
+        conditions.push(`customer_name.ilike.${fullName}`);
+      }
+
+      const { count, error: linkError } = await supabase
+        .from('appointments')
+        .update({ customer_id: customer.id })
+        .is('customer_id', null)
+        .or(conditions.join(','))
+        .select('id', { count: 'exact', head: true });
+
+      if (linkError) {
+        console.error('Appointment linking error:', linkError);
+      } else if (count && count > 0) {
+        console.info(`${count} bestehende Termine dem Konto ${customer.id} zugeordnet`);
+      }
+    }
+
     // Eigene Beban-E-Mail über Resend senden
     const emailResult = await sendAccountInviteEmail({
       customerName: `${firstName} ${lastName}`,
@@ -144,6 +183,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Kundenkonto erstellt und Einladungs-E-Mail gesendet',
       emailSent: emailResult.success,
+      appointmentsLinked: customer?.id ? true : false,
     });
 
   } catch (error) {
