@@ -153,17 +153,17 @@ export async function POST(request: NextRequest) {
         conditions.push(`customer_name.ilike.${fullName}`);
       }
 
-      const { count, error: linkError } = await supabase
+      const { data: linkedAppointments, error: linkError } = await supabase
         .from('appointments')
         .update({ customer_id: customer.id })
         .is('customer_id', null)
         .or(conditions.join(','))
-        .select('id', { count: 'exact', head: true });
+        .select('id');
 
       if (linkError) {
         console.error('Appointment linking error:', linkError);
-      } else if (count && count > 0) {
-        console.info(`${count} bestehende Termine dem Konto ${customer.id} zugeordnet`);
+      } else if (linkedAppointments && linkedAppointments.length > 0) {
+        console.info(`${linkedAppointments.length} bestehende Termine dem Konto ${customer.id} zugeordnet`);
       }
     }
 
