@@ -12,6 +12,7 @@ export interface PasswordSetupData {
   firstName: string;
   lastName: string;
   phone?: string;
+  isRecovery?: boolean;
 }
 
 interface LoginModalProps {
@@ -29,6 +30,7 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
 
   // Password Setup Mode
   const isPasswordSetupMode = !!passwordSetupData;
+  const isRecoveryMode = !!passwordSetupData?.isRecovery;
 
   const [activeTab, setActiveTab] = useState<Tab>(isPasswordSetupMode ? 'register' : initialTab);
   const [email, setEmail] = useState(passwordSetupData?.email || '');
@@ -254,6 +256,41 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
     }
   };
 
+  // Passwort-Reset (Recovery-Link)
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (password.length < 6) {
+      setError(t('errors.passwordTooShort'));
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const result = await setNewPassword(password);
+
+      if (result.error) {
+        setError(translateError(result.error));
+        setIsSubmitting(false);
+        return;
+      }
+
+      setSuccessMessage('Passwort erfolgreich geändert!');
+      setIsSubmitting(false);
+
+      // Nach 1,5s Modal schließen
+      setTimeout(() => {
+        onSuccess?.();
+        onClose();
+      }, 1500);
+    } catch {
+      setError('Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
+      setIsSubmitting(false);
+    }
+  };
+
   const translateError = (error: string): string => {
     const errorMap: Record<string, string> = {
       'Invalid login credentials': t('errors.invalidCredentials'),
@@ -465,7 +502,7 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
       <div style={styles.modal}>
         {/* Header */}
         <div style={styles.header}>
-          <span style={styles.title}>{isPasswordSetupMode ? 'Passwort festlegen' : 'Kundenbereich'}</span>
+          <span style={styles.title}>{isRecoveryMode ? 'Neues Passwort festlegen' : isPasswordSetupMode ? 'Passwort festlegen' : 'Kundenbereich'}</span>
           <button
             onClick={onClose}
             onMouseEnter={() => setCloseHover(true)}
@@ -585,8 +622,56 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
             </form>
           )}
 
-          {/* Register Form / Password Setup Form */}
-          {activeTab === 'register' && !successMessage && (
+          {/* Recovery Form (Simplified) */}
+          {activeTab === 'register' && isRecoveryMode && !successMessage && (
+            <form onSubmit={handlePasswordReset}>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>E-Mail</label>
+                <input
+                  type="email"
+                  value={email}
+                  className="login-input"
+                  style={{
+                    ...styles.input,
+                    backgroundColor: '#f1f5f9',
+                    color: '#64748b',
+                    cursor: 'not-allowed',
+                  }}
+                  readOnly
+                />
+              </div>
+
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>Neues Passwort</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Min. 6 Zeichen"
+                  className="login-input"
+                  style={styles.input}
+                  autoComplete="new-password"
+                  required
+                  minLength={6}
+                  autoFocus
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !password || password.length < 6}
+                  className="primary-btn"
+                  style={styles.primaryButton}
+                >
+                  {isSubmitting ? 'Wird gespeichert...' : 'Passwort ändern'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Register Form / Password Setup Form (Invite) */}
+          {activeTab === 'register' && !isRecoveryMode && !successMessage && (
             <form onSubmit={isPasswordSetupMode ? handlePasswordSetup : handleRegister}>
               {/* Zeile 1: Vorname, Nachname */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>

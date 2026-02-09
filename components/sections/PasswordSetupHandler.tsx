@@ -11,6 +11,7 @@ export function PasswordSetupHandler() {
   useEffect(() => {
     const hash = window.location.hash;
     const hasRecoveryToken = hash.includes('type=recovery') || hash.includes('type=invite');
+    const isRecovery = hash.includes('type=recovery');
 
     if (!hasRecoveryToken) return;
 
@@ -27,6 +28,7 @@ export function PasswordSetupHandler() {
         firstName: metadata.first_name || '',
         lastName: metadata.last_name || '',
         phone: metadata.phone || '',
+        isRecovery,
       });
     };
 

@@ -51,6 +51,7 @@ interface PasswordSetupData {
   firstName: string;
   lastName: string;
   phone?: string;
+  isRecovery?: boolean;
 }
 
 interface BookingModalClassicProps {
