@@ -7,6 +7,8 @@ import {
   sendPasswordResetEmail,
 } from '@/lib/email';
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Test-Endpoint zum Versenden aller E-Mail-Typen
 export async function POST(request: NextRequest) {
   try {
@@ -38,6 +40,8 @@ export async function POST(request: NextRequest) {
       appointmentId: 'test-booking-123',
     });
 
+    await delay(600);
+
     // 2. Terminerinnerung
     results.reminder = await sendAppointmentReminder({
       customerName: 'Max Mustermann',
@@ -52,6 +56,8 @@ export async function POST(request: NextRequest) {
       price: '35,00 €',
       appointmentId: 'test-reminder-456',
     });
+
+    await delay(600);
 
     // 3. Termin verschoben
     results.reschedule = await sendRescheduleConfirmation({
@@ -74,12 +80,16 @@ export async function POST(request: NextRequest) {
       barberChanged: true,
     });
 
+    await delay(600);
+
     // 4. Konto-Einladung
     results.invite = await sendAccountInviteEmail({
       customerName: 'Max Mustermann',
       customerEmail: email,
       activationUrl: 'https://terminster.com/de#type=invite&access_token=test-token-789',
     });
+
+    await delay(600);
 
     // 5. Passwort-Reset
     results.passwordReset = await sendPasswordResetEmail({
