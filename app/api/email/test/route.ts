@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   sendBookingConfirmation,
   sendAppointmentReminder,
+  sendRescheduleConfirmation,
   sendAccountInviteEmail,
+  sendPasswordResetEmail,
 } from '@/lib/email';
 
-// Test-Endpoint zum Versenden aller 3 E-Mail-Typen
+// Test-Endpoint zum Versenden aller E-Mail-Typen
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -18,23 +20,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const results: {
-      booking: { success: boolean; error?: string };
-      reminder: { success: boolean; error?: string };
-      account: { success: boolean; error?: string };
-    } = {
-      booking: { success: false },
-      reminder: { success: false },
-      account: { success: false },
-    };
+    const results: Record<string, { success: boolean; error?: string }> = {};
 
     // 1. Buchungsbestätigung
-    const bookingResult = await sendBookingConfirmation({
+    results.booking = await sendBookingConfirmation({
       customerName: 'Max Mustermann',
       customerEmail: email,
       customerPhone: '+49 176 12345678',
       barberName: 'Khalid',
-      barberImage: 'https://terminster.com/team/khalid.webp',
+      barberImage: '/team/khalid.webp',
       imagePosition: 'center 30%',
       serviceName: 'Haarschnitt',
       date: '2026-02-10',
@@ -43,39 +37,64 @@ export async function POST(request: NextRequest) {
       price: '20,00 €',
       appointmentId: 'test-booking-123',
     });
-    results.booking = bookingResult;
 
     // 2. Terminerinnerung
-    const reminderResult = await sendAppointmentReminder({
+    results.reminder = await sendAppointmentReminder({
       customerName: 'Max Mustermann',
       customerEmail: email,
-      barberName: 'Khalid',
-      barberImage: 'https://terminster.com/team/khalid.webp',
-      imagePosition: 'center 30%',
-      serviceName: 'Haarschnitt',
-      date: '2026-02-06',
+      barberName: 'Sahir',
+      barberImage: '/team/sahir.webp',
+      imagePosition: '51% 32%',
+      serviceName: 'Haare & Bart',
+      date: '2026-02-11',
       time: '10:30',
-      duration: 30,
-      price: '20,00 €',
+      duration: 45,
+      price: '35,00 €',
       appointmentId: 'test-reminder-456',
     });
-    results.reminder = reminderResult;
 
-    // 3. Konto-Einladung
-    const accountResult = await sendAccountInviteEmail({
+    // 3. Termin verschoben
+    results.reschedule = await sendRescheduleConfirmation({
       customerName: 'Max Mustermann',
       customerEmail: email,
-      activationUrl: 'https://beban-barbershop.de/activate?token=test-token-789',
+      oldBarberName: 'Sakvan',
+      oldBarberImage: '/team/sakvan.webp',
+      oldImagePosition: 'center 30%',
+      oldDate: '2026-02-10',
+      oldTime: '15:00',
+      newBarberName: 'Mansur',
+      newBarberImage: '/team/mansur.webp',
+      newImagePosition: 'center 30%',
+      newDate: '2026-02-12',
+      newTime: '11:00',
+      serviceName: 'Bartrasur',
+      duration: 20,
+      price: '15,00 €',
+      appointmentId: 'test-reschedule-789',
+      barberChanged: true,
     });
-    results.account = accountResult;
 
-    const allSuccess = results.booking.success && results.reminder.success && results.account.success;
+    // 4. Konto-Einladung
+    results.invite = await sendAccountInviteEmail({
+      customerName: 'Max Mustermann',
+      customerEmail: email,
+      activationUrl: 'https://terminster.com/de#type=invite&access_token=test-token-789',
+    });
+
+    // 5. Passwort-Reset
+    results.passwordReset = await sendPasswordResetEmail({
+      customerName: 'Max Mustermann',
+      customerEmail: email,
+      resetUrl: 'https://terminster.com/de#type=recovery&access_token=test-token-reset',
+    });
+
+    const allSuccess = Object.values(results).every(r => r.success);
 
     return NextResponse.json({
       success: allSuccess,
       results,
       message: allSuccess
-        ? 'Alle 3 Test-E-Mails wurden erfolgreich gesendet!'
+        ? `Alle ${Object.keys(results).length} Test-E-Mails wurden erfolgreich gesendet!`
         : 'Einige E-Mails konnten nicht gesendet werden.',
     });
 
