@@ -69,7 +69,6 @@ export function BlockedSlot({ block, slotTime, isPast, onBlockChanged }: Blocked
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isPast) return;
     if (!showPopup) calculatePosition();
     setShowPopup(!showPopup);
   };
@@ -145,7 +144,7 @@ export function BlockedSlot({ block, slotTime, isPast, onBlockChanged }: Blocked
   return (
     <div ref={slotRef} className="relative p-1 h-full transition-colors select-none bg-gray-200 hover:bg-gray-300">
       <div
-        className={`flex items-center justify-between gap-1 h-full pl-1 ${!isPast ? 'cursor-pointer' : ''}`}
+        className="flex items-center justify-between gap-1 h-full pl-1 cursor-pointer"
         onClick={handleClick}
       >
         <div className="flex-1 min-w-0">
@@ -153,21 +152,19 @@ export function BlockedSlot({ block, slotTime, isPast, onBlockChanged }: Blocked
             {block.reason || 'Blockiert'}
           </span>
         </div>
-        {!isPast && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!showPopup) calculatePosition();
-              setShowPopup(!showPopup);
-            }}
-            className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded border border-red-300 bg-red-50 hover:bg-red-100 transition-colors"
-            title="Blockierung bearbeiten"
-          >
-            <svg className="w-2.5 h-2.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        )}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!showPopup) calculatePosition();
+            setShowPopup(!showPopup);
+          }}
+          className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded border border-red-300 bg-red-50 hover:bg-red-100 transition-colors"
+          title="Blockierung bearbeiten"
+        >
+          <svg className="w-2.5 h-2.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
       {/* Popup */}
@@ -194,8 +191,8 @@ export function BlockedSlot({ block, slotTime, isPast, onBlockChanged }: Blocked
 
           {/* Optionen */}
           <div className="flex flex-col gap-1.5">
-            {/* Nur diesen Slot freigeben */}
-            {!isSingleSlot && (
+            {/* Nur diesen Slot freigeben (nur Zukunft) */}
+            {!isPast && !isSingleSlot && (
               <button
                 onClick={handleFreeThisSlot}
                 disabled={isProcessing}
@@ -208,8 +205,8 @@ export function BlockedSlot({ block, slotTime, isPast, onBlockChanged }: Blocked
               </button>
             )}
 
-            {/* Ab hier freigeben */}
-            {!isSingleSlot && !isFirstSlot && (
+            {/* Ab hier freigeben (nur Zukunft) */}
+            {!isPast && !isSingleSlot && !isFirstSlot && (
               <button
                 onClick={handleFreeFromHere}
                 disabled={isProcessing}

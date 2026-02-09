@@ -61,19 +61,35 @@ function getMondayOfWeek(weekOffset: number): Date {
   return monday;
 }
 
-// Ab Samstag Ladenschluss (19:00) oder Sonntag → nächste Woche Montag
+// Ab Ladenschluss (19:00) → nächster Arbeitstag anzeigen
 function getEffectiveToday(): { weekOffset: number; dayIndex: number } {
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0=So, 1=Mo, ..., 6=Sa
+  const afterClose = now.getHours() >= 19;
 
+  // Sonntag → Montag nächste Woche
   if (dayOfWeek === 0) {
     return { weekOffset: 1, dayIndex: 0 };
   }
 
-  if (dayOfWeek === 6 && now.getHours() >= 19) {
+  // Samstag nach Ladenschluss → Montag nächste Woche
+  if (dayOfWeek === 6 && afterClose) {
     return { weekOffset: 1, dayIndex: 0 };
   }
 
+  // Samstag vor Ladenschluss → Samstag (dayIndex 5)
+  if (dayOfWeek === 6) {
+    return { weekOffset: 0, dayIndex: 5 };
+  }
+
+  // Mo-Fr nach Ladenschluss → nächster Tag
+  if (afterClose) {
+    // Freitag nach 19:00 → Samstag (dayIndex 5)
+    // Mo-Do nach 19:00 → nächster Tag
+    return { weekOffset: 0, dayIndex: dayOfWeek }; // dayOfWeek 1=Mo→dayIndex 1=Di, ..., 5=Fr→dayIndex 5=Sa
+  }
+
+  // Mo-Fr vor Ladenschluss → heute
   return { weekOffset: 0, dayIndex: dayOfWeek - 1 };
 }
 
@@ -208,14 +224,13 @@ export default function DashboardPage() {
     setCurrentWeekOffset(effective.weekOffset);
 
     if (effective.weekOffset === 0) {
-      const todayIndex = weekDays.findIndex(d => d.isToday);
-      if (todayIndex !== -1) {
-        const today = weekDays[todayIndex];
-        if (today.isSunday) {
+      const effectiveDay = weekDays[effective.dayIndex];
+      if (effectiveDay) {
+        if (effectiveDay.isSunday) {
           setCurrentWeekOffset(1);
           setSelectedDay(0);
-        } else if (today.isClosed) {
-          const nextOpenDay = weekDays.findIndex((d, i) => i > todayIndex && !d.isSunday && !d.isClosed);
+        } else if (effectiveDay.isClosed) {
+          const nextOpenDay = weekDays.findIndex((d, i) => i > effective.dayIndex && !d.isSunday && !d.isClosed);
           if (nextOpenDay !== -1) {
             setSelectedDay(nextOpenDay);
           } else {
@@ -223,8 +238,10 @@ export default function DashboardPage() {
             setSelectedDay(0);
           }
         } else {
-          setSelectedDay(todayIndex);
+          setSelectedDay(effective.dayIndex);
         }
+      } else {
+        setSelectedDay(effective.dayIndex);
       }
     } else {
       setSelectedDay(effective.dayIndex);

@@ -1005,15 +1005,23 @@ export async function signOut(): Promise<void> {
 }
 
 export async function resetPassword(email: string): Promise<{ error: string | null }> {
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`,
-  });
+  try {
+    const res = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
 
-  if (error) {
-    return { error: error.message };
+    const data = await res.json();
+
+    if (!res.ok) {
+      return { error: data.error || 'Fehler beim Zurücksetzen des Passworts' };
+    }
+
+    return { error: null };
+  } catch {
+    return { error: 'Netzwerkfehler beim Zurücksetzen des Passworts' };
   }
-
-  return { error: null };
 }
 
 // Passwort setzen (für Einladungslinks)
@@ -1849,6 +1857,9 @@ export async function updateSetting(
     console.error(`Error updating setting ${key}:`, error);
     return false;
   }
+
+  // Cache invalidieren damit neue Werte sofort geladen werden
+  cache.delete(`setting_${key}`);
 
   return true;
 }

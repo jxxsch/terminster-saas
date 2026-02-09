@@ -12,6 +12,7 @@ interface BookingSettings {
   max_bookings_per_day: { value: number; enabled: boolean };
   bundesland: Bundesland;
   booking_system_type: BookingSystemType;
+  allow_edit_customer_in_modal: boolean;
 }
 
 const defaultSettings: BookingSettings = {
@@ -20,6 +21,7 @@ const defaultSettings: BookingSettings = {
   max_bookings_per_day: { value: 2, enabled: true },
   bundesland: 'NW',
   booking_system_type: 'standard',
+  allow_edit_customer_in_modal: false,
 };
 
 export default function SettingsPage() {
@@ -61,6 +63,9 @@ export default function SettingsPage() {
           max_bookings_per_day: maxBookings,
           bundesland: (settingsData.bundesland as Bundesland) || defaultSettings.bundesland,
           booking_system_type: (settingsData.booking_system_type as BookingSystemType) || defaultSettings.booking_system_type,
+          allow_edit_customer_in_modal: typeof settingsData.allow_edit_customer_in_modal === 'boolean'
+            ? settingsData.allow_edit_customer_in_modal
+            : defaultSettings.allow_edit_customer_in_modal,
         });
         setIsLoading(false);
       }
@@ -271,6 +276,33 @@ export default function SettingsPage() {
                   onClick={() => saveField('bundesland', settings.bundesland)}
                   saving={saving === 'bundesland'}
                   saved={savedFields.has('bundesland')}
+                />
+              </div>
+            </div>
+
+            {/* Kundendaten bearbeitbar */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-slate-50 rounded-xl px-4 md:px-5 py-4">
+              <div>
+                <div className="text-sm font-medium text-slate-900">Kundendaten bearbeitbar</div>
+                <div className="text-xs text-slate-400">Name, Telefon & E-Mail im Kalender-Popup änderbar</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.allow_edit_customer_in_modal}
+                    onChange={(e) => setSettings(s => ({
+                      ...s,
+                      allow_edit_customer_in_modal: e.target.checked
+                    }))}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:shadow after:transition-all peer-checked:bg-gold"></div>
+                </label>
+                <SaveButton
+                  onClick={() => saveField('allow_edit_customer_in_modal', settings.allow_edit_customer_in_modal)}
+                  saving={saving === 'allow_edit_customer_in_modal'}
+                  saved={savedFields.has('allow_edit_customer_in_modal')}
                 />
               </div>
             </div>

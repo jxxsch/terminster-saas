@@ -1939,7 +1939,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                           {authTab === 'forgot' && !authSuccess && (
                             <form onSubmit={handleForgotPassword}>
                               <p style={{ fontSize: '0.625rem', color: '#64748b', marginBottom: '0.5rem' }}>{tAuth('resetDescription')}</p>
-                              <input type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder={tAuth('email')} style={{ ...styles.input, marginBottom: '0.5rem' }} required />
+                              <input type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder={tAuth('email')} style={{ ...styles.input, width: '100%', marginBottom: '0.5rem' }} required />
                               <button type="submit" disabled={authSubmitting} style={{ ...styles.submitBtn, width: '100%', justifyContent: 'center', opacity: authSubmitting ? 0.5 : 1 }}>
                                 {authSubmitting ? tAuth('sendingLink') : tAuth('sendResetLink')}
                               </button>
