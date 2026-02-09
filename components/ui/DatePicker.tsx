@@ -44,10 +44,12 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
   });
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({ top: -9999, left: -9999 });
   const [mounted, setMounted] = useState(false);
+  const [typedText, setTypedText] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const calendarBtnRef = useRef<HTMLButtonElement>(null);
 
   // Parse min/max dates
   const minDate = min ? new Date(min + 'T00:00:00') : null;
@@ -63,38 +65,46 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
     setMounted(true);
   }, []);
 
-  // Calculate dropdown position when opening
+  // Calculate dropdown position when opening or when month changes
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      const dropdownWidth = 280;
-      const dropdownHeight = 340;
-      const padding = 8;
-
-      // Calculate left position - check if it goes off screen to the right
-      let left = rect.left;
-      if (left + dropdownWidth > window.innerWidth - padding) {
-        left = window.innerWidth - dropdownWidth - padding;
-      }
-      // Make sure it doesn't go off screen to the left
-      if (left < padding) {
-        left = padding;
-      }
-
-      // Calculate top position - check if it goes off screen at the bottom
-      let top = rect.bottom + 4;
-      if (top + dropdownHeight > window.innerHeight - padding) {
-        // Show above the input instead
-        top = rect.top - dropdownHeight - 4;
-      }
-      // Make sure it doesn't go off screen at the top
-      if (top < padding) {
-        top = padding;
-      }
-
-      setDropdownPosition({ top, left });
+    if (!isOpen) {
+      setDropdownPosition({ top: -9999, left: -9999 });
+      return;
     }
-  }, [isOpen]);
+    if (!inputRef.current) return;
+
+    const rect = inputRef.current.getBoundingClientRect();
+    const dropdownWidth = 280;
+    const padding = 8;
+
+    // Measure actual dropdown height, with calculated fallback
+    const numRows = Math.ceil((getFirstDayOfMonth(viewDate.year, viewDate.month) + getDaysInMonth(viewDate.year, viewDate.month)) / 7);
+    const dropdownHeight = dropdownRef.current?.offsetHeight || (155 + numRows * 38);
+
+    // Calculate left position - check if it goes off screen to the right
+    let left = rect.left;
+    if (left + dropdownWidth > window.innerWidth - padding) {
+      left = window.innerWidth - dropdownWidth - padding;
+    }
+    if (left < padding) {
+      left = padding;
+    }
+
+    // Prefer opening above to avoid covering form fields below the input
+    let top: number;
+    const spaceAbove = rect.top;
+
+    if (spaceAbove >= dropdownHeight + padding) {
+      top = rect.top - dropdownHeight - 4;
+    } else {
+      top = rect.bottom + 4;
+    }
+    if (top < padding) {
+      top = padding;
+    }
+
+    setDropdownPosition({ top, left });
+  }, [isOpen, viewDate.year, viewDate.month]);
 
   // Close on click outside
   useEffect(() => {
@@ -102,7 +112,8 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
       const target = e.target as Node;
       if (
         inputRef.current && !inputRef.current.contains(target) &&
-        dropdownRef.current && !dropdownRef.current.contains(target)
+        dropdownRef.current && !dropdownRef.current.contains(target) &&
+        calendarBtnRef.current && !calendarBtnRef.current.contains(target)
       ) {
         setIsOpen(false);
       }
@@ -124,10 +135,54 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
     }
   }, [isOpen]);
 
+  // Sync typedText when value changes externally (e.g. from calendar click)
+  useEffect(() => {
+    const formatted = value ? value.split('-').reverse().join('.') : '';
+    setTypedText(formatted);
+  }, [value]);
+
+  // Handle keyboard input in tt.mm.jjjj format
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value;
+    // Only allow digits and dots
+    const cleaned = raw.replace(/[^\d.]/g, '');
+
+    // Auto-insert dots after day (2 digits) and month (2 digits)
+    let formatted = '';
+    const digits = cleaned.replace(/\./g, '');
+    for (let i = 0; i < digits.length && i < 8; i++) {
+      if (i === 2 || i === 4) formatted += '.';
+      formatted += digits[i];
+    }
+
+    setTypedText(formatted);
+
+    // Try to parse complete date tt.mm.jjjj
+    const match = formatted.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (match) {
+      const day = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10);
+      const year = parseInt(match[3], 10);
+
+      // Basic validation
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900 && year <= 2100) {
+        const date = new Date(year, month - 1, day);
+        // Verify the date is valid (e.g. not Feb 30)
+        if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+          const isoDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          if (!isDateDisabled(year, month - 1, day)) {
+            onChange(isoDate);
+            setViewDate({ year, month: month - 1 });
+          }
+        }
+      }
+    } else if (formatted === '') {
+      onChange('');
+    }
+  }
+
   // Format display value
-  const displayValue = value
-    ? value.split('-').reverse().join('.')
-    : '';
+  const displayValue = typedText;
 
   // Get days in month
   function getDaysInMonth(year: number, month: number) {
@@ -511,19 +566,48 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
 
   return (
     <div style={styles.container}>
-      <input
-        ref={inputRef}
-        type="text"
-        readOnly
-        value={displayValue}
-        placeholder={placeholder}
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          ...styles.input,
-          ...(isOpen ? styles.inputFocused : {}),
-        }}
-        required={required}
-      />
+      <div style={{ position: 'relative' }}>
+        <input
+          ref={inputRef}
+          type="text"
+          value={displayValue}
+          placeholder={placeholder}
+          onChange={handleInputChange}
+          onFocus={() => {
+            // Don't auto-open calendar on focus — user might want to type
+          }}
+          style={{
+            ...styles.input,
+            paddingRight: '2.25rem',
+            ...(isOpen ? styles.inputFocused : {}),
+          }}
+          required={required}
+        />
+        <button
+          ref={calendarBtnRef}
+          type="button"
+          tabIndex={-1}
+          onClick={() => setIsOpen(!isOpen)}
+          style={{
+            position: 'absolute',
+            right: '0.5rem',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '0.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#94a3b8',
+          }}
+        >
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
+          </svg>
+        </button>
+      </div>
 
       {mounted && isOpen && createPortal(dropdown, document.body)}
     </div>

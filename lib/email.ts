@@ -17,28 +17,17 @@ async function getLogoUrl(): Promise<string> {
   return data?.value || `${BASE_URL}/logo.png`;
 }
 
-// Konvertiert Bild-URL in ein E-Mail-kompatibles Format (JPG statt WebP)
+// Konvertiert Bild-URL in ein E-Mail-kompatibles Format
 // Viele E-Mail-Clients (Outlook, Yahoo, Thunderbird) unterstützen kein WebP
-function toEmailSafeImageUrl(imageUrl: string, barberName?: string): string {
+function toEmailSafeImageUrl(imageUrl: string): string {
   if (!imageUrl) return imageUrl;
 
-  // Für statische Bilder von terminster.com: .webp → .jpg
-  if (imageUrl.includes('terminster.com/') && imageUrl.endsWith('.webp')) {
-    return imageUrl.replace(/\.webp$/, '.jpg');
-  }
-
-  // Für Supabase Storage URLs: verwende lokale JPG-Version stattdessen
-  // (JPG existiert nicht in Supabase Storage, aber lokal unter /team/{name}.jpg)
-  if (imageUrl.includes('supabase.co/storage/') && barberName) {
-    const slug = barberName.toLowerCase().replace(/\s+/g, '-');
-    return `${BASE_URL}/team/${slug}.jpg`;
-  }
-
-  // Allgemeiner Fallback: .webp → .jpg
+  // WebP-Bilder sind in E-Mail-Clients problematisch → .jpg Fallback
   if (imageUrl.endsWith('.webp')) {
     return imageUrl.replace(/\.webp$/, '.jpg');
   }
 
+  // Supabase-Storage-URLs und alle anderen direkt durchlassen
   return imageUrl;
 }
 
@@ -217,7 +206,7 @@ export async function sendRescheduleConfirmation(data: RescheduleEmailData): Pro
 
 function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string): string {
   const dateFormatted = formatDateShort(data.date);
-  const barberImage = toEmailSafeImageUrl(data.barberImage || `${BASE_URL}/team/default.jpg`, data.barberName);
+  const barberImage = toEmailSafeImageUrl(data.barberImage || `${BASE_URL}/team/default.jpg`);
   const barberImagePosition = data.imagePosition || 'center 30%';
   const icsDownloadUrl = `${BASE_URL}/api/calendar/${data.appointmentId}`;
   const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
@@ -457,7 +446,7 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
 
 function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string {
   const dateFormatted = formatDateShort(data.date);
-  const barberImage = toEmailSafeImageUrl(data.barberImage || `${BASE_URL}/team/default.jpg`, data.barberName);
+  const barberImage = toEmailSafeImageUrl(data.barberImage || `${BASE_URL}/team/default.jpg`);
   const barberImagePosition = data.imagePosition || 'center 30%';
   const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
 
@@ -679,7 +668,7 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
 function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): string {
   const oldDateFormatted = formatDateShort(data.oldDate);
   const newDateFormatted = formatDateShort(data.newDate);
-  const newBarberImage = toEmailSafeImageUrl(data.newBarberImage || `${BASE_URL}/team/default.jpg`, data.newBarberName);
+  const newBarberImage = toEmailSafeImageUrl(data.newBarberImage || `${BASE_URL}/team/default.jpg`);
   const newBarberImagePosition = data.newImagePosition || 'center 30%';
   const icsDownloadUrl = `${BASE_URL}/api/calendar/${data.appointmentId}`;
   const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
