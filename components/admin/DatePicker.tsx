@@ -135,10 +135,12 @@ export function DatePicker({
     if (initialMonth) return new Date(initialMonth);
     return new Date();
   });
+  const [typedText, setTypedText] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const calendarBtnRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: -9999, left: -9999 });
   const [mounted, setMounted] = useState(false);
 
   // Client-side only
@@ -166,16 +168,76 @@ export function DatePicker({
     }
   }, [autoOpen, initialMonth]);
 
-  // Update position when opening
+  // Sync typedText when value changes externally
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-      });
+    const formatted = value
+      ? new Date(value).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : '';
+    setTypedText(formatted);
+  }, [value]);
+
+  // Handle keyboard input in tt.mm.jjjj format
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.value;
+    const cleaned = raw.replace(/[^\d.]/g, '');
+    let formatted = '';
+    const digits = cleaned.replace(/\./g, '');
+    for (let i = 0; i < digits.length && i < 8; i++) {
+      if (i === 2 || i === 4) formatted += '.';
+      formatted += digits[i];
     }
-  }, [isOpen]);
+    setTypedText(formatted);
+
+    const match = formatted.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (match) {
+      const day = parseInt(match[1], 10);
+      const month = parseInt(match[2], 10);
+      const year = parseInt(match[3], 10);
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900 && year <= 2100) {
+        const date = new Date(year, month - 1, day);
+        if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+          const isoDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          if (!min || isoDate >= min) {
+            onChange(isoDate);
+            setViewDate(new Date(year, month - 1, 1));
+          }
+        }
+      }
+    } else if (formatted === '') {
+      onChange('');
+    }
+  }
+
+  // Update position when opening or month changes
+  useEffect(() => {
+    if (!isOpen || inline) {
+      if (!isOpen) setDropdownPosition({ top: -9999, left: -9999 });
+      return;
+    }
+    if (!inputRef.current) return;
+
+    const rect = inputRef.current.getBoundingClientRect();
+    const dropdownHeight = dropdownRef.current?.offsetHeight || 380;
+    const dropdownWidth = 280;
+    const padding = 8;
+
+    let left = rect.left;
+    if (left + dropdownWidth > window.innerWidth - padding) {
+      left = window.innerWidth - dropdownWidth - padding;
+    }
+    if (left < padding) left = padding;
+
+    let top: number;
+    const spaceAbove = rect.top;
+    if (spaceAbove >= dropdownHeight + padding) {
+      top = rect.top - dropdownHeight - 4;
+    } else {
+      top = rect.bottom + 4;
+    }
+    if (top < padding) top = padding;
+
+    setDropdownPosition({ top, left });
+  }, [isOpen, inline, viewDate]);
 
   // Click outside to close
   useEffect(() => {
@@ -183,8 +245,9 @@ export function DatePicker({
       const target = event.target as Node;
       const clickedInContainer = containerRef.current?.contains(target);
       const clickedInDropdown = dropdownRef.current?.contains(target);
+      const clickedCalendarBtn = calendarBtnRef.current?.contains(target);
 
-      if (!clickedInContainer && !clickedInDropdown) {
+      if (!clickedInContainer && !clickedInDropdown && !clickedCalendarBtn) {
         setIsOpen(false);
         onClose?.();
       }
@@ -270,9 +333,7 @@ export function DatePicker({
     });
   }
 
-  const displayValue = value
-    ? new Date(value).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    : '';
+  const displayValue = typedText;
 
   // Kalender-Content als wiederverwendbare Variable
   const calendarContent = (
@@ -375,16 +436,28 @@ export function DatePicker({
       {label && (
         <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
       )}
-      <input
-        ref={inputRef}
-        type="text"
-        value={displayValue}
-        onClick={() => setIsOpen(true)}
-        readOnly
-        required={required}
-        placeholder="TT.MM.JJJJ"
-        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer"
-      />
+      <div className="relative">
+        <input
+          ref={inputRef}
+          type="text"
+          value={displayValue}
+          onChange={handleInputChange}
+          required={required}
+          placeholder="TT.MM.JJJJ"
+          className="w-full px-3 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+        />
+        <button
+          ref={calendarBtnRef}
+          type="button"
+          tabIndex={-1}
+          onClick={() => setIsOpen(!isOpen)}
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
+          </svg>
+        </button>
+      </div>
 
       {isOpen && mounted && createPortal(
         <div

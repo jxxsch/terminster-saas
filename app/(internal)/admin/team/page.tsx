@@ -12,6 +12,7 @@ import {
   TeamMember,
 } from '@/lib/supabase';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
+import { DatePicker } from '@/components/admin/DatePicker';
 
 type ImageFormat = 'square' | 'portrait';
 
@@ -598,21 +599,17 @@ export default function TeamPage() {
             {/* Zeile 2: Geburtstag, Dabei seit, Freier Tag, Aktiv + Bild */}
             <div className="grid grid-cols-4 gap-3 items-end">
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Geburtstag</label>
-                <input
-                  type="date"
+                <DatePicker
+                  label="Geburtstag"
                   value={formData.birthday}
-                  onChange={(e) => setFormData({ ...formData, birthday: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                  onChange={(val) => setFormData({ ...formData, birthday: val })}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Dabei seit</label>
-                <input
-                  type="date"
+                <DatePicker
+                  label="Dabei seit"
                   value={formData.start_date}
-                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                  onChange={(val) => setFormData({ ...formData, start_date: val })}
                 />
               </div>
               <div>

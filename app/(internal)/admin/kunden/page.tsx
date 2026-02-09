@@ -15,6 +15,7 @@ import {
   type TeamMember,
   type Service,
 } from '@/lib/supabase';
+import { DatePicker } from '@/components/admin/DatePicker';
 
 export default function KundenPage() {
   const [customers, setCustomers] = useState<CustomerWithStats[]>([]);
@@ -635,12 +636,10 @@ export default function KundenPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] font-medium text-slate-500 mb-1">Geburtstag</label>
-                      <input
-                        type="date"
+                      <DatePicker
+                        label="Geburtstag"
                         value={editData.birth_date || ''}
-                        onChange={(e) => setEditData({ ...editData, birth_date: e.target.value })}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
+                        onChange={(val) => setEditData({ ...editData, birth_date: val })}
                       />
                     </div>
                     <div>

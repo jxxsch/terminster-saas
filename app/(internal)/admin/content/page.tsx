@@ -19,6 +19,7 @@ import {
   Review,
 } from '@/lib/supabase';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
+import { DatePicker } from '@/components/admin/DatePicker';
 
 type TabId = 'galerie' | 'content' | 'rezensionen';
 
@@ -1521,12 +1522,10 @@ export default function MedienPage() {
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="text-xs font-medium text-slate-600 mb-1 block">Datum (optional)</label>
-                      <input
-                        type="date"
+                      <DatePicker
+                        label="Datum (optional)"
                         value={reviewFormData.date}
-                        onChange={(e) => setReviewFormData({ ...reviewFormData, date: e.target.value })}
-                        className="w-full h-10 px-3 bg-white border border-slate-200 rounded-lg text-sm"
+                        onChange={(val) => setReviewFormData({ ...reviewFormData, date: val })}
                       />
                     </div>
                     <div>
