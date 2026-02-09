@@ -22,13 +22,19 @@ async function getLogoUrl(): Promise<string> {
 function toEmailSafeImageUrl(imageUrl: string): string {
   if (!imageUrl) return imageUrl;
 
-  // WebP-Bilder sind in E-Mail-Clients problematisch → .jpg Fallback
-  if (imageUrl.endsWith('.webp')) {
-    return imageUrl.replace(/\.webp$/, '.jpg');
+  let url = imageUrl;
+
+  // Relative Pfade zu absoluten URLs machen (z.B. /team/sahir.webp)
+  if (url.startsWith('/')) {
+    url = `${BASE_URL}${url}`;
   }
 
-  // Supabase-Storage-URLs und alle anderen direkt durchlassen
-  return imageUrl;
+  // WebP-Bilder sind in E-Mail-Clients problematisch → .jpg Fallback
+  if (url.endsWith('.webp')) {
+    url = url.replace(/\.webp$/, '.jpg');
+  }
+
+  return url;
 }
 
 // Typen
@@ -172,9 +178,7 @@ export async function sendRescheduleConfirmation(data: RescheduleEmailData): Pro
       description: `Dein Termin bei Beban Barbershop mit ${data.newBarberName}`,
     });
 
-    const subject = data.barberChanged
-      ? `Terminänderung - Neuer Termin: ${formatDateShort(data.newDate)} um ${data.newTime}`
-      : `Termin verschoben - Neuer Termin: ${formatDateShort(data.newDate)} um ${data.newTime}`;
+    const subject = `Termin verschoben - Neuer Termin: ${formatDateShort(data.newDate)} um ${data.newTime}`;
 
     const { error } = await resend.emails.send({
       from: `${FROM_NAME} <${FROM_EMAIL}>`,
