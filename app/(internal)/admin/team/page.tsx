@@ -14,7 +14,7 @@ import {
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
 import { DatePicker } from '@/components/admin/DatePicker';
 
-type ImageFormat = 'square' | 'portrait';
+type ImageFormat = 'square' | 'portrait' | 'email';
 
 // Berechnet Tage bis zum nächsten Geburtstag und das Alter
 function getDaysUntilBirthday(birthdayStr: string): { days: number; label: string; nextAge: number } {
@@ -66,6 +66,8 @@ export default function TeamPage() {
     image_scale: 1,
     image_position_portrait: '50% 50%',
     image_scale_portrait: 1,
+    image_position_email: '50% 50%',
+    image_scale_email: 1.7,
     active: true,
     phone: '',
     birthday: '',
@@ -84,20 +86,27 @@ export default function TeamPage() {
   // Position refs for each format
   const squareOffsetRef = useRef({ x: 50, y: 50 });
   const portraitOffsetRef = useRef({ x: 50, y: 50 });
+  const emailOffsetRef = useRef({ x: 50, y: 50 });
   const squareScaleRef = useRef(1);
   const portraitScaleRef = useRef(1);
+  const emailScaleRef = useRef(1.7);
 
   // DOM refs
   const squareImageRef = useRef<HTMLImageElement>(null);
   const portraitImageRef = useRef<HTMLImageElement>(null);
+  const emailImageRef = useRef<HTMLImageElement>(null);
   const squareOverlayRef = useRef<HTMLDivElement>(null);
   const portraitOverlayRef = useRef<HTMLDivElement>(null);
+  const emailOverlayRef = useRef<HTMLDivElement>(null);
   const squareSliderRef = useRef<HTMLDivElement>(null);
   const portraitSliderRef = useRef<HTMLDivElement>(null);
+  const emailSliderRef = useRef<HTMLDivElement>(null);
   const squareSliderThumbRef = useRef<HTMLDivElement>(null);
   const portraitSliderThumbRef = useRef<HTMLDivElement>(null);
+  const emailSliderThumbRef = useRef<HTMLDivElement>(null);
   const squareScaleDisplayRef = useRef<HTMLSpanElement>(null);
   const portraitScaleDisplayRef = useRef<HTMLSpanElement>(null);
+  const emailScaleDisplayRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -133,6 +142,8 @@ export default function TeamPage() {
       image_scale: 1,
       image_position_portrait: '50% 50%',
       image_scale_portrait: 1,
+      image_position_email: '50% 50%',
+      image_scale_email: 1.7,
       active: true,
       phone: '',
       birthday: '',
@@ -142,8 +153,10 @@ export default function TeamPage() {
     });
     squareOffsetRef.current = { x: 50, y: 50 };
     portraitOffsetRef.current = { x: 50, y: 50 };
+    emailOffsetRef.current = { x: 50, y: 50 };
     squareScaleRef.current = 1;
     portraitScaleRef.current = 1;
+    emailScaleRef.current = 1.7;
     setActiveFormat('square');
     activeFormatRef.current = 'square';
     setUploadError('');
@@ -154,9 +167,11 @@ export default function TeamPage() {
   function openEditForm(member: TeamMember) {
     const squarePos = parsePosition(member.image_position || '50% 50%');
     const portraitPos = parsePosition(member.image_position_portrait || '50% 50%');
+    const emailPos = parsePosition(member.image_position_email || '50% 50%');
 
     const squareScale = member.image_scale || 1;
     const portraitScale = member.image_scale_portrait || 1;
+    const emailScale = member.image_scale_email || 1.7;
 
     setFormData({
       id: member.id,
@@ -166,6 +181,8 @@ export default function TeamPage() {
       image_scale: squareScale,
       image_position_portrait: member.image_position_portrait || '50% 50%',
       image_scale_portrait: portraitScale,
+      image_position_email: member.image_position_email || '50% 50%',
+      image_scale_email: emailScale,
       active: member.active,
       phone: member.phone || '',
       birthday: member.birthday || '',
@@ -176,8 +193,10 @@ export default function TeamPage() {
 
     squareOffsetRef.current = squarePos;
     portraitOffsetRef.current = portraitPos;
+    emailOffsetRef.current = emailPos;
     squareScaleRef.current = squareScale;
     portraitScaleRef.current = portraitScale;
+    emailScaleRef.current = emailScale;
 
     setActiveFormat('square');
     activeFormatRef.current = 'square';
@@ -215,11 +234,15 @@ export default function TeamPage() {
         image_scale: 1,
         image_position_portrait: '50% 50%',
         image_scale_portrait: 1,
+        image_position_email: '50% 50%',
+        image_scale_email: 1.7,
       }));
       squareOffsetRef.current = { x: 50, y: 50 };
       portraitOffsetRef.current = { x: 50, y: 50 };
+      emailOffsetRef.current = { x: 50, y: 50 };
       squareScaleRef.current = 1;
       portraitScaleRef.current = 1;
+      emailScaleRef.current = 1.7;
     } else {
       setUploadError('Fehler beim Hochladen');
     }
@@ -238,9 +261,13 @@ export default function TeamPage() {
       if (squareImageRef.current) {
         squareImageRef.current.style.transform = transform;
       }
-    } else {
+    } else if (format === 'portrait') {
       if (portraitImageRef.current) {
         portraitImageRef.current.style.transform = transform;
+      }
+    } else {
+      if (emailImageRef.current) {
+        emailImageRef.current.style.transform = transform;
       }
     }
   }, []);
@@ -248,8 +275,8 @@ export default function TeamPage() {
   // Update slider thumb position via DOM
   const updateSliderDOM = useCallback((format: ImageFormat, scale: number) => {
     const percent = ((scale - 1.0) / 2.0) * 100; // 1.0-3.0 -> 0-100%
-    const thumbRef = format === 'square' ? squareSliderThumbRef : portraitSliderThumbRef;
-    const displayRef = format === 'square' ? squareScaleDisplayRef : portraitScaleDisplayRef;
+    const thumbRef = format === 'square' ? squareSliderThumbRef : format === 'portrait' ? portraitSliderThumbRef : emailSliderThumbRef;
+    const displayRef = format === 'square' ? squareScaleDisplayRef : format === 'portrait' ? portraitScaleDisplayRef : emailScaleDisplayRef;
 
     if (thumbRef.current) {
       thumbRef.current.style.left = `${percent}%`;
@@ -261,7 +288,7 @@ export default function TeamPage() {
 
   // Show/hide overlay via DOM
   const setOverlayVisible = useCallback((format: ImageFormat, visible: boolean) => {
-    const ref = format === 'square' ? squareOverlayRef : portraitOverlayRef;
+    const ref = format === 'square' ? squareOverlayRef : format === 'portrait' ? portraitOverlayRef : emailOverlayRef;
     if (ref.current) {
       ref.current.style.opacity = visible ? '1' : '0';
       ref.current.style.pointerEvents = visible ? 'auto' : 'none';
@@ -275,8 +302,8 @@ export default function TeamPage() {
       if (isDraggingRef.current) {
         e.preventDefault();
         const format = activeFormatRef.current;
-        const offsetRef = format === 'square' ? squareOffsetRef : portraitOffsetRef;
-        const scaleRef = format === 'square' ? squareScaleRef : portraitScaleRef;
+        const offsetRef = format === 'square' ? squareOffsetRef : format === 'portrait' ? portraitOffsetRef : emailOffsetRef;
+        const scaleRef = format === 'square' ? squareScaleRef : format === 'portrait' ? portraitScaleRef : emailScaleRef;
 
         // Sensitivität für Bewegung (kleinerer Wert = schnellere Bewegung)
         const deltaX = (e.clientX - dragStartRef.current.x) / 1.5;
@@ -296,9 +323,9 @@ export default function TeamPage() {
       if (isSliderDraggingRef.current) {
         e.preventDefault();
         const format = activeFormatRef.current;
-        const sliderRef = format === 'square' ? squareSliderRef : portraitSliderRef;
-        const scaleRef = format === 'square' ? squareScaleRef : portraitScaleRef;
-        const offsetRef = format === 'square' ? squareOffsetRef : portraitOffsetRef;
+        const sliderRef = format === 'square' ? squareSliderRef : format === 'portrait' ? portraitSliderRef : emailSliderRef;
+        const scaleRef = format === 'square' ? squareScaleRef : format === 'portrait' ? portraitScaleRef : emailScaleRef;
+        const offsetRef = format === 'square' ? squareOffsetRef : format === 'portrait' ? portraitOffsetRef : emailOffsetRef;
 
         if (sliderRef.current) {
           const rect = sliderRef.current.getBoundingClientRect();
@@ -319,26 +346,30 @@ export default function TeamPage() {
         setOverlayVisible(format, false);
 
         // Update state at the end
-        const offsetRef = format === 'square' ? squareOffsetRef : portraitOffsetRef;
-        const scaleRef = format === 'square' ? squareScaleRef : portraitScaleRef;
+        const offsetRef = format === 'square' ? squareOffsetRef : format === 'portrait' ? portraitOffsetRef : emailOffsetRef;
+        const scaleRef = format === 'square' ? squareScaleRef : format === 'portrait' ? portraitScaleRef : emailScaleRef;
         const newPosition = `${Math.round(offsetRef.current.x)}% ${Math.round(offsetRef.current.y)}%`;
 
         if (format === 'square') {
           setFormData(prev => ({ ...prev, image_position: newPosition, image_scale: scaleRef.current }));
-        } else {
+        } else if (format === 'portrait') {
           setFormData(prev => ({ ...prev, image_position_portrait: newPosition, image_scale_portrait: scaleRef.current }));
+        } else {
+          setFormData(prev => ({ ...prev, image_position_email: newPosition, image_scale_email: scaleRef.current }));
         }
       }
 
       if (isSliderDraggingRef.current) {
         isSliderDraggingRef.current = false;
         const format = activeFormatRef.current;
-        const scaleRef = format === 'square' ? squareScaleRef : portraitScaleRef;
+        const scaleRef = format === 'square' ? squareScaleRef : format === 'portrait' ? portraitScaleRef : emailScaleRef;
 
         if (format === 'square') {
           setFormData(prev => ({ ...prev, image_scale: scaleRef.current }));
-        } else {
+        } else if (format === 'portrait') {
           setFormData(prev => ({ ...prev, image_scale_portrait: scaleRef.current }));
+        } else {
+          setFormData(prev => ({ ...prev, image_scale_email: scaleRef.current }));
         }
       }
     };
@@ -376,9 +407,9 @@ export default function TeamPage() {
     isSliderDraggingRef.current = true;
 
     // Immediately update to clicked position
-    const sliderRef = format === 'square' ? squareSliderRef : portraitSliderRef;
-    const scaleRef = format === 'square' ? squareScaleRef : portraitScaleRef;
-    const offsetRef = format === 'square' ? squareOffsetRef : portraitOffsetRef;
+    const sliderRef = format === 'square' ? squareSliderRef : format === 'portrait' ? portraitSliderRef : emailSliderRef;
+    const scaleRef = format === 'square' ? squareScaleRef : format === 'portrait' ? portraitScaleRef : emailScaleRef;
+    const offsetRef = format === 'square' ? squareOffsetRef : format === 'portrait' ? portraitOffsetRef : emailOffsetRef;
 
     if (sliderRef.current) {
       const rect = sliderRef.current.getBoundingClientRect();
@@ -402,6 +433,8 @@ export default function TeamPage() {
         image_scale: formData.image_scale,
         image_position_portrait: formData.image_position_portrait,
         image_scale_portrait: formData.image_scale_portrait,
+        image_position_email: formData.image_position_email,
+        image_scale_email: formData.image_scale_email,
         sort_order: team.length,
         active: formData.active,
         phone: formData.phone || null,
@@ -422,6 +455,8 @@ export default function TeamPage() {
         image_scale: formData.image_scale,
         image_position_portrait: formData.image_position_portrait,
         image_scale_portrait: formData.image_scale_portrait,
+        image_position_email: formData.image_position_email,
+        image_scale_email: formData.image_scale_email,
         active: formData.active,
         phone: formData.phone || null,
         birthday: formData.birthday || null,
@@ -473,13 +508,13 @@ export default function TeamPage() {
   // Image Preview Component - kompakt
   const ImagePreview = ({ format, label, aspectClass }: { format: ImageFormat; label: string; aspectClass: string }) => {
     const isActive = activeFormat === format;
-    const position = format === 'square' ? formData.image_position : formData.image_position_portrait;
-    const scale = format === 'square' ? formData.image_scale : formData.image_scale_portrait;
-    const imageRef = format === 'square' ? squareImageRef : portraitImageRef;
-    const overlayRef = format === 'square' ? squareOverlayRef : portraitOverlayRef;
-    const sliderRef = format === 'square' ? squareSliderRef : portraitSliderRef;
-    const thumbRef = format === 'square' ? squareSliderThumbRef : portraitSliderThumbRef;
-    const displayRef = format === 'square' ? squareScaleDisplayRef : portraitScaleDisplayRef;
+    const position = format === 'square' ? formData.image_position : format === 'portrait' ? formData.image_position_portrait : formData.image_position_email;
+    const scale = format === 'square' ? formData.image_scale : format === 'portrait' ? formData.image_scale_portrait : formData.image_scale_email;
+    const imageRef = format === 'square' ? squareImageRef : format === 'portrait' ? portraitImageRef : emailImageRef;
+    const overlayRef = format === 'square' ? squareOverlayRef : format === 'portrait' ? portraitOverlayRef : emailOverlayRef;
+    const sliderRef = format === 'square' ? squareSliderRef : format === 'portrait' ? portraitSliderRef : emailSliderRef;
+    const thumbRef = format === 'square' ? squareSliderThumbRef : format === 'portrait' ? portraitSliderThumbRef : emailSliderThumbRef;
+    const displayRef = format === 'square' ? squareScaleDisplayRef : format === 'portrait' ? portraitScaleDisplayRef : emailScaleDisplayRef;
 
     const thumbPercent = ((scale - 1.0) / 2.0) * 100;
 
@@ -492,7 +527,7 @@ export default function TeamPage() {
 
         {/* Image Frame */}
         <div
-          className={`relative ${aspectClass} rounded-lg overflow-hidden bg-slate-200 border ${isActive ? 'border-gold' : 'border-slate-300'} ${formData.image ? 'cursor-move' : ''}`}
+          className={`relative ${aspectClass} ${format === 'email' ? 'rounded-full' : 'rounded-lg'} overflow-hidden bg-slate-200 border ${isActive ? 'border-gold' : 'border-slate-300'} ${formData.image ? 'cursor-move' : ''}`}
           onMouseDown={(e) => handleImageMouseDown(e, format)}
         >
           {formData.image ? (
@@ -679,9 +714,10 @@ export default function TeamPage() {
                 </svg>
                 Bildausschnitt anpassen (ziehen zum Verschieben)
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <ImagePreview format="square" label="Quadratisch (Buchungstool)" aspectClass="aspect-square w-full max-w-[160px] mx-auto" />
-                <ImagePreview format="portrait" label="Hochformat (Website)" aspectClass="aspect-[3/4] w-full max-w-[120px] mx-auto" />
+              <div className="grid grid-cols-3 gap-4">
+                <ImagePreview format="square" label="Quadratisch (Buchungstool)" aspectClass="aspect-square w-full max-w-[140px] mx-auto" />
+                <ImagePreview format="portrait" label="Hochformat (Website)" aspectClass="aspect-[3/4] w-full max-w-[110px] mx-auto" />
+                <ImagePreview format="email" label="Rund (E-Mail)" aspectClass="aspect-square w-full max-w-[140px] mx-auto rounded-full" />
               </div>
             </div>
           </div>

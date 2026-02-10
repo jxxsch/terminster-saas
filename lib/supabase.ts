@@ -94,6 +94,8 @@ export interface TeamMember {
   image_scale: number;
   image_position_portrait: string;
   image_scale_portrait: number;
+  image_position_email: string;
+  image_scale_email: number;
   sort_order: number;
   active: boolean;
   created_at: string;

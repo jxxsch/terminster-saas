@@ -38,10 +38,12 @@ function toEmailSafeImageUrl(imageUrl: string): string {
 }
 
 // Generiert E-Mail-sicheren HTML-Code für ein rundes Barber-Bild
-// Feste Werte für 42px-Kreis: starker Zoom + oberer Fokus = Gesicht zentriert
-function generateBarberImageHtml(src: string, alt: string): string {
+// Nutzt die im Admin eingestellten E-Mail-Bildwerte (position + scale)
+function generateBarberImageHtml(src: string, alt: string, position?: string, scale?: number): string {
   const size = 42;
-  return `<div role="img" aria-label="${alt}" style="width: ${size}px; height: ${size}px; border-radius: 50%; background-image: url('${src}'); background-size: 300%; background-position: center 8%; background-repeat: no-repeat; display: inline-block;"></div>`;
+  const bgSize = ((scale || 1.7) * 100).toFixed(0);
+  const bgPos = position || '50% 50%';
+  return `<div role="img" aria-label="${alt}" style="width: ${size}px; height: ${size}px; border-radius: 50%; background-image: url('${src}'); background-size: ${bgSize}%; background-position: ${bgPos}; background-repeat: no-repeat; display: inline-block;"></div>`;
 }
 
 // Typen
@@ -53,6 +55,8 @@ export interface BookingEmailData {
   barberImage?: string; // URL zum Barber-Bild
   imagePosition?: string; // CSS object-position z.B. "51% 32%"
   imageScale?: number; // Zoom-Faktor z.B. 1.5
+  imagePositionEmail?: string; // E-Mail-Bild Position z.B. "50% 30%"
+  imageScaleEmail?: number; // E-Mail-Bild Zoom z.B. 1.7
   serviceName: string;
   date: string; // Format: "2026-01-27" (ISO)
   time: string; // Format: "14:00"
@@ -68,6 +72,8 @@ export interface ReminderEmailData {
   barberImage?: string;
   imagePosition?: string; // CSS object-position z.B. "51% 32%"
   imageScale?: number; // Zoom-Faktor z.B. 1.5
+  imagePositionEmail?: string;
+  imageScaleEmail?: number;
   serviceName: string;
   date: string;
   time: string;
@@ -88,6 +94,8 @@ export interface RescheduleEmailData {
   newBarberImage?: string;
   newImagePosition?: string;
   newImageScale?: number;
+  newImagePositionEmail?: string;
+  newImageScaleEmail?: number;
   newDate: string;
   newTime: string;
   serviceName: string;
@@ -223,7 +231,7 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
   const barberImage = toEmailSafeImageUrl(data.barberImage || `${BASE_URL}/team/default.jpg`);
   const barberImagePosition = data.imagePosition || 'center 30%';
   const barberImageScale = data.imageScale || 1;
-  const barberImageHtml = generateBarberImageHtml(barberImage, data.barberName);
+  const barberImageHtml = generateBarberImageHtml(barberImage, data.barberName, data.imagePositionEmail, data.imageScaleEmail);
   const icsDownloadUrl = `${BASE_URL}/api/calendar/${data.appointmentId}`;
   const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
 
@@ -465,7 +473,7 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
   const barberImage = toEmailSafeImageUrl(data.barberImage || `${BASE_URL}/team/default.jpg`);
   const barberImagePosition = data.imagePosition || 'center 30%';
   const barberImageScale = data.imageScale || 1;
-  const barberImageHtml = generateBarberImageHtml(barberImage, data.barberName);
+  const barberImageHtml = generateBarberImageHtml(barberImage, data.barberName, data.imagePositionEmail, data.imageScaleEmail);
   const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
 
   return `
@@ -689,7 +697,7 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
   const newBarberImage = toEmailSafeImageUrl(data.newBarberImage || `${BASE_URL}/team/default.jpg`);
   const newBarberImagePosition = data.newImagePosition || 'center 30%';
   const newBarberImageScale = data.newImageScale || 1;
-  const newBarberImageHtml = generateBarberImageHtml(newBarberImage, data.newBarberName);
+  const newBarberImageHtml = generateBarberImageHtml(newBarberImage, data.newBarberName, data.newImagePositionEmail, data.newImageScaleEmail);
   const icsDownloadUrl = `${BASE_URL}/api/calendar/${data.appointmentId}`;
   const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
 

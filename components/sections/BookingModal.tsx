@@ -1200,6 +1200,8 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
             barberImage: selectedBarberData?.image || undefined,
             imagePosition: selectedBarberData?.image_position || undefined,
             imageScale: selectedBarberData?.image_scale || undefined,
+            imagePositionEmail: selectedBarberData?.image_position_email || undefined,
+            imageScaleEmail: selectedBarberData?.image_scale_email || undefined,
             serviceName: '',
             date: selectedDay!,
             time: selectedSlot!,

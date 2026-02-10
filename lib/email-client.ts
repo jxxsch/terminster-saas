@@ -10,6 +10,8 @@ export interface SendEmailParams {
     barberImage?: string;
     imagePosition?: string;
     imageScale?: number;
+    imagePositionEmail?: string;
+    imageScaleEmail?: number;
     serviceName: string;
     date?: string;
     time?: string;
@@ -26,6 +28,8 @@ export interface SendEmailParams {
     newBarberImage?: string;
     newImagePosition?: string;
     newImageScale?: number;
+    newImagePositionEmail?: string;
+    newImageScaleEmail?: number;
     newDate?: string;
     newTime?: string;
     barberChanged?: boolean;
@@ -64,6 +68,8 @@ export async function sendBookingConfirmationEmail(data: {
   barberImage?: string;
   imagePosition?: string;
   imageScale?: number;
+  imagePositionEmail?: string;
+  imageScaleEmail?: number;
   serviceName: string;
   date: string;
   time: string;
@@ -90,6 +96,8 @@ export async function sendRescheduleEmail(data: {
   newBarberImage?: string;
   newImagePosition?: string;
   newImageScale?: number;
+  newImagePositionEmail?: string;
+  newImageScaleEmail?: number;
   newDate: string;
   newTime: string;
   serviceName: string;
