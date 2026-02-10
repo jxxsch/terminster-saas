@@ -37,12 +37,11 @@ function toEmailSafeImageUrl(imageUrl: string): string {
   return url;
 }
 
-// Generiert E-Mail-sicheren HTML-Code für ein gezoomtes rundes Barber-Bild
-// Nutzt background-image statt <img> + object-fit (zuverlässiger in Gmail)
-function generateBarberImageHtml(src: string, alt: string, position: string, scale: number = 1): string {
+// Generiert E-Mail-sicheren HTML-Code für ein rundes Barber-Bild
+// Feste Werte für 42px-Kreis: starker Zoom + oberer Fokus = Gesicht zentriert
+function generateBarberImageHtml(src: string, alt: string): string {
   const size = 42;
-  const bgSize = scale > 1 ? `${Math.round(scale * 100)}%` : 'cover';
-  return `<div role="img" aria-label="${alt}" style="width: ${size}px; height: ${size}px; border-radius: 50%; background-image: url('${src}'); background-size: ${bgSize}; background-position: ${position}; background-repeat: no-repeat; display: inline-block;"></div>`;
+  return `<div role="img" aria-label="${alt}" style="width: ${size}px; height: ${size}px; border-radius: 50%; background-image: url('${src}'); background-size: 250%; background-position: center 15%; background-repeat: no-repeat; display: inline-block;"></div>`;
 }
 
 // Typen
@@ -224,7 +223,7 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
   const barberImage = toEmailSafeImageUrl(data.barberImage || `${BASE_URL}/team/default.jpg`);
   const barberImagePosition = data.imagePosition || 'center 30%';
   const barberImageScale = data.imageScale || 1;
-  const barberImageHtml = generateBarberImageHtml(barberImage, data.barberName, barberImagePosition, barberImageScale);
+  const barberImageHtml = generateBarberImageHtml(barberImage, data.barberName);
   const icsDownloadUrl = `${BASE_URL}/api/calendar/${data.appointmentId}`;
   const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
 
@@ -466,7 +465,7 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
   const barberImage = toEmailSafeImageUrl(data.barberImage || `${BASE_URL}/team/default.jpg`);
   const barberImagePosition = data.imagePosition || 'center 30%';
   const barberImageScale = data.imageScale || 1;
-  const barberImageHtml = generateBarberImageHtml(barberImage, data.barberName, barberImagePosition, barberImageScale);
+  const barberImageHtml = generateBarberImageHtml(barberImage, data.barberName);
   const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
 
   return `
@@ -690,7 +689,7 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
   const newBarberImage = toEmailSafeImageUrl(data.newBarberImage || `${BASE_URL}/team/default.jpg`);
   const newBarberImagePosition = data.newImagePosition || 'center 30%';
   const newBarberImageScale = data.newImageScale || 1;
-  const newBarberImageHtml = generateBarberImageHtml(newBarberImage, data.newBarberName, newBarberImagePosition, newBarberImageScale);
+  const newBarberImageHtml = generateBarberImageHtml(newBarberImage, data.newBarberName);
   const icsDownloadUrl = `${BASE_URL}/api/calendar/${data.appointmentId}`;
   const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
 
