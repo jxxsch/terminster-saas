@@ -33,6 +33,7 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
   const tAuth = useTranslations('auth');
   const tCommon = useTranslations('common');
   const { customer, refreshCustomer, signOut } = useAuth();
+  const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>('upcoming');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
@@ -56,7 +57,10 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
 
   useEffect(() => {
     setMounted(true);
-    return () => setMounted(false);
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => { setMounted(false); window.removeEventListener('resize', check); };
   }, []);
 
   useEffect(() => {
@@ -272,7 +276,7 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '1rem',
+      padding: isMobile ? 0 : '1rem',
     },
     backdrop: {
       position: 'absolute' as const,
@@ -280,20 +284,20 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
+      backgroundColor: isMobile ? '#f8fafc' : 'rgba(0,0,0,0.5)',
     },
     modal: {
       position: 'relative' as const,
       zIndex: 10,
       backgroundColor: '#f8fafc',
       width: '100%',
-      maxWidth: '40rem',
-      height: '70vh',
-      minHeight: '500px',
-      borderRadius: '1rem',
+      maxWidth: isMobile ? '100%' : '40rem',
+      height: isMobile ? '100%' : '70vh',
+      minHeight: isMobile ? '100%' : '500px',
+      borderRadius: isMobile ? 0 : '1rem',
       overflow: 'hidden',
-      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-      border: '1px solid #e2e8f0',
+      boxShadow: isMobile ? 'none' : '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+      border: isMobile ? 'none' : '1px solid #e2e8f0',
       animation: 'modalFadeIn 0.2s ease-out',
       display: 'flex',
       flexDirection: 'column' as const,
