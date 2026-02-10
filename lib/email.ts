@@ -41,7 +41,7 @@ function toEmailSafeImageUrl(imageUrl: string): string {
 // Feste Werte für 42px-Kreis: starker Zoom + oberer Fokus = Gesicht zentriert
 function generateBarberImageHtml(src: string, alt: string): string {
   const size = 42;
-  return `<div role="img" aria-label="${alt}" style="width: ${size}px; height: ${size}px; border-radius: 50%; background-image: url('${src}'); background-size: 250%; background-position: center 15%; background-repeat: no-repeat; display: inline-block;"></div>`;
+  return `<div role="img" aria-label="${alt}" style="width: ${size}px; height: ${size}px; border-radius: 50%; background-image: url('${src}'); background-size: 300%; background-position: center 8%; background-repeat: no-repeat; display: inline-block;"></div>`;
 }
 
 // Typen
