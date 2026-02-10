@@ -761,9 +761,12 @@ export default function TeamPage() {
                     <div className="p-4">
                       <div className="flex items-start gap-3">
                         {/* Bild */}
-                        <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
+                        <div className="w-14 h-14 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0 relative">
                           {member.image ? (
-                            <img src={member.image} alt={member.name} className="w-full h-full object-cover" style={{ transform: (() => { const pos = parsePosition(member.image_position || '50% 50%'); const s = member.image_scale || 1; return `scale(${s}) translate(${(50 - pos.x) * 0.5}%, ${(50 - pos.y) * 0.5}%)`; })() }} />
+                            <>
+                              <img src={member.image} alt="" className="absolute w-full h-full object-cover pointer-events-none" style={{ filter: 'blur(8px)', transform: 'scale(1.1)' }} />
+                              <img src={member.image} alt={member.name} className="absolute w-full h-full object-contain" style={{ transform: (() => { const pos = parsePosition(member.image_position || '50% 50%'); const s = member.image_scale || 1; return `scale(${s}) translate(${(50 - pos.x) * 0.5}%, ${(50 - pos.y) * 0.5}%)`; })() }} />
+                            </>
                           ) : (
                             <div className="w-full h-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center text-white font-bold text-lg">{member.name.charAt(0)}</div>
                           )}
@@ -834,9 +837,12 @@ export default function TeamPage() {
                     <div key={member.id}>
                       <div className={`grid grid-cols-[48px_1.5fr_1.2fr_1fr_0.8fr_1fr_0.6fr_60px_80px] gap-6 items-center px-4 py-3.5 transition-colors ${editingId === member.id ? 'bg-gold/5' : 'hover:bg-slate-50'}`}>
                         {/* Bild */}
-                        <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0">
+                        <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-200 flex-shrink-0 relative">
                           {member.image ? (
-                            <img src={member.image} alt={member.name} className="w-full h-full object-cover" style={{ transform: (() => { const pos = parsePosition(member.image_position || '50% 50%'); const s = member.image_scale || 1; return `scale(${s}) translate(${(50 - pos.x) * 0.5}%, ${(50 - pos.y) * 0.5}%)`; })() }} />
+                            <>
+                              <img src={member.image} alt="" className="absolute w-full h-full object-cover pointer-events-none" style={{ filter: 'blur(8px)', transform: 'scale(1.1)' }} />
+                              <img src={member.image} alt={member.name} className="absolute w-full h-full object-contain" style={{ transform: (() => { const pos = parsePosition(member.image_position || '50% 50%'); const s = member.image_scale || 1; return `scale(${s}) translate(${(50 - pos.x) * 0.5}%, ${(50 - pos.y) * 0.5}%)`; })() }} />
+                            </>
                           ) : (
                             <div className="w-full h-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center text-white font-bold text-sm">{member.name.charAt(0)}</div>
                           )}
