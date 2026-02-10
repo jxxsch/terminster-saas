@@ -38,15 +38,11 @@ function toEmailSafeImageUrl(imageUrl: string): string {
 }
 
 // Generiert E-Mail-sicheren HTML-Code für ein gezoomtes rundes Barber-Bild
-// Nutzt overflow:hidden + oversized image statt CSS transform (Gmail-kompatibel)
+// Nutzt background-image statt <img> + object-fit (zuverlässiger in Gmail)
 function generateBarberImageHtml(src: string, alt: string, position: string, scale: number = 1): string {
   const size = 42;
-  if (scale <= 1) {
-    return `<img src="${src}" alt="${alt}" style="display: block; width: ${size}px; height: ${size}px; border-radius: 50%; object-fit: cover; object-position: ${position};">`;
-  }
-  const scaledSize = Math.round(size * scale);
-  const offset = Math.round((scaledSize - size) / 2);
-  return `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; overflow: hidden;"><img src="${src}" alt="${alt}" style="display: block; width: ${scaledSize}px; height: ${scaledSize}px; object-fit: cover; object-position: ${position}; margin: -${offset}px 0 0 -${offset}px;"></div>`;
+  const bgSize = scale > 1 ? `${Math.round(scale * 100)}%` : 'cover';
+  return `<div role="img" aria-label="${alt}" style="width: ${size}px; height: ${size}px; border-radius: 50%; background-image: url('${src}'); background-size: ${bgSize}; background-position: ${position}; background-repeat: no-repeat; display: inline-block;"></div>`;
 }
 
 // Typen
