@@ -521,6 +521,13 @@ export default function TeamPage() {
                 }}
                 draggable={false}
               />
+              {/* Drittel-Raster zur Ausrichtung */}
+              <div className="absolute inset-0 pointer-events-none" style={{ opacity: isActive ? 0.4 : 0.15 }}>
+                <div className="absolute left-1/3 top-0 bottom-0 w-px bg-white" />
+                <div className="absolute left-2/3 top-0 bottom-0 w-px bg-white" />
+                <div className="absolute top-1/3 left-0 right-0 h-px bg-white" />
+                <div className="absolute top-2/3 left-0 right-0 h-px bg-white" />
+              </div>
               <div
                 ref={overlayRef}
                 className="absolute inset-0 bg-gold/30 flex items-center justify-center transition-opacity duration-100"
