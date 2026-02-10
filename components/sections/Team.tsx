@@ -71,8 +71,11 @@ export function Team() {
           {team.map((member) => (
             <div key={member.id} className="group">
               <div className="rounded-3xl overflow-hidden shadow-lg card-interactive">
-                <div className="aspect-[3/4] bg-gray-100 overflow-hidden relative img-zoom">
-                  <Image src={member.image || '/team/placeholder.jpg'} alt={member.name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-cover group-hover:brightness-75 transition-all duration-300" style={{ objectPosition: member.image_position, transform: `scale(${member.image_scale})` }} />
+                <div className="aspect-[3/4] bg-gray-100 overflow-hidden relative">
+                  {member.image && (
+                    <Image src={member.image} alt="" fill className="object-cover pointer-events-none" style={{ filter: 'blur(8px)', transform: 'scale(1.1)' }} aria-hidden="true" />
+                  )}
+                  <Image src={member.image || '/team/placeholder.jpg'} alt={member.name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-contain group-hover:brightness-75 transition-all duration-300" style={{ transform: (() => { const m = (member.image_position_portrait || member.image_position || '50% 50%').match(/(-?\d+)%\s+(-?\d+)%/); const x = m ? parseInt(m[1]) : 50; const y = m ? parseInt(m[2]) : 50; const s = member.image_scale_portrait || member.image_scale || 1; return `scale(${s}) translate(${(50 - x) * 0.5}%, ${(50 - y) * 0.5}%)`; })() }} />
                 </div>
                 <div className="bg-white p-4 text-center">
                   <h3 className="text-sm font-extralight text-black tracking-[0.2em] uppercase mb-0 group-hover:mb-3 transition-all duration-300 border-b border-gold/50 pb-1 inline-block">{member.name}</h3>

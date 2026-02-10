@@ -1065,16 +1065,18 @@ function BarberTabDroppable({ barber, isSelected, onSelectBarber }: BarberTabDro
         }`}
       >
         {barber.image ? (
-          <Image
-            src={barber.image}
-            alt={barber.name}
-            fill
-            className="object-cover"
-            style={{
-              objectPosition: barber.image_position || 'center',
-              transform: `scale(${barber.image_scale || 1})`,
-            }}
-          />
+          <>
+            <Image src={barber.image} alt="" fill className="object-cover pointer-events-none" style={{ filter: 'blur(8px)', transform: 'scale(1.1)' }} aria-hidden="true" />
+            <Image
+              src={barber.image}
+              alt={barber.name}
+              fill
+              className="object-contain"
+              style={{
+                transform: (() => { const m = (barber.image_position || '50% 50%').match(/(-?\d+)%\s+(-?\d+)%/); const x = m ? parseInt(m[1]) : 50; const y = m ? parseInt(m[2]) : 50; const s = barber.image_scale || 1; return `scale(${s}) translate(${(50 - x) * 0.5}%, ${(50 - y) * 0.5}%)`; })(),
+              }}
+            />
+          </>
         ) : (
           <div className="w-full h-full bg-gray-300 flex items-center justify-center">
             <span className="text-xs text-gray-500 font-medium">

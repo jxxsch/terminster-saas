@@ -116,6 +116,7 @@ export default function DashboardPage() {
     time_slot: string;
     barber_name: string;
     cancelled_at: string;
+    cancelled_by: 'customer' | 'barber' | null;
   }>>([]);
   const t = useTranslations('dashboard');
   const tDays = useTranslations('days');
@@ -939,8 +940,8 @@ export default function DashboardPage() {
                               <p style={{ fontSize: '0.875rem', color: '#64748b' }}>Barber: {apt.barber_name}</p>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                              <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.25rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 500, backgroundColor: '#fee2e2', color: '#b91c1c' }}>
-                                Storniert
+                              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '0.25rem 0.5rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 500, minWidth: '10rem', backgroundColor: apt.cancelled_by === 'customer' ? '#fef3c7' : '#fee2e2', color: apt.cancelled_by === 'customer' ? '#92400e' : '#b91c1c' }}>
+                                {apt.cancelled_by === 'customer' ? 'Vom Kunden storniert' : apt.cancelled_by === 'barber' ? 'Vom Barber storniert' : 'Storniert'}
                               </span>
                               <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '0.25rem' }}>{cancelledStr}</p>
                             </div>

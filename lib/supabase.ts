@@ -484,7 +484,7 @@ export async function moveAppointment(
 export async function cancelAppointmentAdmin(id: string): Promise<boolean> {
   const { error } = await supabase
     .from('appointments')
-    .update({ status: 'cancelled' })
+    .update({ status: 'cancelled', cancelled_by: 'barber', cancelled_at: new Date().toISOString() })
     .eq('id', id);
 
   if (error) {
@@ -1340,6 +1340,7 @@ export async function cancelAppointment(id: string): Promise<{ success: boolean;
     .from('appointments')
     .update({
       status: 'cancelled',
+      cancelled_by: 'customer',
       cancelled_at: new Date().toISOString()
     })
     .eq('id', id);

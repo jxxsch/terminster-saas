@@ -59,6 +59,7 @@ export async function POST(
       .from('appointments')
       .update({
         status: 'cancelled',
+        cancelled_by: 'customer',
         cancelled_at: new Date().toISOString(),
       })
       .eq('id', id);
