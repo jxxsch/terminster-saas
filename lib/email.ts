@@ -18,7 +18,6 @@ async function getLogoUrl(): Promise<string> {
 }
 
 // Konvertiert Bild-URL in ein E-Mail-kompatibles Format
-// Viele E-Mail-Clients (Outlook, Yahoo, Thunderbird) unterstützen kein WebP
 function toEmailSafeImageUrl(imageUrl: string): string {
   if (!imageUrl) return imageUrl;
 
@@ -27,11 +26,12 @@ function toEmailSafeImageUrl(imageUrl: string): string {
   // Relative Pfade zu absoluten URLs machen (z.B. /team/sahir.webp)
   if (url.startsWith('/')) {
     url = `${BASE_URL}${url}`;
-  }
 
-  // WebP-Bilder sind in E-Mail-Clients problematisch → .jpg Fallback
-  if (url.endsWith('.webp')) {
-    url = url.replace(/\.webp$/, '.jpg');
+    // Nur für lokale Bilder: WebP → JPG (dort existieren beide Formate)
+    // Supabase-Storage-URLs nicht konvertieren (dort gibt es nur das Original)
+    if (url.endsWith('.webp')) {
+      url = url.replace(/\.webp$/, '.jpg');
+    }
   }
 
   return url;

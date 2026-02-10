@@ -6,6 +6,7 @@ import {
   sendAccountInviteEmail,
   sendPasswordResetEmail,
 } from '@/lib/email';
+import { getTeam, getServices, formatPrice } from '@/lib/supabase';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -22,6 +23,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Echte Team- und Service-Daten aus Supabase laden
+    const team = await getTeam();
+    const services = await getServices();
+
+    const barber1 = team[0];
+    const barber2 = team[1] || team[0];
+    const service1 = services[0];
+    const service2 = services[1] || services[0];
+
+    if (!barber1 || !service1) {
+      return NextResponse.json(
+        { error: 'Keine Team- oder Service-Daten gefunden' },
+        { status: 500 }
+      );
+    }
+
     const results: Record<string, { success: boolean; error?: string }> = {};
 
     // 1. Buchungsbestätigung
@@ -29,14 +46,14 @@ export async function POST(request: NextRequest) {
       customerName: 'Max Mustermann',
       customerEmail: email,
       customerPhone: '+49 176 12345678',
-      barberName: 'Khalid',
-      barberImage: '/team/khalid.webp',
-      imagePosition: 'center 30%',
-      serviceName: 'Haarschnitt',
+      barberName: barber1.name,
+      barberImage: barber1.image || undefined,
+      imagePosition: barber1.image_position || undefined,
+      serviceName: service1.name,
       date: '2026-02-10',
       time: '14:00',
-      duration: 30,
-      price: '20,00 €',
+      duration: service1.duration,
+      price: formatPrice(service1.price),
       appointmentId: 'test-booking-123',
     });
 
@@ -46,36 +63,39 @@ export async function POST(request: NextRequest) {
     results.reminder = await sendAppointmentReminder({
       customerName: 'Max Mustermann',
       customerEmail: email,
-      barberName: 'Sahir',
-      barberImage: '/team/sahir.webp',
-      imagePosition: '51% 32%',
-      serviceName: 'Haare & Bart',
+      barberName: barber2.name,
+      barberImage: barber2.image || undefined,
+      imagePosition: barber2.image_position || undefined,
+      serviceName: service2.name,
       date: '2026-02-11',
       time: '10:30',
-      duration: 45,
-      price: '35,00 €',
+      duration: service2.duration,
+      price: formatPrice(service2.price),
       appointmentId: 'test-reminder-456',
     });
 
     await delay(600);
 
     // 3. Termin verschoben
+    const barber3 = team[2] || team[0];
+    const barber4 = team[3] || team[1] || team[0];
+
     results.reschedule = await sendRescheduleConfirmation({
       customerName: 'Max Mustermann',
       customerEmail: email,
-      oldBarberName: 'Sakvan',
-      oldBarberImage: '/team/sakvan.webp',
-      oldImagePosition: 'center 30%',
+      oldBarberName: barber3.name,
+      oldBarberImage: barber3.image || undefined,
+      oldImagePosition: barber3.image_position || undefined,
       oldDate: '2026-02-10',
       oldTime: '15:00',
-      newBarberName: 'Mansur',
-      newBarberImage: '/team/mansur.webp',
-      newImagePosition: 'center 30%',
+      newBarberName: barber4.name,
+      newBarberImage: barber4.image || undefined,
+      newImagePosition: barber4.image_position || undefined,
       newDate: '2026-02-12',
       newTime: '11:00',
-      serviceName: 'Bartrasur',
-      duration: 20,
-      price: '15,00 €',
+      serviceName: service1.name,
+      duration: service1.duration,
+      price: formatPrice(service1.price),
       appointmentId: 'test-reschedule-789',
       barberChanged: true,
     });
@@ -103,6 +123,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: allSuccess,
       results,
+      teamUsed: team.map(t => ({ name: t.name, image: t.image })),
       message: allSuccess
         ? `Alle ${Object.keys(results).length} Test-E-Mails wurden erfolgreich gesendet!`
         : 'Einige E-Mails konnten nicht gesendet werden.',
