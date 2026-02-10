@@ -497,11 +497,20 @@ export default function TeamPage() {
         >
           {formData.image ? (
             <>
+              {/* Unscharfer Hintergrund für leere Bereiche */}
+              <img
+                src={formData.image}
+                alt=""
+                className="absolute w-full h-full object-cover pointer-events-none select-none"
+                style={{ filter: 'blur(20px)', transform: 'scale(1.1)' }}
+                draggable={false}
+              />
+              {/* Hauptbild - ganzes Bild sichtbar */}
               <img
                 ref={imageRef}
                 src={formData.image}
                 alt={formData.name || 'Preview'}
-                className="absolute w-full h-full object-cover pointer-events-none select-none"
+                className="absolute w-full h-full object-contain pointer-events-none select-none"
                 style={{
                   transform: (() => {
                     const pos = parsePosition(position);
