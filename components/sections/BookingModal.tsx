@@ -10,6 +10,7 @@ import {
   getTimeSlotsArray,
   getAppointments,
   createAppointment,
+  updateCustomer,
   resetPassword,
   setNewPassword,
   getClosedDates,
@@ -562,7 +563,7 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: 'rgba(212, 168, 83, 0.1)',
     borderRadius: '0.5rem',
     marginBottom: '0.75rem',
-    fontSize: '0.625rem',
+    fontSize: '0.75rem',
     color: '#64748b',
   },
   loggedInActions: {
@@ -575,7 +576,7 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '0.5rem',
     border: '1px solid #e2e8f0',
     backgroundColor: 'transparent',
-    fontSize: '0.5625rem',
+    fontSize: '0.75rem',
     fontWeight: 500,
     cursor: 'pointer',
     transition: 'all 0.15s',
@@ -636,7 +637,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   footerSummary: {
     flex: 1,
-    fontSize: '0.625rem',
+    fontSize: '0.75rem',
     color: '#64748b',
   },
   gold: {
@@ -652,7 +653,7 @@ const styles: Record<string, React.CSSProperties> = {
     border: 'none',
     backgroundColor: '#0f172a',
     color: '#ffffff',
-    fontSize: '0.6875rem',
+    fontSize: '0.75rem',
     fontWeight: 500,
     cursor: 'pointer',
     transition: 'all 0.15s',
@@ -701,7 +702,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
   const tDays = useTranslations('days');
   const tMonths = useTranslations('months');
 
-  const { customer, isAuthenticated, signIn, signUp, signOut } = useAuth();
+  const { customer, isAuthenticated, signIn, signUp, signOut, refreshCustomer } = useAuth();
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const [bookedAppointments, setBookedAppointments] = useState<Appointment[]>([]);
@@ -1166,7 +1167,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
 
   const isTimeUnlocked = selectedBarber !== null;
   const isContactUnlocked = selectedBarber !== null && selectedDay !== null && selectedSlot !== null;
-  const canSubmit = isContactUnlocked && customerName.trim() && customerEmail.trim() && customerPhone.trim();
+  const canSubmit = isContactUnlocked && customerName.trim() && customerEmail.trim() && customerPhone.trim() && (!isAuthenticated || !!customer?.phone);
 
   const handleBooking = async () => {
     if (!canSubmit || !selectedBarber || !selectedDay || !selectedSlot) return;
@@ -1754,32 +1755,45 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
 
                   {isAuthenticated ? (
                     <div>
-                      <div style={styles.loggedInInfo}>
+                      <div style={{ ...styles.loggedInInfo, marginBottom: !customer?.phone ? 0 : '0.75rem', borderRadius: !customer?.phone ? '0.5rem 0.5rem 0 0' : '0.5rem' }}>
                         <svg width="16" height="16" fill="none" stroke="#d4a853" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                         <span>{t('loggedInAs')} <span style={{ fontWeight: 500, color: '#0f172a' }}>{customer?.name}</span></span>
                       </div>
-                      {/* Telefonnummer-Eingabe wenn fehlend */}
-                      {!customerPhone && (
-                        <div style={{ marginTop: '0.75rem' }}>
+                      {/* Telefonnummer-Eingabe wenn im Profil fehlend */}
+                      {!customer?.phone && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: '0 0 0.5rem 0.5rem', backgroundColor: 'rgba(212, 168, 83, 0.05)', borderTop: '1px dashed rgba(212, 168, 83, 0.3)', marginBottom: '0.75rem' }}>
+                          <svg width="14" height="14" fill="none" stroke="#94a3b8" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          </svg>
                           <input
                             type="tel"
-                            placeholder={t('phone')}
+                            placeholder={t('addPhoneNumber')}
                             value={customerPhone}
                             onChange={(e) => {
                               const value = e.target.value.replace(/[^\d+\-\s]/g, '');
                               if (value.length <= 20) setCustomerPhone(value);
                             }}
-                            style={{ ...styles.input, borderColor: '#f59e0b', backgroundColor: '#fffbeb' }}
+                            style={{ flex: 1, padding: '0.375rem 0.5rem', border: '1px solid #e2e8f0', borderRadius: '0.375rem', fontSize: '0.75rem', outline: 'none', backgroundColor: '#fff', color: '#0f172a' }}
                             maxLength={20}
                           />
-                          <p style={{ fontSize: '0.6875rem', color: '#d97706', marginTop: '0.25rem' }}>
-                            {t('addPhoneNumber')}
-                          </p>
+                          <button
+                            type="button"
+                            disabled={!customerPhone.trim()}
+                            onClick={async () => {
+                              if (customer?.id && customerPhone.trim()) {
+                                await updateCustomer(customer.id, { phone: customerPhone.trim() });
+                                await refreshCustomer();
+                              }
+                            }}
+                            style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', backgroundColor: customerPhone.trim() ? '#d4a853' : '#e5e7eb', color: customerPhone.trim() ? '#fff' : '#9ca3af', fontSize: '0.6875rem', fontWeight: 500, cursor: customerPhone.trim() ? 'pointer' : 'default', whiteSpace: 'nowrap', transition: 'all 0.15s' }}
+                          >
+                            {tCommon('save')}
+                          </button>
                         </div>
                       )}
-                      <div style={{ ...styles.loggedInActions, marginTop: '0.75rem' }}>
+                      <div style={{ ...styles.loggedInActions }}>
                         <button type="button" onClick={() => setShowCustomerPortal(true)} style={{ ...styles.actionBtn, border: '1px solid rgba(212, 168, 83, 0.6)', color: '#d4a853' }}>
                           {t('myAppointments')}
                         </button>
@@ -1802,14 +1816,14 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                             damping: 30,
                             opacity: { duration: 0.2 }
                           }}
-                          style={styles.choiceGrid}
+                          style={{ ...styles.choiceGrid, ...(!isMobile ? { gridTemplateColumns: '1fr 1fr' } : {}) }}
                         >
                           <button type="button" onClick={() => setContactMode('auth')} style={{ ...styles.choiceBtn, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', height: '100%', border: '1px solid rgb(15, 23, 42)' }}>
                             <div style={{ ...styles.choiceBtnHeader, justifyContent: 'center' }}>
                               <svg width="18" height="18" fill="none" stroke="rgb(15, 23, 42)" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                               </svg>
-                              <span style={{ ...styles.choiceBtnTitle, fontSize: '1rem', color: 'rgb(15, 23, 42)' }}>{tAuth('login')}</span>
+                              <span style={{ ...styles.choiceBtnTitle, fontSize: '1rem', color: 'rgb(15, 23, 42)', whiteSpace: 'nowrap' }}>{tAuth('login')}</span>
                             </div>
                             <p style={{ ...styles.choiceBtnDesc, textAlign: 'center' }}>{t('manageAppointments')}</p>
                           </button>
@@ -2046,7 +2060,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                     style={{
                       ...styles.submitBtn,
                       ...(!canSubmit || isSubmitting ? styles.submitBtnDisabled : { backgroundColor: '#16a34a', border: 'none' }),
-                      ...(isMobile ? { fontSize: '1rem', padding: '1rem 1.5rem' } : {}),
+                      ...(isMobile ? { fontSize: '1rem', padding: '1rem 1.5rem' } : { fontSize: '1rem' }),
                     }}
                   >
                     {isSubmitting ? (
