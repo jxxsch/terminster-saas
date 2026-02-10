@@ -252,7 +252,16 @@ export default function TeamPage() {
 
   // Update image position via DOM directly
   // Verwende translate statt object-position für zuverlässiges Verschieben in alle Richtungen
+  // E-Mail-Format: background-position/size (identisch zum E-Mail-Template)
   const updateImageDOM = useCallback((format: ImageFormat, x: number, y: number, scale: number) => {
+    if (format === 'email') {
+      if (emailImageRef.current) {
+        (emailImageRef.current as HTMLElement).style.backgroundPosition = `${Math.round(x)}% ${Math.round(y)}%`;
+        (emailImageRef.current as HTMLElement).style.backgroundSize = `${(scale * 100).toFixed(0)}%`;
+      }
+      return;
+    }
+
     const translateX = (50 - x) * 0.5;
     const translateY = (50 - y) * 0.5;
     const transform = `scale(${scale}) translate(${translateX}%, ${translateY}%)`;
@@ -261,13 +270,9 @@ export default function TeamPage() {
       if (squareImageRef.current) {
         squareImageRef.current.style.transform = transform;
       }
-    } else if (format === 'portrait') {
+    } else {
       if (portraitImageRef.current) {
         portraitImageRef.current.style.transform = transform;
-      }
-    } else {
-      if (emailImageRef.current) {
-        emailImageRef.current.style.transform = transform;
       }
     }
   }, []);
@@ -532,30 +537,46 @@ export default function TeamPage() {
         >
           {formData.image ? (
             <>
-              {/* Unscharfer Hintergrund für leere Bereiche */}
-              <img
-                src={formData.image}
-                alt=""
-                className="absolute w-full h-full object-cover pointer-events-none select-none"
-                style={{ filter: 'blur(20px)', transform: 'scale(1.1)' }}
-                draggable={false}
-              />
-              {/* Hauptbild - ganzes Bild sichtbar */}
-              <img
-                ref={imageRef}
-                src={formData.image}
-                alt={formData.name || 'Preview'}
-                className="absolute w-full h-full object-contain pointer-events-none select-none"
-                style={{
-                  transform: (() => {
-                    const pos = parsePosition(position);
-                    const translateX = (50 - pos.x) * 0.5;
-                    const translateY = (50 - pos.y) * 0.5;
-                    return `scale(${scale}) translate(${translateX}%, ${translateY}%)`;
-                  })()
-                }}
-                draggable={false}
-              />
+              {format === 'email' ? (
+                /* E-Mail-Vorschau: Identisch wie im E-Mail-Template (background-image) */
+                <div
+                  ref={imageRef as React.RefObject<HTMLDivElement>}
+                  className="absolute inset-0 pointer-events-none select-none"
+                  style={{
+                    backgroundImage: `url('${formData.image}')`,
+                    backgroundSize: `${(scale * 100).toFixed(0)}%`,
+                    backgroundPosition: position,
+                    backgroundRepeat: 'no-repeat',
+                  }}
+                />
+              ) : (
+                <>
+                  {/* Unscharfer Hintergrund für leere Bereiche */}
+                  <img
+                    src={formData.image}
+                    alt=""
+                    className="absolute w-full h-full object-cover pointer-events-none select-none"
+                    style={{ filter: 'blur(20px)', transform: 'scale(1.1)' }}
+                    draggable={false}
+                  />
+                  {/* Hauptbild - ganzes Bild sichtbar */}
+                  <img
+                    ref={imageRef}
+                    src={formData.image}
+                    alt={formData.name || 'Preview'}
+                    className="absolute w-full h-full object-contain pointer-events-none select-none"
+                    style={{
+                      transform: (() => {
+                        const pos = parsePosition(position);
+                        const translateX = (50 - pos.x) * 0.5;
+                        const translateY = (50 - pos.y) * 0.5;
+                        return `scale(${scale}) translate(${translateX}%, ${translateY}%)`;
+                      })()
+                    }}
+                    draggable={false}
+                  />
+                </>
+              )}
               {/* Drittel-Raster zur Ausrichtung */}
               <div className="absolute inset-0 pointer-events-none" style={{ opacity: isActive ? 0.4 : 0.15 }}>
                 <div className="absolute left-1/3 top-0 bottom-0 w-px bg-white" />
