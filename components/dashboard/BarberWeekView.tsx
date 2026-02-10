@@ -651,6 +651,7 @@ export function BarberWeekView({
         newBarberName: newBarber?.name || 'Barber',
         newBarberImage: newBarber?.image || undefined,
         newImagePosition: newBarber?.image_position || undefined,
+        newImageScale: newBarber?.image_scale || undefined,
         newDate: newAppointment.date,
         newTime: newAppointment.time_slot,
         serviceName: service?.name || 'Termin',

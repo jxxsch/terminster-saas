@@ -943,6 +943,7 @@ export function BookingModalClassic({ isOpen, onClose, preselectedBarber, passwo
           barberName: barber.name,
           barberImage: barber.image || undefined,
           imagePosition: barber.image_position || undefined,
+          imageScale: barber.image_scale || undefined,
           serviceName: service.name,
           date: selectedDay,
           time: selectedSlot,

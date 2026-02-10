@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
         barberName: barber.name,
         barberImage: barber.image || undefined,
         imagePosition: barber.image_position || undefined,
+        imageScale: barber.image_scale || undefined,
         serviceName: service.name,
         date: appointment.date,
         time: appointment.time_slot,

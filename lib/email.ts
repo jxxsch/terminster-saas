@@ -37,6 +37,18 @@ function toEmailSafeImageUrl(imageUrl: string): string {
   return url;
 }
 
+// Generiert E-Mail-sicheren HTML-Code für ein gezoomtes rundes Barber-Bild
+// Nutzt overflow:hidden + oversized image statt CSS transform (Gmail-kompatibel)
+function generateBarberImageHtml(src: string, alt: string, position: string, scale: number = 1): string {
+  const size = 42;
+  if (scale <= 1) {
+    return `<img src="${src}" alt="${alt}" style="display: block; width: ${size}px; height: ${size}px; border-radius: 50%; object-fit: cover; object-position: ${position};">`;
+  }
+  const scaledSize = Math.round(size * scale);
+  const offset = Math.round((scaledSize - size) / 2);
+  return `<div style="width: ${size}px; height: ${size}px; border-radius: 50%; overflow: hidden;"><img src="${src}" alt="${alt}" style="display: block; width: ${scaledSize}px; height: ${scaledSize}px; object-fit: cover; object-position: ${position}; margin: -${offset}px 0 0 -${offset}px;"></div>`;
+}
+
 // Typen
 export interface BookingEmailData {
   customerName: string;
@@ -45,6 +57,7 @@ export interface BookingEmailData {
   barberName: string;
   barberImage?: string; // URL zum Barber-Bild
   imagePosition?: string; // CSS object-position z.B. "51% 32%"
+  imageScale?: number; // Zoom-Faktor z.B. 1.5
   serviceName: string;
   date: string; // Format: "2026-01-27" (ISO)
   time: string; // Format: "14:00"
@@ -59,6 +72,7 @@ export interface ReminderEmailData {
   barberName: string;
   barberImage?: string;
   imagePosition?: string; // CSS object-position z.B. "51% 32%"
+  imageScale?: number; // Zoom-Faktor z.B. 1.5
   serviceName: string;
   date: string;
   time: string;
@@ -78,6 +92,7 @@ export interface RescheduleEmailData {
   newBarberName: string;
   newBarberImage?: string;
   newImagePosition?: string;
+  newImageScale?: number;
   newDate: string;
   newTime: string;
   serviceName: string;
@@ -212,6 +227,8 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
   const dateFormatted = formatDateShort(data.date);
   const barberImage = toEmailSafeImageUrl(data.barberImage || `${BASE_URL}/team/default.jpg`);
   const barberImagePosition = data.imagePosition || 'center 30%';
+  const barberImageScale = data.imageScale || 1;
+  const barberImageHtml = generateBarberImageHtml(barberImage, data.barberName, barberImagePosition, barberImageScale);
   const icsDownloadUrl = `${BASE_URL}/api/calendar/${data.appointmentId}`;
   const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
 
@@ -268,7 +285,7 @@ function generateBookingConfirmationHtml(data: BookingEmailData, logoUrl: string
                           <table role="presentation" style="display: inline-table;">
                             <tr>
                               <td style="width: 42px; vertical-align: middle;">
-                                <img src="${barberImage}" alt="${data.barberName}" style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; object-position: ${barberImagePosition};">
+                                ${barberImageHtml}
                               </td>
                               <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
                                 <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">BARBER</p>
@@ -452,6 +469,8 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
   const dateFormatted = formatDateShort(data.date);
   const barberImage = toEmailSafeImageUrl(data.barberImage || `${BASE_URL}/team/default.jpg`);
   const barberImagePosition = data.imagePosition || 'center 30%';
+  const barberImageScale = data.imageScale || 1;
+  const barberImageHtml = generateBarberImageHtml(barberImage, data.barberName, barberImagePosition, barberImageScale);
   const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
 
   return `
@@ -507,7 +526,7 @@ function generateReminderHtml(data: ReminderEmailData, logoUrl: string): string 
                           <table role="presentation">
                             <tr>
                               <td style="width: 42px; vertical-align: middle;">
-                                <img src="${barberImage}" alt="${data.barberName}" style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; object-position: ${barberImagePosition};">
+                                ${barberImageHtml}
                               </td>
                               <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
                                 <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">BARBER</p>
@@ -674,6 +693,8 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
   const newDateFormatted = formatDateShort(data.newDate);
   const newBarberImage = toEmailSafeImageUrl(data.newBarberImage || `${BASE_URL}/team/default.jpg`);
   const newBarberImagePosition = data.newImagePosition || 'center 30%';
+  const newBarberImageScale = data.newImageScale || 1;
+  const newBarberImageHtml = generateBarberImageHtml(newBarberImage, data.newBarberName, newBarberImagePosition, newBarberImageScale);
   const icsDownloadUrl = `${BASE_URL}/api/calendar/${data.appointmentId}`;
   const cancelUrl = `${BASE_URL}/de?cancel=${data.appointmentId}`;
 
@@ -755,7 +776,7 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
                           <table role="presentation" style="display: inline-table;">
                             <tr>
                               <td style="width: 42px; vertical-align: middle;">
-                                <img src="${newBarberImage}" alt="${data.newBarberName}" style="width: 42px; height: 42px; border-radius: 50%; object-fit: cover; object-position: ${newBarberImagePosition};">
+                                ${newBarberImageHtml}
                               </td>
                               <td style="padding-left: 10px; vertical-align: middle; text-align: left; white-space: nowrap;">
                                 <p style="margin: 0 0 2px; font-size: ${data.barberChanged ? '9px' : '10px'}; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: ${data.barberChanged ? '0.5px' : '1px'}; white-space: nowrap;">${barberLabel}</p>

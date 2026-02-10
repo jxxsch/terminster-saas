@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
           barberName: data.barberName,
           barberImage: data.barberImage,
           imagePosition: data.imagePosition,
+          imageScale: data.imageScale,
           serviceName: data.serviceName,
           date: data.date, // ISO Format: YYYY-MM-DD
           time: data.time,
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
           barberName: data.barberName,
           barberImage: data.barberImage,
           imagePosition: data.imagePosition,
+          imageScale: data.imageScale,
           serviceName: data.serviceName,
           date: data.date,
           time: data.time,
@@ -73,6 +75,7 @@ export async function POST(request: NextRequest) {
           newBarberName: data.newBarberName,
           newBarberImage: data.newBarberImage,
           newImagePosition: data.newImagePosition,
+          newImageScale: data.newImageScale,
           newDate: data.newDate,
           newTime: data.newTime,
           serviceName: data.serviceName,
