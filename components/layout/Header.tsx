@@ -271,38 +271,36 @@ export function Header() {
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={cn(
-                    'py-2 text-left text-4xl font-light tracking-wide transition-colors',
+                    'py-2 pl-5 text-left text-4xl font-light tracking-wide transition-colors',
                     activeSection === item.href ? 'text-white' : 'text-white/40 hover:text-white'
                   )}
                 >
                   {item.label}
                 </a>
               ))}
-            </div>
 
-            {/* Bottom Buttons */}
-            <div className="flex border-t border-gold">
-              {/* Login Button */}
-              <button
-                onClick={() => {
-                  isAuthenticated ? openCustomerPortal() : openLogin();
-                  setIsMobileMenuOpen(false);
-                }}
-                className="flex-1 py-4 text-white text-sm tracking-[0.15em] uppercase border-r border-gold transition-colors hover:text-gold"
-              >
-                {isAuthenticated ? t('myArea') : t('login')}
-              </button>
-
-              {/* Book Button */}
-              <button
-                onClick={() => {
-                  openBooking();
-                  setIsMobileMenuOpen(false);
-                }}
-                className="flex-1 py-4 text-white text-sm tracking-[0.15em] uppercase transition-colors hover:text-gold"
-              >
-                {t('bookNow')}
-              </button>
+              {/* Trennlinie + Konto & Buchen als Pill-Buttons */}
+              <div className="h-px bg-gold/30 my-4" />
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    isAuthenticated ? openCustomerPortal() : openLogin();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex-1 py-2.5 rounded-full border border-white/20 text-sm font-light tracking-[0.15em] uppercase text-white/60 hover:text-white hover:border-white/40 transition-all"
+                >
+                  {isAuthenticated ? t('myArea') : t('login')}
+                </button>
+                <button
+                  onClick={() => {
+                    openBooking();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex-1 py-2.5 rounded-full bg-gold text-sm font-light tracking-[0.15em] uppercase text-black hover:bg-gold/80 transition-all"
+                >
+                  {t('bookNow')}
+                </button>
+              </div>
             </div>
           </nav>
       </div>
