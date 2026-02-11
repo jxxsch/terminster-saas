@@ -711,10 +711,10 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
   // Barber-Label & Border
   const barberLabel = data.barberChanged ? 'NEUER BARBER' : 'BARBER';
   const barberBoxBorder = data.barberChanged ? '2px solid #10b981' : '1px solid #e5e7eb';
-  // Status: Orange/Gold für "Verschoben"
+  // Status: Blau für "Verschoben"
   const statusBoxBorder = '1px solid #e5e7eb';
-  const statusColor = '#d97706';
-  const statusBgColor = '#fffbeb';
+  const statusColor = '#3b82f6';
+  const statusBgColor = '#eff6ff';
 
   return `
 <!DOCTYPE html>
@@ -769,21 +769,21 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
               </table>
 
               <!-- Barber & Status Row -->
-              <table role="presentation" style="width: 100%; margin-bottom: 12px; table-layout: fixed;">
+              <table role="presentation" style="width: 100%; margin-bottom: 12px; border-collapse: collapse; table-layout: fixed;">
                 <tr>
                   <td style="width: 50%; padding-right: 6px; vertical-align: top;">
                     <!-- Barber Box -->
-                    <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: ${barberBoxBorder};">
+                    <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: ${barberBoxBorder}; table-layout: fixed;">
                       <tr>
-                        <td style="padding: 5px 10px; height: 54px; text-align: center;">
-                          <table role="presentation" style="display: inline-table;">
+                        <td style="padding: 5px 10px; height: 54px; overflow: hidden;">
+                          <table role="presentation" style="width: 100%;">
                             <tr>
                               <td style="width: 42px; vertical-align: middle;">
                                 ${newBarberImageHtml}
                               </td>
-                              <td style="padding-left: 10px; vertical-align: middle; text-align: left; white-space: nowrap;">
-                                <p style="margin: 0 0 2px; font-size: ${data.barberChanged ? '9px' : '10px'}; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: ${data.barberChanged ? '0.5px' : '1px'}; white-space: nowrap;">${barberLabel}</p>
-                                <p style="margin: 0; font-size: 14px; font-weight: 700; color: #1a1a1a;">${data.newBarberName}</p>
+                              <td style="padding-left: 10px; vertical-align: middle; text-align: left; overflow: hidden;">
+                                <p style="margin: 0 0 2px; font-size: ${data.barberChanged ? '9px' : '10px'}; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: ${data.barberChanged ? '0.5px' : '1px'};">${barberLabel}</p>
+                                <p style="margin: 0; font-size: 14px; font-weight: 700; color: #1a1a1a; overflow: hidden; text-overflow: ellipsis;">${data.newBarberName}</p>
                               </td>
                             </tr>
                           </table>
@@ -793,10 +793,10 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
                   </td>
                   <td style="width: 50%; padding-left: 6px; vertical-align: top;">
                     <!-- Status Box -->
-                    <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: ${statusBoxBorder};">
+                    <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: ${statusBoxBorder}; table-layout: fixed;">
                       <tr>
-                        <td style="padding: 5px 10px; height: 54px; text-align: center;">
-                          <table role="presentation" style="display: inline-table;">
+                        <td style="padding: 5px 10px; height: 54px; overflow: hidden;">
+                          <table role="presentation" style="width: 100%;">
                             <tr>
                               <td style="width: 42px; vertical-align: middle;">
                                 <div style="width: 42px; height: 42px; background-color: ${statusBgColor}; border-radius: 50%; text-align: center; line-height: 42px;">
