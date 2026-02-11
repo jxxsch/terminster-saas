@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useBooking } from '@/context/BookingContext';
 import { useHeroContent } from '@/hooks/useSiteSettings';
 import { useTranslations, useLocale } from 'next-intl';
@@ -8,8 +8,6 @@ import { useTranslations, useLocale } from 'next-intl';
 export function StickyBookingButton() {
   const { openBooking } = useBooking();
   const [isVisible, setIsVisible] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [hideForFooter, setHideForFooter] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   // DB-CTA-Text für Deutsch, i18n für andere Sprachen
@@ -24,14 +22,6 @@ export function StickyBookingButton() {
     return t('cta');
   }, [locale, dbContent.ctaText, t]);
 
-  // Mobile-Check
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
   // Scroll-Visibility: Button erscheint nach 80% Hero-Scroll
   useEffect(() => {
     const handleScroll = () => {
@@ -44,35 +34,7 @@ export function StickyBookingButton() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // IntersectionObserver: Button verstecken wenn Footer sichtbar (nur Mobile)
-  const handleFooterIntersection = useCallback(
-    (entries: IntersectionObserverEntry[]) => {
-      if (!isMobile) {
-        setHideForFooter(false);
-        return;
-      }
-      const entry = entries[0];
-      // Footer sichtbar → Button verstecken, damit er keine Links überdeckt
-      setHideForFooter(entry.isIntersecting);
-    },
-    [isMobile]
-  );
-
-  useEffect(() => {
-    const contactSection = document.getElementById('contact');
-    if (!contactSection) return;
-
-    const observer = new IntersectionObserver(handleFooterIntersection, {
-      // Trigger wenn die unteren 100px des Contact-Bereichs sichtbar werden
-      rootMargin: '0px 0px 0px 0px',
-      threshold: 0.95,
-    });
-
-    observer.observe(contactSection);
-    return () => observer.disconnect();
-  }, [handleFooterIntersection]);
-
-  const shouldShow = isVisible && !hideForFooter;
+  const shouldShow = isVisible;
 
   return (
     <button

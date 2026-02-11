@@ -20,7 +20,6 @@ export function StickyBookingBar() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
-  const isFooterVisibleRef = useRef(false);
 
   // Einmalig erfasste Werte — kein State, kein Re-Render
   const initialValues = useRef<{
@@ -72,31 +71,10 @@ export function StickyBookingBar() {
     const currentLeft = buttonLeft + (centeredLeft - buttonLeft) * progress;
     const currentScale = 1 + 0.12 * progress;
 
-    // Footer erreicht → sanft ausblenden
-    const hide = isFooterVisibleRef.current;
-
     el.style.transform = `translate(${currentLeft}px, ${currentTop}px) scale(${currentScale})`;
-    el.style.opacity = hide ? '0' : '1';
-    el.style.pointerEvents = hide ? 'none' : '';
+    el.style.opacity = '1';
+    el.style.pointerEvents = '';
   }, []);
-
-  // IntersectionObserver für Footer — kein getBoundingClientRect pro Frame
-  useEffect(() => {
-    const contactSection = document.getElementById('contact');
-    if (!contactSection) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        isFooterVisibleRef.current = entries[0].isIntersecting;
-        // Sofort Position/Sichtbarkeit aktualisieren
-        updatePosition();
-      },
-      { threshold: 0.1 }
-    );
-
-    observer.observe(contactSection);
-    return () => observer.disconnect();
-  }, [updatePosition]);
 
   useEffect(() => {
     const handleScroll = () => {

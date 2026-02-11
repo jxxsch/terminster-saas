@@ -78,8 +78,8 @@ export function Team() {
                   <Image src={member.image || '/team/placeholder.jpg'} alt={member.name} fill sizes="(max-width: 768px) 50vw, 25vw" className="object-contain group-hover:brightness-75 transition-all duration-300" style={{ transform: (() => { const m = (member.image_position_portrait || member.image_position || '50% 50%').match(/(-?\d+)%\s+(-?\d+)%/); const x = m ? parseInt(m[1]) : 50; const y = m ? parseInt(m[2]) : 50; const s = member.image_scale_portrait || member.image_scale || 1; return `scale(${s}) translate(${(50 - x) * 0.5}%, ${(50 - y) * 0.5}%)`; })() }} />
                 </div>
                 <div className="bg-white p-4 text-center">
-                  <h3 className="text-sm font-extralight text-black tracking-[0.2em] uppercase mb-0 group-hover:mb-3 transition-all duration-300 border-b border-gold/50 pb-1 inline-block">{member.name}</h3>
-                  <div className="h-0 group-hover:h-10 overflow-hidden transition-all duration-300">
+                  <h3 className="text-sm font-extralight text-black tracking-[0.2em] uppercase mb-3 transition-all duration-300 border-b border-gold/50 pb-1 inline-block">{member.name}</h3>
+                  <div className="h-10 overflow-hidden transition-all duration-300">
                     <button onClick={() => openBooking(member.id)} className="inline-flex items-center justify-center px-5 py-2 bg-gold text-black text-[10px] font-light tracking-[0.15em] uppercase hover:bg-black hover:text-white transition-all btn-interactive">{t('bookButton')}</button>
                   </div>
                 </div>

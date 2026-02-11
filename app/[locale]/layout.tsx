@@ -4,6 +4,7 @@ import { locales } from '@/i18n/config';
 import { BookingProvider } from '@/context/BookingContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { ScrollAnimationProvider } from '@/components/ScrollAnimationProvider';
+import { LegalModal } from '@/components/LegalModal';
 
 type Props = {
   children: React.ReactNode;
@@ -36,6 +37,7 @@ export default async function LocaleLayout({ children, params }: Props) {
         <BookingProvider>
           <ScrollAnimationProvider>
             {children}
+            <LegalModal />
           </ScrollAnimationProvider>
         </BookingProvider>
       </AuthProvider>

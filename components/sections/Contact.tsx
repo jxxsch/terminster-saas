@@ -2,11 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useBooking } from '@/context/BookingContext';
-import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { useLogoUrl } from '@/hooks/useLogoUrl';
 import { useContactSettings } from '@/hooks/useSiteSettings';
 import { openCookieSettings } from '@/components/CookieBanner';
+import { openImpressum, openDatenschutz } from '@/components/LegalModal';
 
 export function Contact() {
   const logoUrl = useLogoUrl();
@@ -163,12 +163,12 @@ export function Contact() {
                       <div className="flex-1 min-w-0">
                         <h3 className="text-[10px] font-normal text-gray-400 tracking-[0.05em] uppercase mb-1 origin-left scale-[0.7]">{t('hours.label')}</h3>
                         <div className="space-y-0.5">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">{t('hours.weekdays')}</span>
+                          <div className="flex gap-4 text-sm">
+                            <span className="text-gray-500 w-16">{t('hours.weekdays')}</span>
                             <span className="text-gray-700 font-medium">{t('hours.weekdaysTime')}</span>
                           </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">{t('hours.sunday')}</span>
+                          <div className="flex gap-4 text-sm">
+                            <span className="text-gray-500 w-16">{t('hours.sunday')}</span>
                             <span className="text-gray-400">{t('hours.closed')}</span>
                           </div>
                         </div>
@@ -317,9 +317,9 @@ export function Contact() {
 
               {/* Links & Copyright */}
               <div className="flex items-center gap-4 text-xs text-gray-500 md:flex-1 md:justify-end">
-                <Link href="/impressum" className="hover:text-gold transition-colors">{t('imprint')}</Link>
+                <button onClick={openImpressum} className="hover:text-gold transition-colors">{t('imprint')}</button>
                 <span className="text-gray-300">·</span>
-                <Link href="/datenschutz" className="hover:text-gold transition-colors">{t('privacy')}</Link>
+                <button onClick={openDatenschutz} className="hover:text-gold transition-colors">{t('privacy')}</button>
                 <span className="text-gray-300">·</span>
                 <button onClick={openCookieSettings} className="hover:text-gold transition-colors">Cookies</button>
                 <span className="text-gray-300">·</span>
