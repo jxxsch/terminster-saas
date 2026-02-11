@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getSetting, getAllSettings } from '@/lib/supabase';
+import { getAllSettings } from '@/lib/supabase';
 import { useLocale } from 'next-intl';
 
 // Types for site settings
@@ -158,15 +158,14 @@ export function useContactSettings() {
   useEffect(() => {
     async function loadSettings() {
       try {
-        const [phone, email, address, instagram, facebook, youtube, tiktok] = await Promise.all([
-          getSetting<{ value: string }>('contact_phone'),
-          getSetting<{ value: string }>('contact_email'),
-          getSetting<{ street: string; city: string }>('contact_address'),
-          getSetting<{ value: string }>('social_instagram'),
-          getSetting<{ value: string }>('social_facebook'),
-          getSetting<{ value: string }>('social_youtube'),
-          getSetting<{ value: string }>('social_tiktok'),
-        ]);
+        const all = await getAllSettings();
+        const phone = all.contact_phone as { value: string } | undefined;
+        const email = all.contact_email as { value: string } | undefined;
+        const address = all.contact_address as { street: string; city: string } | undefined;
+        const instagram = all.social_instagram as { value: string } | undefined;
+        const facebook = all.social_facebook as { value: string } | undefined;
+        const youtube = all.social_youtube as { value: string } | undefined;
+        const tiktok = all.social_tiktok as { value: string } | undefined;
 
         setSettings({
           phone: phone?.value || '',
@@ -229,13 +228,12 @@ export function useHeroSettings() {
   useEffect(() => {
     async function loadSettings() {
       try {
-        const [title, subtitle, cta, background, phone] = await Promise.all([
-          getSetting<LocalizedText>('hero_title'),
-          getSetting<LocalizedText>('hero_subtitle'),
-          getSetting<{ text: LocalizedText; enabled: boolean }>('hero_cta'),
-          getSetting<HeroBackground>('hero_background'),
-          getSetting<{ value: string }>('contact_phone'),
-        ]);
+        const all = await getAllSettings();
+        const title = all.hero_title as LocalizedText | undefined;
+        const subtitle = all.hero_subtitle as LocalizedText | undefined;
+        const cta = all.hero_cta as { text: LocalizedText; enabled: boolean } | undefined;
+        const background = all.hero_background as HeroBackground | undefined;
+        const phone = all.contact_phone as { value: string } | undefined;
 
         setSettings({
           title: title || { de: '', en: '' },
@@ -276,14 +274,14 @@ export function useSectionSettings(section: 'about' | 'services' | 'team' | 'gal
   useEffect(() => {
     async function loadSettings() {
       try {
-        const sectionSettings = await getSetting<SectionSettings>(`section_${section}`);
+        const all = await getAllSettings();
+        const sectionSettings = all[`section_${section}`] as SectionSettings | undefined;
         if (sectionSettings) {
           setSettings(sectionSettings);
         }
 
-        // Load about_text only for about section
         if (section === 'about') {
-          const aboutTextData = await getSetting<LocalizedText>('about_text');
+          const aboutTextData = all.about_text as LocalizedText | undefined;
           if (aboutTextData) {
             setAboutText(aboutTextData);
           }
@@ -351,49 +349,27 @@ export function useHeroContent() {
   useEffect(() => {
     async function loadContent() {
       try {
-        const [
-          badge,
-          headline,
-          subtext,
-          ctaText,
-          locationLabel,
-          locationValue,
-          hoursLabel,
-          hoursValue,
-          instagram,
-          facebook,
-        ] = await Promise.all([
-          getSetting<string>('hero_badge'),
-          getSetting<string>('hero_headline'),
-          getSetting<string>('hero_subtext'),
-          getSetting<string>('hero_cta_text'),
-          getSetting<string>('hero_location_label'),
-          getSetting<string>('hero_location_value'),
-          getSetting<string>('hero_hours_label'),
-          getSetting<string>('hero_hours_value'),
-          getSetting<{ value: string } | string>('social_instagram'),
-          getSetting<{ value: string } | string>('social_facebook'),
-        ]);
+        const all = await getAllSettings();
 
         // Handle social links - can be string or {value: string}
-        const extractUrl = (val: { value: string } | string | null): string => {
+        const extractUrl = (val: unknown): string => {
           if (!val) return '';
           if (typeof val === 'string') return val;
-          if (typeof val === 'object' && 'value' in val) return val.value;
+          if (typeof val === 'object' && val !== null && 'value' in val) return (val as { value: string }).value;
           return '';
         };
 
         setContent({
-          badge: badge || defaultHeroContent.badge,
-          headline: headline || defaultHeroContent.headline,
-          subtext: subtext || defaultHeroContent.subtext,
-          ctaText: ctaText || defaultHeroContent.ctaText,
-          locationLabel: locationLabel || defaultHeroContent.locationLabel,
-          locationValue: locationValue || defaultHeroContent.locationValue,
-          hoursLabel: hoursLabel || defaultHeroContent.hoursLabel,
-          hoursValue: hoursValue || defaultHeroContent.hoursValue,
-          instagramUrl: extractUrl(instagram) || defaultHeroContent.instagramUrl,
-          facebookUrl: extractUrl(facebook) || defaultHeroContent.facebookUrl,
+          badge: (all.hero_badge as string) || defaultHeroContent.badge,
+          headline: (all.hero_headline as string) || defaultHeroContent.headline,
+          subtext: (all.hero_subtext as string) || defaultHeroContent.subtext,
+          ctaText: (all.hero_cta_text as string) || defaultHeroContent.ctaText,
+          locationLabel: (all.hero_location_label as string) || defaultHeroContent.locationLabel,
+          locationValue: (all.hero_location_value as string) || defaultHeroContent.locationValue,
+          hoursLabel: (all.hero_hours_label as string) || defaultHeroContent.hoursLabel,
+          hoursValue: (all.hero_hours_value as string) || defaultHeroContent.hoursValue,
+          instagramUrl: extractUrl(all.social_instagram) || defaultHeroContent.instagramUrl,
+          facebookUrl: extractUrl(all.social_facebook) || defaultHeroContent.facebookUrl,
         });
       } catch (error) {
         console.error('Error loading hero content:', error);

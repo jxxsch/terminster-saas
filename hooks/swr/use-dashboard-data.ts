@@ -2,6 +2,26 @@
 
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useSyncExternalStore, useCallback } from 'react';
+
+// ============================================
+// SCOPED MUTATE (für Custom Cache Provider)
+// ============================================
+// globalMutate aus 'swr' erreicht NICHT den Custom Cache Provider.
+// Wir speichern den scoped mutate aus useSWRConfig() in einer Modul-Referenz,
+// damit alle Mutation-Helpers den richtigen Cache invalidieren.
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _scopedMutate: ((...args: any[]) => any) | null = null;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function setScopedMutate(mutate: (...args: any[]) => any): void {
+  _scopedMutate = mutate;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getMutate(): (...args: any[]) => any {
+  return _scopedMutate || globalMutate;
+}
 import {
   getTeam,
   getAllTeam,
@@ -279,19 +299,18 @@ export function useAllReviews() {
 }
 
 // ============================================
-// MUTATION HELPERS
+// MUTATION HELPERS (nutzen scopedMutate statt globalMutate)
 // ============================================
 
 // Invalidate specific SWR cache keys
 export function invalidateSWR(pattern?: string): void {
+  const mutate = getMutate();
   if (!pattern) {
-    // Invalidate everything
-    globalMutate(() => true, undefined, { revalidate: true });
+    mutate(() => true, undefined, { revalidate: true });
     return;
   }
 
-  // Invalidate keys matching pattern
-  globalMutate(
+  mutate(
     (key: string) => typeof key === 'string' && key.includes(pattern),
     undefined,
     { revalidate: true }
@@ -300,18 +319,21 @@ export function invalidateSWR(pattern?: string): void {
 
 // Specific invalidation helpers
 export const mutateTeam = () => {
-  globalMutate('team');
-  globalMutate('team:all');
+  const mutate = getMutate();
+  mutate('team');
+  mutate('team:all');
 };
 
 export const mutateServices = () => {
-  globalMutate('services');
-  globalMutate('services:all');
-  globalMutate('services:calendar');
+  const mutate = getMutate();
+  mutate('services');
+  mutate('services:all');
+  mutate('services:calendar');
 };
 
 export const mutateAppointments = () => {
-  globalMutate(
+  const mutate = getMutate();
+  mutate(
     (key: unknown) => typeof key === 'string' && key.startsWith('appointments:'),
     undefined,
     { revalidate: true }
@@ -319,16 +341,17 @@ export const mutateAppointments = () => {
 };
 
 export const mutateSeries = () => {
-  globalMutate('series');
+  getMutate()('series');
 };
 
 export const mutateTimeSlots = () => {
-  globalMutate('timeSlots');
-  globalMutate('timeSlots:all');
+  const mutate = getMutate();
+  mutate('timeSlots');
+  mutate('timeSlots:all');
 };
 
 export const mutateStaffTimeOff = () => {
-  globalMutate(
+  getMutate()(
     (key: unknown) => typeof key === 'string' && key.startsWith('staffTimeOff:'),
     undefined,
     { revalidate: true }
@@ -336,51 +359,55 @@ export const mutateStaffTimeOff = () => {
 };
 
 export const mutateClosedDates = () => {
-  globalMutate('closedDates');
+  getMutate()('closedDates');
 };
 
 export const mutateOpenSundays = () => {
-  globalMutate('openSundays');
-  globalMutate('openSundayStaff');
+  const mutate = getMutate();
+  mutate('openSundays');
+  mutate('openSundayStaff');
 };
 
 export const mutateOpeningHours = () => {
-  globalMutate('openingHours');
+  getMutate()('openingHours');
 };
 
 export const mutateSettings = () => {
-  globalMutate('settings:all');
+  getMutate()('settings:all');
 };
 
 export const mutateProducts = () => {
-  globalMutate('products');
-  globalMutate('products:all');
+  const mutate = getMutate();
+  mutate('products');
+  mutate('products:all');
 };
 
 export const mutateCustomers = () => {
-  globalMutate('customers:all');
+  getMutate()('customers:all');
 };
 
 export const mutateGallery = () => {
-  globalMutate('gallery');
-  globalMutate('gallery:all');
+  const mutate = getMutate();
+  mutate('gallery');
+  mutate('gallery:all');
 };
 
 export const mutateReviews = () => {
-  globalMutate('reviews');
-  globalMutate('reviews:all');
+  const mutate = getMutate();
+  mutate('reviews');
+  mutate('reviews:all');
 };
 
 export const mutateOpenHolidays = () => {
-  globalMutate('openHolidays');
+  getMutate()('openHolidays');
 };
 
 export const mutateStaffWorkingHours = () => {
-  globalMutate('staffWorkingHours');
+  getMutate()('staffWorkingHours');
 };
 
 export const mutateFreeDayExceptions = () => {
-  globalMutate(
+  getMutate()(
     (key: unknown) => typeof key === 'string' && key.startsWith('freeDayExceptions:'),
     undefined,
     { revalidate: true }

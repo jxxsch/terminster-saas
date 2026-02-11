@@ -1,12 +1,24 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { SWRConfig } from 'swr';
+import { SWRConfig, useSWRConfig } from 'swr';
 import { AppSidebar } from '@/components/shared/AppSidebar';
 import { OfflineIndicator } from '@/components/shared/OfflineIndicator';
 import { localStorageCacheProvider } from '@/hooks/swr/cache-provider';
+import { setScopedMutate } from '@/hooks/swr/use-dashboard-data';
 import { NextIntlClientProvider } from 'next-intl';
 import messages from '@/messages/de.json';
+
+// Synct den scoped mutate aus SWRConfig in die Modul-Referenz,
+// damit alle Mutation-Helpers (mutateAppointments, etc.) den richtigen Cache erreichen.
+function SWRMutateSync() {
+  const { mutate } = useSWRConfig();
+  useEffect(() => {
+    setScopedMutate(mutate);
+  }, [mutate]);
+  return null;
+}
 
 export default function InternalLayout({
   children,
@@ -39,6 +51,7 @@ export default function InternalLayout({
           },
         }}
       >
+        <SWRMutateSync />
         <OfflineIndicator />
         <div className="h-screen flex overflow-hidden bg-white">
           {/* Gemeinsame Sidebar - auf Mobile versteckt (erscheint als Drawer via AppSidebar selbst) */}

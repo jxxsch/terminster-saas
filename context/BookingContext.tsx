@@ -39,7 +39,7 @@ const BookingContext = createContext<BookingContextType | null>(null);
 export function BookingProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [preselectedBarber, setPreselectedBarber] = useState<string | undefined>();
-  const [bookingSystemType, setBookingSystemType] = useState<BookingSystemType>('standard');
+  const [bookingSystemType, setBookingSystemType] = useState<BookingSystemType | null>(null);
   const [passwordSetupData, setPasswordSetupData] = useState<PasswordSetupData | null>(null);
 
   // Login Modal State
@@ -52,9 +52,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function loadBookingSystemType() {
       const systemType = await getSetting<BookingSystemType>('booking_system_type');
-      if (systemType) {
-        setBookingSystemType(systemType);
-      }
+      setBookingSystemType(systemType || 'standard');
     }
     loadBookingSystemType();
   }, []);
@@ -125,12 +123,15 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       clearPasswordSetup
     }}>
       {children}
-      <BookingModalComponent
-        isOpen={isOpen}
-        onClose={closeBooking}
-        preselectedBarber={preselectedBarber}
-        passwordSetupData={passwordSetupData}
-      />
+      {/* Erst rendern wenn bookingSystemType geladen ist, um Component-Swap zu verhindern */}
+      {bookingSystemType && (
+        <BookingModalComponent
+          isOpen={isOpen}
+          onClose={closeBooking}
+          preselectedBarber={preselectedBarber}
+          passwordSetupData={passwordSetupData}
+        />
+      )}
     </BookingContext.Provider>
   );
 }

@@ -34,7 +34,6 @@ import {
   useFreeDayExceptions,
   useOpenSundays,
   useOpenSundayStaff,
-  mutateAppointments,
 } from '@/hooks/swr/use-dashboard-data';
 import { sendRescheduleEmail } from '@/lib/email-client';
 import { SelectionToolbar, SelectionFilter } from './SelectionToolbar';
@@ -210,10 +209,11 @@ export function WeekView({
   }, []);
 
   // Realtime-Subscription für Termine → triggert SWR revalidation
+  // Nutzt bound mutate (swrMutateAppointments) statt globalem Helper für zuverlässige Cache-Invalidierung
   useRealtimeAppointments({
     startDate,
     endDate,
-    onUpdate: mutateAppointments,
+    onUpdate: refreshAppointments,
     enabled: weekDays.length > 0,
   });
 
@@ -645,40 +645,44 @@ export function WeekView({
   };
 
   // Drag & Drop Handler
-  const handleAppointmentMoved = useCallback((oldAppointment: Appointment, newAppointment: Appointment) => {
+  const handleAppointmentMoved = useCallback(async (oldAppointment: Appointment, newAppointment: Appointment) => {
     setAppointments(prev => prev.map(apt => apt.id === oldAppointment.id ? newAppointment : apt));
-    setMoveToBarberInfo(null); // Modal schließen nach erfolgreichem Drop
+    setMoveToBarberInfo(null);
     setToast({ message: 'Termin verschoben', type: 'success' });
     setTimeout(() => setToast(null), 3000);
 
-    // Terminverschiebungs-E-Mail senden (fire-and-forget)
+    // Terminverschiebungs-E-Mail senden
     if (newAppointment.customer_email && !newAppointment.is_pause) {
       const oldBarber = team.find(t => t.id === oldAppointment.barber_id);
       const newBarber = team.find(t => t.id === newAppointment.barber_id);
       const service = newAppointment.service_id ? servicesMap[newAppointment.service_id] : null;
 
-      sendRescheduleEmail({
-        customerName: newAppointment.customer_name,
-        customerEmail: newAppointment.customer_email,
-        oldBarberName: oldBarber?.name || 'Barber',
-        oldBarberImage: oldBarber?.image || undefined,
-        oldImagePosition: oldBarber?.image_position || undefined,
-        oldDate: oldAppointment.date,
-        oldTime: oldAppointment.time_slot,
-        newBarberName: newBarber?.name || 'Barber',
-        newBarberImage: newBarber?.image || undefined,
-        newImagePosition: newBarber?.image_position || undefined,
-        newImageScale: newBarber?.image_scale || undefined,
-        newImagePositionEmail: newBarber?.image_position_email || undefined,
-        newImageScaleEmail: newBarber?.image_scale_email || undefined,
-        newDate: newAppointment.date,
-        newTime: newAppointment.time_slot,
-        serviceName: service?.name || 'Termin',
-        duration: service?.duration || 30,
-        price: service ? formatPrice(service.price) : '0,00 €',
-        appointmentId: newAppointment.id,
-        barberChanged: oldAppointment.barber_id !== newAppointment.barber_id,
-      }).catch(err => console.error('Reschedule email failed:', err));
+      try {
+        await sendRescheduleEmail({
+          customerName: newAppointment.customer_name,
+          customerEmail: newAppointment.customer_email,
+          oldBarberName: oldBarber?.name || 'Barber',
+          oldBarberImage: oldBarber?.image || undefined,
+          oldImagePosition: oldBarber?.image_position || undefined,
+          oldDate: oldAppointment.date,
+          oldTime: oldAppointment.time_slot,
+          newBarberName: newBarber?.name || 'Barber',
+          newBarberImage: newBarber?.image || undefined,
+          newImagePosition: newBarber?.image_position || undefined,
+          newImageScale: newBarber?.image_scale || undefined,
+          newImagePositionEmail: newBarber?.image_position_email || undefined,
+          newImageScaleEmail: newBarber?.image_scale_email || undefined,
+          newDate: newAppointment.date,
+          newTime: newAppointment.time_slot,
+          serviceName: service?.name || 'Termin',
+          duration: service?.duration || 30,
+          price: service ? formatPrice(service.price) : '0,00 €',
+          appointmentId: newAppointment.id,
+          barberChanged: oldAppointment.barber_id !== newAppointment.barber_id,
+        });
+      } catch (err) {
+        console.error('Reschedule email failed:', err);
+      }
     }
   }, [team, servicesMap]);
 

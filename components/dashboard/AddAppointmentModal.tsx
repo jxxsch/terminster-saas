@@ -474,27 +474,31 @@ export function AddAppointmentModal({
           }
         }
 
-        // Buchungsbestätigung per E-Mail senden (fire-and-forget)
+        // Buchungsbestätigung per E-Mail senden
         const email = result.appointment.customer_email;
         if (email) {
           const barber = team.find(t => t.id === barberId);
           const service = services.find(s => s.id === serviceId);
-          sendBookingConfirmationEmail({
-            customerName: result.appointment.customer_name,
-            customerEmail: email,
-            barberName: barber?.name || 'Barber',
-            barberImage: barber?.image || undefined,
-            imagePosition: barber?.image_position,
-            imageScale: barber?.image_scale || undefined,
-            imagePositionEmail: barber?.image_position_email || undefined,
-            imageScaleEmail: barber?.image_scale_email || undefined,
-            serviceName: service?.name || 'Termin',
-            date: result.appointment.date,
-            time: result.appointment.time_slot,
-            duration: service?.duration || 30,
-            price: service ? formatPrice(service.price) : '0,00 €',
-            appointmentId: result.appointment.id,
-          }).catch(err => console.error('Booking confirmation email failed:', err));
+          try {
+            await sendBookingConfirmationEmail({
+              customerName: result.appointment.customer_name,
+              customerEmail: email,
+              barberName: barber?.name || 'Barber',
+              barberImage: barber?.image || undefined,
+              imagePosition: barber?.image_position,
+              imageScale: barber?.image_scale || undefined,
+              imagePositionEmail: barber?.image_position_email || undefined,
+              imageScaleEmail: barber?.image_scale_email || undefined,
+              serviceName: service?.name || 'Termin',
+              date: result.appointment.date,
+              time: result.appointment.time_slot,
+              duration: service?.duration || 30,
+              price: service ? formatPrice(service.price) : '0,00 €',
+              appointmentId: result.appointment.id,
+            });
+          } catch (err) {
+            console.error('Booking confirmation email failed:', err);
+          }
         }
 
         onCreated(result.appointment);

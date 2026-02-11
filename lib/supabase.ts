@@ -2035,22 +2035,37 @@ export async function getSetting<T>(key: string): Promise<T | null> {
   return data?.value as T;
 }
 
+// Dedup: Wenn mehrere Hooks gleichzeitig getAllSettings() aufrufen,
+// wird nur 1 Supabase-Query ausgeführt (Promise wird geteilt)
+let _allSettingsPromise: Promise<Record<string, unknown>> | null = null;
+
 export async function getAllSettings(): Promise<Record<string, unknown>> {
-  const { data, error } = await supabase
-    .from('site_settings')
-    .select('key, value');
+  if (_allSettingsPromise) return _allSettingsPromise;
 
-  if (error) {
-    console.error('Error fetching all settings:', error);
-    return {};
+  _allSettingsPromise = (async () => {
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('key, value');
+
+    if (error) {
+      console.error('Error fetching all settings:', error);
+      return {};
+    }
+
+    const settings: Record<string, unknown> = {};
+    data?.forEach(row => {
+      settings[row.key] = row.value;
+    });
+
+    return settings;
+  })();
+
+  try {
+    return await _allSettingsPromise;
+  } finally {
+    // Nach 5s Cache freigeben für Neuladen
+    setTimeout(() => { _allSettingsPromise = null; }, 5000);
   }
-
-  const settings: Record<string, unknown> = {};
-  data?.forEach(row => {
-    settings[row.key] = row.value;
-  });
-
-  return settings;
 }
 
 export async function updateSetting(
