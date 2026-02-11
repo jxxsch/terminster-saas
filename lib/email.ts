@@ -775,15 +775,15 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
                     <!-- Barber Box -->
                     <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: ${barberBoxBorder}; table-layout: fixed;">
                       <tr>
-                        <td style="padding: 5px 10px; height: 54px; overflow: hidden;">
+                        <td style="padding: 5px 8px; height: 54px; overflow: hidden;">
                           <table role="presentation" style="width: 100%;">
                             <tr>
-                              <td style="width: 42px; vertical-align: middle;">
+                              <td style="width: 36px; vertical-align: middle;">
                                 ${newBarberImageHtml}
                               </td>
-                              <td style="padding-left: 10px; vertical-align: middle; text-align: left; overflow: hidden;">
-                                <p style="margin: 0 0 2px; font-size: ${data.barberChanged ? '9px' : '10px'}; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: ${data.barberChanged ? '0.5px' : '1px'};">${barberLabel}</p>
-                                <p style="margin: 0; font-size: 14px; font-weight: 700; color: #1a1a1a; overflow: hidden; text-overflow: ellipsis;">${data.newBarberName}</p>
+                              <td style="padding-left: 8px; vertical-align: middle; text-align: left; overflow: hidden;">
+                                <p style="margin: 0 0 1px; font-size: 9px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">${barberLabel}</p>
+                                <p style="margin: 0; font-size: 13px; font-weight: 700; color: #1a1a1a; overflow: hidden; text-overflow: ellipsis;">${data.newBarberName}</p>
                               </td>
                             </tr>
                           </table>
@@ -795,17 +795,17 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
                     <!-- Status Box -->
                     <table role="presentation" style="width: 100%; height: 54px; background-color: #ffffff; border-radius: 16px; border: ${statusBoxBorder}; table-layout: fixed;">
                       <tr>
-                        <td style="padding: 5px 10px; height: 54px; overflow: hidden;">
+                        <td style="padding: 5px 8px; height: 54px; overflow: hidden;">
                           <table role="presentation" style="width: 100%;">
                             <tr>
-                              <td style="width: 42px; vertical-align: middle;">
-                                <div style="width: 42px; height: 42px; background-color: ${statusBgColor}; border-radius: 50%; text-align: center; line-height: 42px;">
-                                  <span style="display: inline-block; width: 14px; height: 14px; background-color: ${statusColor}; border-radius: 50%;"></span>
+                              <td style="width: 36px; vertical-align: middle;">
+                                <div style="width: 36px; height: 36px; background-color: ${statusBgColor}; border-radius: 50%; text-align: center; line-height: 36px;">
+                                  <span style="display: inline-block; width: 12px; height: 12px; background-color: ${statusColor}; border-radius: 50%;"></span>
                                 </div>
                               </td>
-                              <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
-                                <p style="margin: 0 0 2px; font-size: 10px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 1px;">STATUS</p>
-                                <p style="margin: 0; font-size: 14px; font-weight: 700; color: ${statusColor};">Verschoben</p>
+                              <td style="padding-left: 8px; vertical-align: middle; text-align: left;">
+                                <p style="margin: 0 0 1px; font-size: 9px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">STATUS</p>
+                                <p style="margin: 0; font-size: 13px; font-weight: 700; color: ${statusColor};">Verschoben</p>
                               </td>
                             </tr>
                           </table>
