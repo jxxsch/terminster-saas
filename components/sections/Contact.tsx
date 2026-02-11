@@ -249,11 +249,10 @@ export function Contact() {
                 {/* Map Container */}
                 <div className="absolute inset-0">
                   <iframe
-                    src="https://maps.google.com/maps?q=Beban+Barber+Shop+2.0+Leverkusen&t=&z=17&ie=UTF8&iwloc=&output=embed"
+                    src="https://www.google.com/maps/embed?pb=!1m10!1m8!1m3!1d830!2d6.98787!3d51.03345!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sde!2sde"
                     width="100%"
                     height="100%"
-                    style={{ border: 0, filter: 'grayscale(100%) contrast(1.1)' }}
-                    allowFullScreen
+                    style={{ border: 0, pointerEvents: 'none' }}
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
                     title="Beban Barber Shop Standort"
