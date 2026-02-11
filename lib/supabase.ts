@@ -1025,7 +1025,18 @@ export async function cancelSeriesFuture(
   seriesId: string,
   fromDate: string
 ): Promise<{ success: boolean; deletedCount: number }> {
-  // 1. Alle zukünftigen confirmed Appointments dieser Serie löschen (ab fromDate)
+  // 1. Serie end_date setzen (Serie bleibt bestehen, endet aber ab fromDate)
+  const { error: updateError } = await supabase
+    .from('series')
+    .update({ end_date: fromDate })
+    .eq('id', seriesId);
+
+  if (updateError) {
+    console.error('Error updating series end_date:', updateError);
+    return { success: false, deletedCount: 0 };
+  }
+
+  // 2. Alle zukünftigen confirmed Appointments dieser Serie löschen (ab fromDate)
   const { data: deleted, error: deleteError } = await supabase
     .from('appointments')
     .delete()
@@ -1039,30 +1050,8 @@ export async function cancelSeriesFuture(
     return { success: false, deletedCount: 0 };
   }
 
-  // 2. Vergangene Termine von der Serie entkoppeln (series_id = null)
-  //    damit sie beim Löschen der Serie nicht mit-gelöscht werden
-  const { error: unlinkError } = await supabase
-    .from('appointments')
-    .update({ series_id: null })
-    .eq('series_id', seriesId)
-    .lt('date', fromDate);
-
-  if (unlinkError) {
-    console.error('Error unlinking past appointments:', unlinkError);
-  }
-
-  // 3. Zukünftige Exceptions aufräumen
+  // 3. Zukünftige Exceptions aufräumen (nicht mehr nötig da Serie endet)
   await deleteSeriesExceptionsFuture(seriesId, fromDate);
-
-  // 4. Serie komplett löschen (vergangene Termine sind bereits entkoppelt)
-  const { error: seriesError } = await supabase
-    .from('series')
-    .delete()
-    .eq('id', seriesId);
-
-  if (seriesError) {
-    console.error('Error deleting series:', seriesError);
-  }
 
   return { success: true, deletedCount: deleted?.length || 0 };
 }
