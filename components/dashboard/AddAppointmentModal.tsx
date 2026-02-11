@@ -82,6 +82,8 @@ export function AddAppointmentModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [createAccount, setCreateAccount] = useState(false);
+  const [accountCreated, setAccountCreated] = useState(false);
+  const [accountCreating, setAccountCreating] = useState(false);
   const [emailAccountStatus, setEmailAccountStatus] = useState<'checking' | 'has_account' | 'available' | null>(null);
   const [activeSearchField, setActiveSearchField] = useState<'name' | 'phone' | null>(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
@@ -134,39 +136,66 @@ export function AddAppointmentModal({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // E-Mail-Prüfung wenn Konto erstellen aktiviert ist
+  // accountCreated zurücksetzen wenn E-Mail geändert wird
   useEffect(() => {
-    if (!createAccount || !customerEmail.trim()) {
+    if (accountCreated) {
+      setAccountCreated(false);
+      setCreateAccount(false);
       setEmailAccountStatus(null);
+    }
+  }, [customerEmail]);
+
+  // Konto sofort erstellen und Einladungsmail senden
+  const handleCreateAccount = async () => {
+    if (!customerEmail.trim() || !customerName.trim()) {
+      setError('Name und E-Mail sind erforderlich');
       return;
     }
-
-    // E-Mail-Format prüfen
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(customerEmail.trim())) {
-      setEmailAccountStatus(null);
+      setError('Bitte gültige E-Mail-Adresse eingeben');
       return;
     }
 
-    // Debounce die Prüfung
-    setEmailAccountStatus('checking');
-    const timeoutId = setTimeout(async () => {
-      try {
-        const response = await fetch(`/api/customer/check-email?email=${encodeURIComponent(customerEmail.trim())}`);
-        const data = await response.json();
+    setAccountCreating(true);
+    setError('');
 
-        if (data.hasAccount) {
+    try {
+      const nameParts = customerName.trim().split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || nameParts[0] || '';
+
+      const inviteResponse = await fetch('/api/customer/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: customerEmail.trim(),
+          firstName,
+          lastName,
+          phone: customerPhone.trim() || undefined,
+        }),
+      });
+
+      const inviteResult = await inviteResponse.json();
+
+      if (!inviteResponse.ok) {
+        if (inviteResponse.status === 409) {
           setEmailAccountStatus('has_account');
+          setCreateAccount(false);
         } else {
-          setEmailAccountStatus('available');
+          setError(inviteResult.error || 'Fehler beim Erstellen des Kontos');
         }
-      } catch {
-        setEmailAccountStatus(null);
+      } else {
+        setAccountCreated(true);
+        setCreateAccount(true);
       }
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [customerEmail, createAccount]);
+    } catch (err) {
+      console.error('Invite fetch error:', err);
+      setError('Fehler beim Erstellen des Kontos');
+    } finally {
+      setAccountCreating(false);
+    }
+  };
 
   // Kunde auswählen
   const handleSelectCustomer = (customer: Customer) => {
@@ -439,41 +468,6 @@ export function AddAppointmentModal({
       });
 
       if (result.success && result.appointment) {
-        // Kundenkonto erstellen wenn aktiviert UND Kunde hat noch kein Konto
-        if (createAccount && customerEmail.trim() && !selectedCustomer && emailAccountStatus !== 'has_account') {
-          try {
-            // Name in Vor- und Nachname aufteilen
-            const nameParts = customerName.trim().split(' ');
-            const firstName = nameParts[0] || '';
-            const lastName = nameParts.slice(1).join(' ') || nameParts[0] || '';
-
-            const inviteResponse = await fetch('/api/customer/invite', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                email: customerEmail.trim(),
-                firstName,
-                lastName,
-                phone: customerPhone.trim() || undefined,
-              }),
-            });
-
-            const inviteResult = await inviteResponse.json();
-
-            if (!inviteResponse.ok) {
-              // 409 = Kunde hat bereits ein Konto - das ist kein Fehler, nur Info
-              if (inviteResponse.status === 409) {
-                console.info('Einladung nicht nötig:', inviteResult.error);
-              } else {
-                console.error('Invite error:', inviteResult.error);
-              }
-              // Termin wurde erstellt, aber Einladung nicht gesendet - trotzdem schließen
-            }
-          } catch (err) {
-            console.error('Invite fetch error:', err);
-          }
-        }
-
         // Buchungsbestätigung per E-Mail senden
         const email = result.appointment.customer_email;
         if (email) {
@@ -908,47 +902,47 @@ export function AddAppointmentModal({
                       />
                       <button
                         type="button"
-                        onClick={() => setCreateAccount(!createAccount)}
+                        onClick={accountCreated ? undefined : handleCreateAccount}
+                        disabled={accountCreating || accountCreated || !customerEmail.trim() || !customerName.trim()}
                         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border whitespace-nowrap ${
-                          createAccount
-                            ? 'border-green-500 bg-green-50 text-green-700'
-                            : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                          accountCreated
+                            ? 'border-green-500 bg-green-50 text-green-700 cursor-default'
+                            : accountCreating
+                            ? 'border-gray-200 text-gray-400 cursor-wait'
+                            : 'border-gray-200 text-gray-600 hover:border-gold hover:bg-gold/5 disabled:opacity-40 disabled:cursor-not-allowed'
                         }`}
                       >
-                        <svg className={`w-4 h-4 ${createAccount ? 'text-green-600' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
-                        Konto erstellen
+                        {accountCreating ? (
+                          <svg className="w-4 h-4 animate-spin text-gray-400" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : accountCreated ? (
+                          <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : (
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                          </svg>
+                        )}
+                        {accountCreating ? 'Erstelle...' : accountCreated ? 'Konto erstellt' : 'Konto erstellen'}
                       </button>
                     </div>
-                    {createAccount && emailAccountStatus === 'checking' && (
-                      <p className="mt-1.5 text-[10px] text-gray-500 flex items-center gap-1">
-                        <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Prüfe E-Mail...
-                      </p>
-                    )}
-                    {createAccount && emailAccountStatus === 'has_account' && (
-                      <p className="mt-1.5 text-[10px] text-amber-600 flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        Kunde hat bereits ein Konto – keine Einladung nötig
-                      </p>
-                    )}
-                    {createAccount && emailAccountStatus === 'available' && (
+                    {accountCreated && (
                       <p className="mt-1.5 text-[10px] text-green-600 flex items-center gap-1">
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        Einladungs-E-Mail wird an den Kunden gesendet
+                        Einladungs-E-Mail wurde gesendet
                       </p>
                     )}
-                    {createAccount && !emailAccountStatus && customerEmail.trim() && (
-                      <p className="mt-1.5 text-[10px] text-green-600">
-                        Einladungs-E-Mail wird an den Kunden gesendet
+                    {emailAccountStatus === 'has_account' && (
+                      <p className="mt-1.5 text-[10px] text-amber-600 flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Kunde hat bereits ein Konto
                       </p>
                     )}
                   </div>
