@@ -263,31 +263,35 @@ export function Header() {
 
           {/* Menu Content */}
           <nav className="flex flex-col justify-between h-[calc(100%-3.5rem)] px-12 pb-6">
-            {/* Navigation Links - Left aligned, vertically centered */}
-            <div className="flex flex-col justify-center flex-1">
-              {navItems.map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={cn(
-                    'py-2 pl-5 text-left text-4xl font-light tracking-wide transition-colors',
-                    activeSection === item.href ? 'text-white' : 'text-white/40 hover:text-white'
-                  )}
-                >
-                  {item.label}
-                </a>
-              ))}
+            {/* Navigation Links - Block zentriert, Text linksbündig */}
+            <div className="flex flex-col items-center justify-center flex-1">
+              <div className="flex flex-col">
+                {navItems.map((item) => (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={cn(
+                      'py-2 text-left text-4xl font-light tracking-wide transition-colors',
+                      activeSection === item.href ? 'text-white' : 'text-white/40 hover:text-white'
+                    )}
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </div>
+            </div>
 
-              {/* Trennlinie + Konto & Buchen als Pill-Buttons */}
+            {/* Trennlinie + Konto & Buchen als Pill-Buttons */}
+            <div>
               <div className="h-px bg-gold/30 my-4" />
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3">
                 <button
                   onClick={() => {
                     isAuthenticated ? openCustomerPortal() : openLogin();
                     setIsMobileMenuOpen(false);
                   }}
-                  className="flex-1 py-2.5 rounded-full border border-white/20 text-sm font-light tracking-[0.15em] uppercase text-white/60 hover:text-white hover:border-white/40 transition-all"
+                  className="w-full py-2.5 rounded-full border border-white/20 text-sm font-light tracking-[0.15em] uppercase text-white/60 hover:text-white hover:border-white/40 transition-all"
                 >
                   {isAuthenticated ? t('myArea') : t('login')}
                 </button>
@@ -296,7 +300,7 @@ export function Header() {
                     openBooking();
                     setIsMobileMenuOpen(false);
                   }}
-                  className="flex-1 py-2.5 rounded-full bg-gold text-sm font-light tracking-[0.15em] uppercase text-black hover:bg-gold/80 transition-all"
+                  className="w-full py-2.5 rounded-full bg-gold text-sm font-light tracking-[0.15em] uppercase text-black hover:bg-gold/80 transition-all"
                 >
                   {t('bookNow')}
                 </button>
