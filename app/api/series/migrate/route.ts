@@ -10,7 +10,14 @@ export async function GET(request: NextRequest) {
   const secret = request.nextUrl.searchParams.get('secret');
   const cronSecret = process.env.CRON_SECRET;
 
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}` && secret !== cronSecret) {
+  if (!cronSecret) {
+    return NextResponse.json(
+      { error: 'CRON_SECRET not configured' },
+      { status: 500 }
+    );
+  }
+
+  if (authHeader !== `Bearer ${cronSecret}` && secret !== cronSecret) {
     return NextResponse.json(
       { error: 'Unauthorized' },
       { status: 401 }

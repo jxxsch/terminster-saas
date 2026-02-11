@@ -189,7 +189,7 @@ export function Hero() {
             </div>
 
             {/* Subtext */}
-            <p className="text-white/60 text-sm md:text-base font-light tracking-wide whitespace-nowrap animate-hero-fade-up [animation-delay:0.7s]">
+            <p className="text-white/60 text-sm md:text-base font-light tracking-wide md:whitespace-nowrap animate-hero-fade-up [animation-delay:0.7s]">
               {content.subtext}
             </p>
 

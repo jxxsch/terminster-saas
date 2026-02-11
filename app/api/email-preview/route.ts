@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSetting, getTeam } from '@/lib/supabase';
 
 // Temporary route for email template preview
+// Nur in Development verfügbar
 export async function GET(request: NextRequest) {
+  if (process.env.NODE_ENV === 'production') {
+    return new NextResponse('Not found', { status: 404 });
+  }
   const type = request.nextUrl.searchParams.get('type') || 'booking';
 
   // Get logo URL from settings

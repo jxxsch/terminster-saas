@@ -11,7 +11,12 @@ import { getTeam, getServices, formatPrice } from '@/lib/supabase';
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Test-Endpoint zum Versenden aller E-Mail-Typen
+// Nur in Development verfügbar
 export async function POST(request: NextRequest) {
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   try {
     const body = await request.json();
     const { email } = body;

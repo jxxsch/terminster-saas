@@ -818,6 +818,43 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     };
   }, [isOpen]);
 
+  // ESC-Key schließt das Modal
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose();
+    };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [isOpen]);
+
+  // Focus Trap: Tab-Navigation innerhalb des Modals halten
+  const modalRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!isOpen || !modalRef.current) return;
+    const modal = modalRef.current;
+    const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    const firstFocusable = modal.querySelector<HTMLElement>(focusableSelector);
+    firstFocusable?.focus();
+
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const focusables = modal.querySelectorAll<HTMLElement>(focusableSelector);
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleTab);
+    return () => document.removeEventListener('keydown', handleTab);
+  }, [isOpen]);
+
   const isLoadingRef = useRef(false);
 
   const loadData = async (retryCount = 0): Promise<boolean> => {
@@ -1287,6 +1324,10 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
         onClick={handleClose}
       >
         <div
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('title')}
           style={{
             ...styles.modal,
             maxWidth: isMobile ? '100%' : (bookingSuccess ? '500px' : '1100px'),
@@ -1516,7 +1557,10 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                     <span style={styles.sectionNum}>1.</span>
                     <span style={styles.sectionTitle}>{t('steps.barber')}</span>
                   </div>
-                  <div style={styles.barbersGrid}>
+                  <div style={{
+                    ...styles.barbersGrid,
+                    gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+                  }}>
                     {team.map((barber) => {
                       const isSelected = selectedBarber === barber.id;
                       const isOtherSelected = selectedBarber !== null && !isSelected;

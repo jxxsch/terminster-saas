@@ -8,9 +8,29 @@ import {
   ReminderEmailData,
   RescheduleEmailData,
 } from '@/lib/email';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export async function POST(request: NextRequest) {
   try {
+    // Origin-Validierung: Nur Same-Origin-Requests erlauben
+    const origin = request.headers.get('origin') || '';
+    const referer = request.headers.get('referer') || '';
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
+
+    if (process.env.NODE_ENV === 'production' && siteUrl) {
+      const host = new URL(siteUrl).host;
+      const isValidOrigin = origin && origin.includes(host);
+      const isValidReferer = referer && referer.includes(host);
+      if (!isValidOrigin && !isValidReferer) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+      }
+    }
+
     const body = await request.json();
     const { type, data } = body;
 
@@ -19,6 +39,19 @@ export async function POST(request: NextRequest) {
         { error: 'Typ und Daten sind erforderlich' },
         { status: 400 }
       );
+    }
+
+    // Appointment-Existenz prüfen: Nur E-Mails für echte Termine senden
+    if (data.appointmentId) {
+      const { data: apt, error: aptError } = await supabaseAdmin
+        .from('appointments')
+        .select('id')
+        .eq('id', data.appointmentId)
+        .single();
+
+      if (aptError || !apt) {
+        return NextResponse.json({ error: 'Invalid appointment' }, { status: 403 });
+      }
     }
 
     let result;

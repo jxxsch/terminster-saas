@@ -591,14 +591,22 @@ export async function getCustomerById(id: string): Promise<Customer | null> {
   return data;
 }
 
+// Sanitize user input for PostgREST filter strings to prevent filter injection
+function sanitizeForPostgrest(input: string): string {
+  return input.replace(/[,.()"'\\]/g, '').trim();
+}
+
 // Kunden nach Namen oder Telefonnummer suchen (für Autocomplete)
 export async function searchCustomers(query: string): Promise<Customer[]> {
   if (!query || query.length < 2) return [];
 
+  const sanitized = sanitizeForPostgrest(query);
+  if (!sanitized) return [];
+
   const { data, error } = await supabase
     .from('customers')
     .select('*')
-    .or(`name.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,phone.ilike.%${query}%`)
+    .or(`name.ilike.%${sanitized}%,first_name.ilike.%${sanitized}%,last_name.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`)
     .order('name')
     .limit(10);
 
@@ -1417,10 +1425,13 @@ export async function getAllCustomers(): Promise<CustomerWithStats[]> {
 export async function searchCustomersAdmin(query: string): Promise<CustomerWithStats[]> {
   if (!query || query.length < 2) return getAllCustomers();
 
+  const sanitized = sanitizeForPostgrest(query);
+  if (!sanitized) return getAllCustomers();
+
   const { data: customers, error } = await supabase
     .from('customers')
     .select('*')
-    .or(`name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%`)
+    .or(`name.ilike.%${sanitized}%,email.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`)
     .order('name');
 
   if (error) {
