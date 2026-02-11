@@ -183,6 +183,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Kundenkonto erstellt und Einladungs-E-Mail gesendet',
       emailSent: emailResult.success,
+      customerId: customer?.id || null,
       appointmentsLinked: customer?.id ? true : false,
     });
 

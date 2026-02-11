@@ -84,6 +84,7 @@ export function AddAppointmentModal({
   const [createAccount, setCreateAccount] = useState(false);
   const [accountCreated, setAccountCreated] = useState(false);
   const [accountCreating, setAccountCreating] = useState(false);
+  const [createdCustomerId, setCreatedCustomerId] = useState<string | null>(null);
   const [emailAccountStatus, setEmailAccountStatus] = useState<'checking' | 'has_account' | 'available' | null>(null);
   const [activeSearchField, setActiveSearchField] = useState<'name' | 'phone' | null>(null);
   const [showConflictModal, setShowConflictModal] = useState(false);
@@ -141,6 +142,7 @@ export function AddAppointmentModal({
     if (accountCreated) {
       setAccountCreated(false);
       setCreateAccount(false);
+      setCreatedCustomerId(null);
       setEmailAccountStatus(null);
     }
   }, [customerEmail]);
@@ -188,6 +190,9 @@ export function AddAppointmentModal({
       } else {
         setAccountCreated(true);
         setCreateAccount(true);
+        if (inviteResult.customerId) {
+          setCreatedCustomerId(inviteResult.customerId);
+        }
       }
     } catch (err) {
       console.error('Invite fetch error:', err);
@@ -459,7 +464,7 @@ export function AddAppointmentModal({
         service_id: serviceId,
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim() || null,
-        customer_id: selectedCustomer?.id || null,
+        customer_id: selectedCustomer?.id || createdCustomerId || null,
         customer_email: selectedCustomer?.email || customerEmail.trim() || null,
         status: 'confirmed',
         source: 'manual',
