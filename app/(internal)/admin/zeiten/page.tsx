@@ -758,8 +758,8 @@ export default function ZeitenPage() {
                         className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-9"
                         required
                       >
-                        {Array.from({ length: 25 }, (_, i) => {
-                          const hour = Math.floor(i / 2) + 8;
+                        {Array.from({ length: 19 }, (_, i) => {
+                          const hour = Math.floor(i / 2) + 10;
                           const minute = i % 2 === 0 ? '00' : '30';
                           const time = `${hour.toString().padStart(2, '0')}:${minute}`;
                           return (
@@ -840,8 +840,8 @@ export default function ZeitenPage() {
                       disabled={savingHour === hour.day_of_week}
                       className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
                     >
-                      {Array.from({ length: 29 }, (_, i) => {
-                        const h = Math.floor(i / 2) + 6;
+                      {Array.from({ length: 19 }, (_, i) => {
+                        const h = Math.floor(i / 2) + 10;
                         const minute = i % 2 === 0 ? '00' : '30';
                         const time = `${h.toString().padStart(2, '0')}:${minute}`;
                         return <option key={time} value={time}>{time}</option>;
@@ -854,8 +854,8 @@ export default function ZeitenPage() {
                       disabled={savingHour === hour.day_of_week}
                       className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none"
                     >
-                      {Array.from({ length: 29 }, (_, i) => {
-                        const h = Math.floor(i / 2) + 6;
+                      {Array.from({ length: 19 }, (_, i) => {
+                        const h = Math.floor(i / 2) + 10;
                         const minute = i % 2 === 0 ? '00' : '30';
                         const time = `${h.toString().padStart(2, '0')}:${minute}`;
                         return <option key={time} value={time}>{time}</option>;
@@ -910,8 +910,8 @@ export default function ZeitenPage() {
                       disabled={savingHour === hour.day_of_week}
                       className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.4rem_center] bg-no-repeat pr-7"
                     >
-                      {Array.from({ length: 29 }, (_, i) => {
-                        const h = Math.floor(i / 2) + 6;
+                      {Array.from({ length: 19 }, (_, i) => {
+                        const h = Math.floor(i / 2) + 10;
                         const minute = i % 2 === 0 ? '00' : '30';
                         const time = `${h.toString().padStart(2, '0')}:${minute}`;
                         return <option key={time} value={time}>{time}</option>;
@@ -927,8 +927,8 @@ export default function ZeitenPage() {
                       disabled={savingHour === hour.day_of_week}
                       className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.4rem_center] bg-no-repeat pr-7"
                     >
-                      {Array.from({ length: 29 }, (_, i) => {
-                        const h = Math.floor(i / 2) + 6;
+                      {Array.from({ length: 19 }, (_, i) => {
+                        const h = Math.floor(i / 2) + 10;
                         const minute = i % 2 === 0 ? '00' : '30';
                         const time = `${h.toString().padStart(2, '0')}:${minute}`;
                         return <option key={time} value={time}>{time}</option>;
@@ -1121,8 +1121,8 @@ export default function ZeitenPage() {
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-7"
                       required
                     >
-                      {Array.from({ length: 29 }, (_, i) => {
-                        const hour = Math.floor(i / 2) + 6;
+                      {Array.from({ length: 19 }, (_, i) => {
+                        const hour = Math.floor(i / 2) + 10;
                         const minute = i % 2 === 0 ? '00' : '30';
                         const time = `${hour.toString().padStart(2, '0')}:${minute}`;
                         return <option key={time} value={time}>{time}</option>;
@@ -1141,8 +1141,8 @@ export default function ZeitenPage() {
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-7"
                       required
                     >
-                      {Array.from({ length: 29 }, (_, i) => {
-                        const hour = Math.floor(i / 2) + 6;
+                      {Array.from({ length: 19 }, (_, i) => {
+                        const hour = Math.floor(i / 2) + 10;
                         const minute = i % 2 === 0 ? '00' : '30';
                         const time = `${hour.toString().padStart(2, '0')}:${minute}`;
                         return <option key={time} value={time}>{time}</option>;
@@ -1640,8 +1640,8 @@ export default function ZeitenPage() {
                                     onChange={(e) => setWorkStartTime(e.target.value)}
                                     className="w-full px-2 py-1.5 bg-white border border-gold rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.4rem_center] bg-no-repeat pr-7"
                                   >
-                                    {Array.from({ length: 29 }, (_, i) => {
-                                      const h = Math.floor(i / 2) + 6;
+                                    {Array.from({ length: 19 }, (_, i) => {
+                                      const h = Math.floor(i / 2) + 10;
                                       const minute = i % 2 === 0 ? '00' : '30';
                                       const time = `${h.toString().padStart(2, '0')}:${minute}`;
                                       return <option key={time} value={time}>{time}</option>;
@@ -1662,8 +1662,8 @@ export default function ZeitenPage() {
                                     onChange={(e) => setWorkEndTime(e.target.value)}
                                     className="w-full px-2 py-1.5 bg-white border border-gold rounded-lg text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.4rem_center] bg-no-repeat pr-7"
                                   >
-                                    {Array.from({ length: 29 }, (_, i) => {
-                                      const h = Math.floor(i / 2) + 6;
+                                    {Array.from({ length: 19 }, (_, i) => {
+                                      const h = Math.floor(i / 2) + 10;
                                       const minute = i % 2 === 0 ? '00' : '30';
                                       const time = `${h.toString().padStart(2, '0')}:${minute}`;
                                       return <option key={time} value={time}>{time}</option>;
@@ -1861,8 +1861,8 @@ export default function ZeitenPage() {
                           }}
                           className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
                         >
-                          {Array.from({ length: 29 }, (_, i) => {
-                            const h = Math.floor(i / 2) + 6;
+                          {Array.from({ length: 19 }, (_, i) => {
+                            const h = Math.floor(i / 2) + 10;
                             const minute = i % 2 === 0 ? '00' : '30';
                             const time = `${h.toString().padStart(2, '0')}:${minute}`;
                             return <option key={time} value={time}>{time}</option>;
@@ -1879,8 +1879,8 @@ export default function ZeitenPage() {
                           onChange={(e) => setNewExceptionEndTime(e.target.value)}
                           className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:ring-1 focus:ring-gold focus:border-gold focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22%2394a3b8%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
                         >
-                          {Array.from({ length: 29 }, (_, i) => {
-                            const h = Math.floor(i / 2) + 6;
+                          {Array.from({ length: 19 }, (_, i) => {
+                            const h = Math.floor(i / 2) + 10;
                             const minute = i % 2 === 0 ? '00' : '30';
                             const time = `${h.toString().padStart(2, '0')}:${minute}`;
                             return <option key={time} value={time}>{time}</option>;
