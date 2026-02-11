@@ -182,35 +182,7 @@ export function CookieBanner() {
     );
   }
 
-  // Floating cookie icon (after consent given, always visible)
-  if (consentGiven) {
-    return (
-      <button
-        onClick={() => setShowSettings(true)}
-        aria-label="Cookie-Einstellungen öffnen"
-        className="hidden lg:flex fixed bottom-20 left-5 z-[9998] w-10 h-10 rounded-full bg-white shadow-lg border border-gray-200 items-center justify-center cursor-pointer hover:shadow-xl hover:scale-110 transition-all duration-200"
-        style={{ animation: 'cookieBannerSlideUp 0.3s ease-out' }}
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#D4AF37"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5" />
-          <path d="M8.5 8.5v.01" />
-          <path d="M16 15.5v.01" />
-          <path d="M12 12v.01" />
-          <path d="M11 17v.01" />
-          <path d="M7 14v.01" />
-        </svg>
-      </button>
-    );
-  }
+  // Cookie-Einstellungen sind über den Footer erreichbar
 
   return null;
 }
