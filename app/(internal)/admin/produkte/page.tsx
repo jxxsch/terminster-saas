@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import {
-  getAllProducts,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -13,13 +12,13 @@ import {
   formatProductPrice,
   productCategories,
 } from '@/lib/supabase';
+import { useAllProducts, mutateProducts } from '@/hooks/swr/use-dashboard-data';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
 
 type CategoryKey = 'bart' | 'haare' | 'rasur' | 'pflege';
 
 export default function ProduktePage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: products = [], isLoading } = useAllProducts();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
@@ -60,22 +59,6 @@ export default function ProduktePage() {
     }
     return { x: 50, y: 50 };
   };
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadProducts() {
-      const data = await getAllProducts();
-      if (mounted) {
-        setProducts(data);
-        setIsLoading(false);
-      }
-    }
-
-    loadProducts();
-
-    return () => { mounted = false; };
-  }, []);
 
   // Produkte nach Kategorie filtern
   const filteredProducts = activeCategory === 'all'
@@ -299,7 +282,7 @@ export default function ProduktePage() {
       });
 
       if (newProduct) {
-        setProducts([...products, newProduct]);
+        mutateProducts();
         closeForm();
       }
     } else if (editingId) {
@@ -314,7 +297,7 @@ export default function ProduktePage() {
       });
 
       if (updated) {
-        setProducts(products.map(p => p.id === updated.id ? updated : p));
+        mutateProducts();
         closeForm();
       }
     }
@@ -325,7 +308,7 @@ export default function ProduktePage() {
 
     const success = await deleteProduct(deleteTarget.id);
     if (success) {
-      setProducts(products.filter(p => p.id !== deleteTarget.id));
+      mutateProducts();
     }
     setDeleteTarget(null);
   }
@@ -336,7 +319,7 @@ export default function ProduktePage() {
     });
 
     if (updated) {
-      setProducts(products.map(p => p.id === updated.id ? updated : p));
+      mutateProducts();
     }
   }
 
@@ -352,8 +335,7 @@ export default function ProduktePage() {
       { id: prevProduct.id, sort_order: product.sort_order },
     ]);
 
-    const data = await getAllProducts();
-    setProducts(data);
+    mutateProducts();
   }
 
   async function handleMoveDown(index: number) {
@@ -368,8 +350,7 @@ export default function ProduktePage() {
       { id: nextProduct.id, sort_order: product.sort_order },
     ]);
 
-    const data = await getAllProducts();
-    setProducts(data);
+    mutateProducts();
   }
 
   // Image Preview Component with drag and zoom

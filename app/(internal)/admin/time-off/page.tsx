@@ -2,15 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import {
-  getStaffTimeOff,
   createStaffTimeOff,
   updateStaffTimeOff,
   deleteStaffTimeOff,
-  getAllTeam,
   getUsedVacationDays,
-  StaffTimeOff,
-  TeamMember,
+  type StaffTimeOff,
+  type TeamMember,
 } from '@/lib/supabase';
+import {
+  useStaffTimeOffAll,
+  useAllTeam,
+  mutateStaffTimeOff,
+} from '@/hooks/swr/use-dashboard-data';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
 import { DatePicker, getWorkingDays } from '@/components/admin/DatePicker';
 
@@ -22,14 +25,17 @@ const ABSENCE_TYPES = [
 ];
 
 export default function TimeOffPage() {
-  const [timeOffs, setTimeOffs] = useState<StaffTimeOff[]>([]);
-  const [team, setTeam] = useState<TeamMember[]>([]);
+  const { data: rawTimeOffs = [], isLoading: timeOffsLoading } = useStaffTimeOffAll();
+  const { data: team = [], isLoading: teamLoading } = useAllTeam();
   const [usedVacationDays, setUsedVacationDays] = useState<Record<string, number>>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const isLoading = timeOffsLoading || teamLoading;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<StaffTimeOff | null>(null);
   const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
+
+  // Chronologisch sortieren (nächster zuerst)
+  const timeOffs = [...rawTimeOffs].sort((a, b) => a.start_date.localeCompare(b.start_date));
 
   // Form state
   const [formData, setFormData] = useState({
@@ -40,28 +46,13 @@ export default function TimeOffPage() {
   });
   const [autoOpenEndDate, setAutoOpenEndDate] = useState(false);
 
+  // Urlaubstage laden (kein SWR-Hook vorhanden)
   useEffect(() => {
     let mounted = true;
-
-    async function loadData() {
-      const currentYear = new Date().getFullYear();
-      const [timeOffData, teamData, vacationData] = await Promise.all([
-        getStaffTimeOff(),
-        getAllTeam(),
-        getUsedVacationDays(currentYear),
-      ]);
-      if (mounted) {
-        // Chronologisch sortieren (nächster zuerst)
-        const sorted = timeOffData.sort((a, b) => a.start_date.localeCompare(b.start_date));
-        setTimeOffs(sorted);
-        setTeam(teamData);
-        setUsedVacationDays(vacationData);
-        setIsLoading(false);
-      }
-    }
-
-    loadData();
-
+    const currentYear = new Date().getFullYear();
+    getUsedVacationDays(currentYear).then(vacationData => {
+      if (mounted) setUsedVacationDays(vacationData);
+    });
     return () => { mounted = false; };
   }, []);
 
@@ -111,9 +102,7 @@ export default function TimeOffPage() {
       });
 
       if (newTimeOff) {
-        setTimeOffs(
-          [...timeOffs, newTimeOff].sort((a, b) => a.start_date.localeCompare(b.start_date))
-        );
+        mutateStaffTimeOff();
         closeForm();
       }
     } else if (editingId) {
@@ -124,11 +113,7 @@ export default function TimeOffPage() {
       });
 
       if (updated) {
-        setTimeOffs(
-          timeOffs
-            .map(t => t.id === updated.id ? updated : t)
-            .sort((a, b) => a.start_date.localeCompare(b.start_date))
-        );
+        mutateStaffTimeOff();
         closeForm();
       }
     }
@@ -139,7 +124,7 @@ export default function TimeOffPage() {
 
     const success = await deleteStaffTimeOff(deleteTarget.id);
     if (success) {
-      setTimeOffs(timeOffs.filter(t => t.id !== deleteTarget.id));
+      mutateStaffTimeOff();
     }
     setDeleteTarget(null);
   }

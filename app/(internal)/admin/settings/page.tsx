@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getAllSettings, updateSetting } from '@/lib/supabase';
+import { updateSetting } from '@/lib/supabase';
+import { useAllSettings, mutateSettings } from '@/hooks/swr/use-dashboard-data';
 import { BUNDESLAENDER, Bundesland } from '@/lib/holidays';
 
 type BookingSystemType = 'standard' | 'custom';
@@ -25,56 +26,48 @@ const defaultSettings: BookingSettings = {
 };
 
 export default function SettingsPage() {
+  const { data: settingsData, isLoading: swrLoading } = useAllSettings();
   const [settings, setSettings] = useState<BookingSettings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [savedFields, setSavedFields] = useState<Set<string>>(new Set());
 
+  // Initialize local settings from SWR data once loaded
   useEffect(() => {
-    let mounted = true;
+    if (swrLoading || !settingsData) return;
 
-    async function loadData() {
-      const settingsData = await getAllSettings();
-
-      if (mounted) {
-        // Migration: Convert old booking_advance_days to weeks if exists
-        let advanceWeeks = defaultSettings.booking_advance_weeks;
-        if (settingsData.booking_advance_weeks) {
-          advanceWeeks = settingsData.booking_advance_weeks as BookingSettings['booking_advance_weeks'];
-        } else if (settingsData.booking_advance_days) {
-          // Convert days to weeks (old format)
-          const oldDays = (settingsData.booking_advance_days as { value: number }).value;
-          advanceWeeks = { value: Math.round(oldDays / 7) || 2 };
-        }
-
-        // Migration: Add enabled field if missing
-        let maxBookings = defaultSettings.max_bookings_per_day;
-        if (settingsData.max_bookings_per_day) {
-          const oldMax = settingsData.max_bookings_per_day as { value: number; enabled?: boolean };
-          maxBookings = {
-            value: oldMax.value,
-            enabled: oldMax.enabled !== undefined ? oldMax.enabled : true
-          };
-        }
-
-        setSettings({
-          booking_advance_weeks: advanceWeeks,
-          cancellation_hours: (settingsData.cancellation_hours as BookingSettings['cancellation_hours']) || defaultSettings.cancellation_hours,
-          max_bookings_per_day: maxBookings,
-          bundesland: (settingsData.bundesland as Bundesland) || defaultSettings.bundesland,
-          booking_system_type: (settingsData.booking_system_type as BookingSystemType) || defaultSettings.booking_system_type,
-          allow_edit_customer_in_modal: typeof settingsData.allow_edit_customer_in_modal === 'boolean'
-            ? settingsData.allow_edit_customer_in_modal
-            : defaultSettings.allow_edit_customer_in_modal,
-        });
-        setIsLoading(false);
-      }
+    // Migration: Convert old booking_advance_days to weeks if exists
+    let advanceWeeks = defaultSettings.booking_advance_weeks;
+    if (settingsData.booking_advance_weeks) {
+      advanceWeeks = settingsData.booking_advance_weeks as BookingSettings['booking_advance_weeks'];
+    } else if (settingsData.booking_advance_days) {
+      // Convert days to weeks (old format)
+      const oldDays = (settingsData.booking_advance_days as { value: number }).value;
+      advanceWeeks = { value: Math.round(oldDays / 7) || 2 };
     }
 
-    loadData();
+    // Migration: Add enabled field if missing
+    let maxBookings = defaultSettings.max_bookings_per_day;
+    if (settingsData.max_bookings_per_day) {
+      const oldMax = settingsData.max_bookings_per_day as { value: number; enabled?: boolean };
+      maxBookings = {
+        value: oldMax.value,
+        enabled: oldMax.enabled !== undefined ? oldMax.enabled : true
+      };
+    }
 
-    return () => { mounted = false; };
-  }, []);
+    setSettings({
+      booking_advance_weeks: advanceWeeks,
+      cancellation_hours: (settingsData.cancellation_hours as BookingSettings['cancellation_hours']) || defaultSettings.cancellation_hours,
+      max_bookings_per_day: maxBookings,
+      bundesland: (settingsData.bundesland as Bundesland) || defaultSettings.bundesland,
+      booking_system_type: (settingsData.booking_system_type as BookingSystemType) || defaultSettings.booking_system_type,
+      allow_edit_customer_in_modal: typeof settingsData.allow_edit_customer_in_modal === 'boolean'
+        ? settingsData.allow_edit_customer_in_modal
+        : defaultSettings.allow_edit_customer_in_modal,
+    });
+    setIsLoading(false);
+  }, [settingsData, swrLoading]);
 
   async function saveField(key: string, value: unknown) {
     setSaving(key);
@@ -82,6 +75,7 @@ export default function SettingsPage() {
     setSaving(null);
 
     if (success) {
+      mutateSettings();
       setSavedFields(prev => new Set(prev).add(key));
       setTimeout(() => {
         setSavedFields(prev => {

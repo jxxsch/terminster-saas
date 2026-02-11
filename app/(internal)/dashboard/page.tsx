@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { WeekView } from '@/components/dashboard/WeekView';
 import { BarberWeekView } from '@/components/dashboard/BarberWeekView';
-import { getClosedDates, getOpenSundays, ClosedDate, OpenSunday } from '@/lib/supabase';
+import { useClosedDates, useOpenSundays } from '@/hooks/swr/use-dashboard-data';
 import { useTranslations } from 'next-intl';
 import { useLogoUrl } from '@/hooks/useLogoUrl';
 
@@ -100,8 +100,8 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [currentWeekOffset, setCurrentWeekOffset] = useState(() => getEffectiveToday().weekOffset);
   const [selectedDay, setSelectedDay] = useState(0);
-  const [closedDates, setClosedDates] = useState<ClosedDate[]>([]);
-  const [openSundays, setOpenSundays] = useState<OpenSunday[]>([]);
+  const { data: closedDates = [] } = useClosedDates();
+  const { data: openSundays = [] } = useOpenSundays();
   const [viewMode, setViewMode] = useState<ViewMode>('day');
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedAppointments, setSelectedAppointments] = useState<Set<string>>(new Set());
@@ -133,9 +133,6 @@ export default function DashboardPage() {
     if (savedNameMode && ['firstName', 'lastName', 'fullName'].includes(savedNameMode)) {
       setNameDisplayMode(savedNameMode);
     }
-
-    getClosedDates().then(setClosedDates);
-    getOpenSundays().then(setOpenSundays);
   }, []);
 
   // Namensanzeige speichern wenn geändert

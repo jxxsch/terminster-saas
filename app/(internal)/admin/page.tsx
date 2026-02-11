@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import useSWR from 'swr';
 import { ExpandableWidget } from '@/components/admin/ExpandableWidget';
 import { StatsModal } from '@/components/admin/StatsModal';
 import { DailyStatsModal } from '@/components/admin/DailyStatsModal';
@@ -35,18 +36,107 @@ interface RecentAppointment {
   isFirstVisit: boolean;
 }
 
+async function fetchAdminDashboardData() {
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  const dayOfWeek = today.getDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() + mondayOffset);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+
+  const weekStartStr = weekStart.toISOString().split('T')[0];
+  const weekEndStr = weekEnd.toISOString().split('T')[0];
+
+  const [
+    todayResult,
+    weekResult,
+    recentResult,
+    birthdayResult,
+    popularityResult,
+    loyaltyResult,
+    weeklyResult,
+    dailyResult,
+  ] = await Promise.all([
+    supabase
+      .from('appointments')
+      .select('id', { count: 'exact' })
+      .eq('date', todayStr)
+      .eq('status', 'confirmed'),
+    supabase
+      .from('appointments')
+      .select('id', { count: 'exact' })
+      .gte('date', weekStartStr)
+      .lte('date', weekEndStr)
+      .eq('status', 'confirmed'),
+    supabase
+      .from('appointments')
+      .select('id, customer_name, customer_id, customer_phone, date, time_slot, barber_id, service_id')
+      .eq('status', 'confirmed')
+      .order('created_at', { ascending: false })
+      .limit(10),
+    getBirthdayAppointments(),
+    getServicePopularity(30),
+    getCustomerLoyaltyStats(30),
+    getWeeklyStats(4),
+    getDailyStats(7),
+  ]);
+
+  const [barbersData, servicesData] = await Promise.all([
+    supabase.from('team').select('id, name'),
+    supabase.from('services').select('id, name'),
+  ]);
+
+  const barberNames: Record<string, string> = {};
+  const serviceNames: Record<string, string> = {};
+
+  barbersData.data?.forEach(b => { barberNames[b.id] = b.name; });
+  servicesData.data?.forEach(s => { serviceNames[s.id] = s.name; });
+
+  const recentAppointments = (recentResult.data || []).map((apt) => ({
+    id: apt.id,
+    customer_name: apt.customer_name,
+    date: apt.date,
+    time_slot: apt.time_slot,
+    barber_name: barberNames[apt.barber_id] || apt.barber_id,
+    service_name: serviceNames[apt.service_id] || apt.service_id,
+    isFirstVisit: false,
+  }));
+
+  const birthdayAppointments = birthdayResult.map(apt => ({
+    ...apt,
+    barber_name: barberNames[apt.barber_id] || apt.barber_id,
+  }));
+
+  return {
+    stats: {
+      todayAppointments: todayResult.count || 0,
+      weekAppointments: weekResult.count || 0,
+    },
+    recentAppointments,
+    birthdayAppointments,
+    servicePopularity: popularityResult,
+    loyaltyStats: loyaltyResult,
+    weeklyStats: weeklyResult,
+    dailyStats: dailyResult,
+  };
+}
+
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<Stats>({
-    todayAppointments: 0,
-    weekAppointments: 0,
+  const { data, isLoading } = useSWR('admin:dashboard', fetchAdminDashboardData, {
+    dedupingInterval: 60 * 1000,
+    revalidateOnFocus: true,
   });
-  const [recentAppointments, setRecentAppointments] = useState<RecentAppointment[]>([]);
-  const [birthdayAppointments, setBirthdayAppointments] = useState<Array<BirthdayAppointment & { barber_name: string }>>([]);
-  const [servicePopularity, setServicePopularity] = useState<ServicePopularity[]>([]);
-  const [loyaltyStats, setLoyaltyStats] = useState<CustomerLoyaltyStats | null>(null);
-  const [weeklyStats, setWeeklyStats] = useState<WeekStats[]>([]);
-  const [dailyStats, setDailyStats] = useState<DayStats[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const stats = data?.stats ?? { todayAppointments: 0, weekAppointments: 0 };
+  const recentAppointments = data?.recentAppointments ?? [];
+  const birthdayAppointments = data?.birthdayAppointments ?? [];
+  const servicePopularity = data?.servicePopularity ?? [];
+  const loyaltyStats = data?.loyaltyStats ?? null;
+  const weeklyStats = data?.weeklyStats ?? [];
+  const dailyStats = data?.dailyStats ?? [];
 
   // Expanded widget state - nur eines kann offen sein
   const [expandedWidget, setExpandedWidget] = useState<string | null>(null);
@@ -59,111 +149,6 @@ export default function AdminDashboard() {
 
   const toggleWidget = useCallback((widgetId: string) => {
     setExpandedWidget(prev => prev === widgetId ? null : widgetId);
-  }, []);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadStats() {
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
-
-      // Week start (Monday) and end (Sunday)
-      const dayOfWeek = today.getDay();
-      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-      const weekStart = new Date(today);
-      weekStart.setDate(today.getDate() + mondayOffset);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-
-      const weekStartStr = weekStart.toISOString().split('T')[0];
-      const weekEndStr = weekEnd.toISOString().split('T')[0];
-
-      // Parallel queries
-      const [
-        todayResult,
-        weekResult,
-        recentResult,
-        birthdayResult,
-        popularityResult,
-        loyaltyResult,
-        weeklyResult,
-        dailyResult,
-      ] = await Promise.all([
-        supabase
-          .from('appointments')
-          .select('id', { count: 'exact' })
-          .eq('date', todayStr)
-          .eq('status', 'confirmed'),
-        supabase
-          .from('appointments')
-          .select('id', { count: 'exact' })
-          .gte('date', weekStartStr)
-          .lte('date', weekEndStr)
-          .eq('status', 'confirmed'),
-        supabase
-          .from('appointments')
-          .select('id, customer_name, customer_id, customer_phone, date, time_slot, barber_id, service_id')
-          .eq('status', 'confirmed')
-          .order('created_at', { ascending: false })
-          .limit(10),
-        getBirthdayAppointments(),
-        getServicePopularity(30),
-        getCustomerLoyaltyStats(30),
-        getWeeklyStats(4),
-        getDailyStats(7),
-      ]);
-
-      if (!mounted) return;
-
-      // Get barber and service names
-      const [barbersData, servicesData] = await Promise.all([
-        supabase.from('team').select('id, name'),
-        supabase.from('services').select('id, name'),
-      ]);
-
-      if (!mounted) return;
-
-      const barberNames: Record<string, string> = {};
-      const serviceNames: Record<string, string> = {};
-
-      barbersData.data?.forEach(b => { barberNames[b.id] = b.name; });
-      servicesData.data?.forEach(s => { serviceNames[s.id] = s.name; });
-
-      // Map recent appointments (ohne einzelne first-visit Abfragen für Performance)
-      const recentWithFirstVisit = (recentResult.data || []).map((apt) => ({
-        id: apt.id,
-        customer_name: apt.customer_name,
-        date: apt.date,
-        time_slot: apt.time_slot,
-        barber_name: barberNames[apt.barber_id] || apt.barber_id,
-        service_name: serviceNames[apt.service_id] || apt.service_id,
-        isFirstVisit: false, // Neukunden-Info kommt aus loyaltyStats
-      }));
-
-      // Enrich birthday appointments with barber names
-      const enrichedBirthdays = birthdayResult.map(apt => ({
-        ...apt,
-        barber_name: barberNames[apt.barber_id] || apt.barber_id,
-      }));
-
-      setStats({
-        todayAppointments: todayResult.count || 0,
-        weekAppointments: weekResult.count || 0,
-      });
-
-      setRecentAppointments(recentWithFirstVisit);
-      setBirthdayAppointments(enrichedBirthdays);
-      setServicePopularity(popularityResult);
-      setLoyaltyStats(loyaltyResult);
-      setWeeklyStats(weeklyResult);
-      setDailyStats(dailyResult);
-      setIsLoading(false);
-    }
-
-    loadStats();
-
-    return () => { mounted = false; };
   }, []);
 
   if (isLoading) {

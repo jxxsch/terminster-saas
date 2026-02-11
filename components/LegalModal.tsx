@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 type LegalType = 'impressum' | 'datenschutz' | 'newsletter' | null;
 
 export function LegalModal() {
+  const t = useTranslations('footer');
   const [type, setType] = useState<LegalType>(null);
 
   useEffect(() => {
@@ -77,14 +78,14 @@ export function LegalModal() {
               onClick={() => setType('impressum')}
               className={`text-xs transition-colors ${type === 'impressum' ? 'text-gold font-medium' : 'text-gray-400 hover:text-gray-600'}`}
             >
-              Impressum
+              {t('imprint')}
             </button>
             <span className="text-gray-300">|</span>
             <button
               onClick={() => setType('datenschutz')}
               className={`text-xs transition-colors ${type === 'datenschutz' ? 'text-gold font-medium' : 'text-gray-400 hover:text-gray-600'}`}
             >
-              Datenschutz
+              {t('privacy')}
             </button>
           </div>
         )}

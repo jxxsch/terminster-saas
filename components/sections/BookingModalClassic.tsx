@@ -588,6 +588,8 @@ export function BookingModalClassic({ isOpen, onClose, preselectedBarber, passwo
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [guestPrivacyConsent, setGuestPrivacyConsent] = useState(false);
+  const [guestNewsletterConsent, setGuestNewsletterConsent] = useState(false);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -932,6 +934,7 @@ export function BookingModalClassic({ isOpen, onClose, preselectedBarber, passwo
       source: 'online',
       series_id: null,
       is_pause: false,
+      newsletter_consent: !isAuthenticated ? guestNewsletterConsent : false,
     });
 
     setIsSubmitting(false);
@@ -2440,6 +2443,50 @@ export function BookingModalClassic({ isOpen, onClose, preselectedBarber, passwo
                               maxLength={20}
                             />
                           </div>
+                          {/* Consent Checkboxen für Gäste */}
+                          <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={guestPrivacyConsent}
+                                onChange={(e) => setGuestPrivacyConsent(e.target.checked)}
+                                style={{ marginTop: '0.2rem', accentColor: 'var(--color-gold)' }}
+                              />
+                              <span style={{ fontSize: '0.7rem', color: '#64748b', lineHeight: '1.4' }}>
+                                {tAuth.rich('privacyConsent', {
+                                  link: (chunks) => (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.preventDefault(); openDatenschutz(); }}
+                                      style={{ color: 'var(--color-gold)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit' }}
+                                    >
+                                      {chunks}
+                                    </button>
+                                  ),
+                                })}
+                              </span>
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer' }}>
+                              <input
+                                type="checkbox"
+                                checked={guestNewsletterConsent}
+                                onChange={(e) => setGuestNewsletterConsent(e.target.checked)}
+                                style={{ marginTop: '0.2rem', accentColor: 'var(--color-gold)' }}
+                              />
+                              <span style={{ fontSize: '0.7rem', color: '#64748b', lineHeight: '1.4' }}>
+                                {tAuth('newsletterConsent')}{' '}
+                                <span style={{ color: '#94a3b8' }}>{tAuth('newsletterOptional')}</span>
+                                {' · '}
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.preventDefault(); openNewsletter(); }}
+                                  style={{ color: 'var(--color-gold)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit' }}
+                                >
+                                  {tAuth('newsletterInfo')}
+                                </button>
+                              </span>
+                            </label>
+                          </div>
                         </div>
                       )}
 
@@ -2759,7 +2806,7 @@ export function BookingModalClassic({ isOpen, onClose, preselectedBarber, passwo
                   </div>
                   <button
                     onClick={handleBooking}
-                    disabled={!isContactUnlocked || !customerName || !customerEmail || !customerPhone || isSubmitting}
+                    disabled={!isContactUnlocked || !customerName || !customerEmail || !customerPhone || isSubmitting || (!isAuthenticated && !guestPrivacyConsent)}
                     style={{
                       ...styles.submitBtn,
                       ...(!isContactUnlocked || !customerName || !customerEmail || !customerPhone || isSubmitting ? styles.submitBtnDisabled : {}),

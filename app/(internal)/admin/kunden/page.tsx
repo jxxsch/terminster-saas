@@ -1,28 +1,28 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  getAllCustomers,
-  searchCustomersAdmin,
   toggleCustomerBlock,
   updateCustomer,
   getCustomerAppointmentsAdmin,
-  getTeam,
-  getServices,
   type CustomerWithStats,
   type Appointment,
-  type TeamMember,
-  type Service,
 } from '@/lib/supabase';
+import {
+  useAllCustomers,
+  useTeam,
+  useAllServices,
+  mutateCustomers,
+} from '@/hooks/swr/use-dashboard-data';
 import { DatePicker } from '@/components/admin/DatePicker';
 
 export default function KundenPage() {
-  const [customers, setCustomers] = useState<CustomerWithStats[]>([]);
-  const [filteredCustomers, setFilteredCustomers] = useState<CustomerWithStats[]>([]);
-  const [team, setTeam] = useState<TeamMember[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: customers = [], isLoading: customersLoading } = useAllCustomers();
+  const { data: team = [] } = useTeam();
+  const { data: services = [] } = useAllServices();
+  const loading = customersLoading;
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithStats | null>(null);
   const [customerAppointments, setCustomerAppointments] = useState<Appointment[]>([]);
@@ -33,27 +33,8 @@ export default function KundenPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    const [customersData, teamData, servicesData] = await Promise.all([
-      getAllCustomers(),
-      getTeam(),
-      getServices(),
-    ]);
-    setCustomers(customersData);
-    setFilteredCustomers(customersData);
-    setTeam(teamData);
-    setServices(servicesData);
-    setLoading(false);
-  }, []);
-
-  /* eslint-disable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
   // Suche und Filter
-  useEffect(() => {
+  const filteredCustomers = useMemo(() => {
     let result = customers;
 
     // Filter anwenden
@@ -77,19 +58,11 @@ export default function KundenPage() {
       );
     }
 
-    setFilteredCustomers(result);
+    return result;
   }, [customers, searchQuery, filter]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
-  const handleSearch = async (query: string) => {
+  const handleSearch = (query: string) => {
     setSearchQuery(query);
-    if (query.length >= 2) {
-      const results = await searchCustomersAdmin(query);
-      setCustomers(results);
-    } else if (query.length === 0) {
-      const all = await getAllCustomers();
-      setCustomers(all);
-    }
   };
 
   const handleSelectCustomer = async (customer: CustomerWithStats) => {
@@ -105,9 +78,7 @@ export default function KundenPage() {
     const newBlocked = !customer.is_blocked;
     const success = await toggleCustomerBlock(customer.id, newBlocked);
     if (success) {
-      setCustomers(prev =>
-        prev.map(c => c.id === customer.id ? { ...c, is_blocked: newBlocked } : c)
-      );
+      mutateCustomers();
       if (selectedCustomer?.id === customer.id) {
         setSelectedCustomer({ ...selectedCustomer, is_blocked: newBlocked });
       }
@@ -127,9 +98,7 @@ export default function KundenPage() {
     });
 
     if (updated) {
-      setCustomers(prev =>
-        prev.map(c => c.id === selectedCustomer.id ? { ...c, ...updated } : c)
-      );
+      mutateCustomers();
       setSelectedCustomer({ ...selectedCustomer, ...updated });
       setEditMode(false);
     }
@@ -150,7 +119,7 @@ export default function KundenPage() {
 
       if (response.ok && result.success) {
         // Kunde aus der Liste entfernen
-        setCustomers(prev => prev.filter(c => c.id !== selectedCustomer.id));
+        mutateCustomers();
         setShowDeleteConfirm(false);
         setShowModal(false);
         setSelectedCustomer(null);

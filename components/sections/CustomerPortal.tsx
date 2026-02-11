@@ -9,12 +9,9 @@ import {
   cancelAppointment,
   updateCustomer,
   getTeam,
-  getServices,
   getSetting,
   Appointment,
   TeamMember,
-  Service,
-  formatPrice,
 } from '@/lib/supabase';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { useRealtimeAppointments } from '@/hooks/useRealtimeAppointments';
@@ -37,7 +34,6 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
   const [activeTab, setActiveTab] = useState<Tab>('upcoming');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [team, setTeam] = useState<TeamMember[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -102,16 +98,14 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
     setLoadError(false);
 
     try {
-      const [appointmentsData, teamData, servicesData, cancellationSetting] = await Promise.all([
+      const [appointmentsData, teamData, cancellationSetting] = await Promise.all([
         getCustomerAppointments(customer.id),
         getTeam(),
-        getServices(),
         getSetting<{ value: number }>('cancellation_hours'),
       ]);
 
       setAppointments(appointmentsData || []);
       setTeam(teamData || []);
-      setServices(servicesData || []);
       if (cancellationSetting?.value) {
         setCancellationHours(cancellationSetting.value);
       }
@@ -174,16 +168,6 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
   const monthKeys = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'] as const;
 
   const getBarberName = (barberId: string) => team.find(t => t.id === barberId)?.name || tCommon('unknown');
-  const getServiceName = (serviceId: string | null) => {
-    if (!serviceId) return '-';
-    return services.find(s => s.id === serviceId)?.name || tCommon('unknown');
-  };
-  const getServicePrice = (serviceId: string | null) => {
-    if (!serviceId) return '-';
-    const service = services.find(s => s.id === serviceId);
-    return service ? formatPrice(service.price) : '';
-  };
-
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const dayName = tDays(`long.${dayKeys[date.getDay()]}`);
@@ -671,19 +655,9 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                               </span>
                             )}
                           </div>
-                          <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', fontSize: '0.75rem' }}>
-                            <div>
-                              <span style={{ color: '#94a3b8' }}>{t('barber')}:</span>{' '}
-                              <span style={{ color: '#0f172a' }}>{getBarberName(apt.barber_id)}</span>
-                            </div>
-                            <div>
-                              <span style={{ color: '#94a3b8' }}>{t('service')}:</span>{' '}
-                              <span style={{ color: '#0f172a' }}>{getServiceName(apt.service_id)}</span>
-                            </div>
-                            <div>
-                              <span style={{ color: '#94a3b8' }}>{t('price')}:</span>{' '}
-                              <span style={{ color: '#d4a853', fontWeight: 600 }}>{getServicePrice(apt.service_id)}</span>
-                            </div>
+                          <div style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>
+                            <span style={{ color: '#94a3b8' }}>{t('barber')}:</span>{' '}
+                            <span style={{ color: '#0f172a' }}>{getBarberName(apt.barber_id)}</span>
                           </div>
                         </div>
                       ))
@@ -717,15 +691,9 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                               </span>
                             )}
                           </div>
-                          <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.75rem' }}>
-                            <div>
-                              <span style={{ color: '#94a3b8' }}>{t('barber')}:</span>{' '}
-                              <span style={{ color: '#64748b' }}>{getBarberName(apt.barber_id)}</span>
-                            </div>
-                            <div>
-                              <span style={{ color: '#94a3b8' }}>{t('service')}:</span>{' '}
-                              <span style={{ color: '#64748b' }}>{getServiceName(apt.service_id)}</span>
-                            </div>
+                          <div style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>
+                            <span style={{ color: '#94a3b8' }}>{t('barber')}:</span>{' '}
+                            <span style={{ color: '#64748b' }}>{getBarberName(apt.barber_id)}</span>
                           </div>
                         </div>
                       ))

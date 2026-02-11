@@ -10,18 +10,10 @@ import { DroppableCell } from './DroppableCell';
 import { MoveToBarberModal } from './MoveToBarberModal';
 import { BlockedSlot } from './BlockedSlot';
 import {
-  getAppointments,
-  getSeries,
-  getTeam,
-  getCalendarServices,
-  getStaffTimeOffForDateRange,
   deleteAppointment,
   deleteStaffTimeOff,
   createAppointment,
   isBarberFreeDay,
-  getFreeDayExceptions,
-  getOpenSundays,
-  getOpenSundayStaff,
   deleteSeriesExceptionByDate,
   Appointment,
   Series,
@@ -33,6 +25,17 @@ import {
   OpenSundayStaff,
   formatPrice,
 } from '@/lib/supabase';
+import {
+  useTeam,
+  useCalendarServices,
+  useAppointments,
+  useSeries,
+  useStaffTimeOff,
+  useFreeDayExceptions,
+  useOpenSundays,
+  useOpenSundayStaff,
+  mutateAppointments,
+} from '@/hooks/swr/use-dashboard-data';
 import { sendRescheduleEmail } from '@/lib/email-client';
 import { SelectionToolbar, SelectionFilter } from './SelectionToolbar';
 import { UndoToast } from './UndoToast';
@@ -107,15 +110,63 @@ export function WeekView({
   onSelectedAppointmentsChange,
   formatName = (name) => name,
 }: WeekViewProps) {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [series, setSeries] = useState<Series[]>([]);
-  const [team, setTeam] = useState<TeamMember[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
-  const [staffTimeOff, setStaffTimeOff] = useState<StaffTimeOff[]>([]);
-  const [freeDayExceptions, setFreeDayExceptions] = useState<FreeDayException[]>([]);
-  const [openSundays, setOpenSundays] = useState<OpenSunday[]>([]);
-  const [openSundayStaff, setOpenSundayStaff] = useState<OpenSundayStaff[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // Generate week days (Mo-So, 7 Tage) - moved up for SWR key computation
+  const weekDays = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const days: { date: Date; dateStr: string; dayName: string; dayNum: number; isToday: boolean }[] = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + i);
+      days.push({
+        date,
+        dateStr: formatDateLocal(date),
+        dayName: DAY_NAMES[date.getDay()],
+        dayNum: date.getDate(),
+        isToday: date.getTime() === today.getTime(),
+      });
+    }
+    return days;
+  }, [monday]);
+
+  const startDate = weekDays[0]?.dateStr;
+  const endDate = weekDays[weekDays.length - 1]?.dateStr;
+
+  // SWR Data Hooks
+  const { data: appointments = [], mutate: swrMutateAppointments } = useAppointments(startDate, endDate);
+  const { data: series = [], mutate: swrMutateSeries } = useSeries();
+  const { data: team = [] } = useTeam();
+  const { data: services = [] } = useCalendarServices();
+  const { data: staffTimeOff = [], mutate: swrMutateStaffTimeOff } = useStaffTimeOff(startDate, endDate);
+  const { data: freeDayExceptions = [] } = useFreeDayExceptions();
+  const { data: openSundays = [] } = useOpenSundays();
+  const { data: openSundayStaff = [] } = useOpenSundayStaff();
+
+  const isLoading = !team.length && !appointments.length;
+
+  // Optimistic update wrappers (mimic setState pattern for SWR)
+  const setAppointments = useCallback((updater: Appointment[] | ((prev: Appointment[]) => Appointment[])) => {
+    swrMutateAppointments(current => {
+      const prev = current || [];
+      return typeof updater === 'function' ? updater(prev) : updater;
+    }, { revalidate: false });
+  }, [swrMutateAppointments]);
+
+  const setSeries = useCallback((updater: Series[] | ((prev: Series[]) => Series[])) => {
+    swrMutateSeries(current => {
+      const prev = current || [];
+      return typeof updater === 'function' ? updater(prev) : updater;
+    }, { revalidate: false });
+  }, [swrMutateSeries]);
+
+  const setStaffTimeOff = useCallback((data: StaffTimeOff[]) => {
+    swrMutateStaffTimeOff(data, { revalidate: false });
+  }, [swrMutateStaffTimeOff]);
+
+  const refreshAppointments = useCallback(() => {
+    swrMutateAppointments();
+  }, [swrMutateAppointments]);
+
   const [selectedSlot, setSelectedSlot] = useState<SlotInfo | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [moveToBarberInfo, setMoveToBarberInfo] = useState<BarberHeaderDropInfo | null>(null);
@@ -149,95 +200,22 @@ export function WeekView({
 
   const tableBodyRef = useRef<HTMLTableSectionElement>(null);
 
-  // Generate week days (Mo-So, 7 Tage)
-  const weekDays = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const days: { date: Date; dateStr: string; dayName: string; dayNum: number; isToday: boolean }[] = [];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(monday);
-      date.setDate(monday.getDate() + i);
-      days.push({
-        date,
-        dateStr: formatDateLocal(date),
-        dayName: DAY_NAMES[date.getDay()],
-        dayNum: date.getDate(),
-        isToday: date.getTime() === today.getTime(),
-      });
-    }
-    return days;
-  }, [monday]);
-
   // Update current time slot every minute
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTimeSlot(getCurrentTimeSlot());
-    }, 60000); // Jede Minute
+    }, 60000);
 
     return () => clearInterval(interval);
   }, []);
 
-  // Nur Termine neu laden (für Realtime-Updates, ohne Loading-State)
-  const refreshAppointments = useCallback(async () => {
-    if (weekDays.length === 0) return;
-    const startDate = weekDays[0].dateStr;
-    const endDate = weekDays[weekDays.length - 1].dateStr;
-    try {
-      const appointmentsData = await getAppointments(startDate, endDate);
-      setAppointments(appointmentsData);
-    } catch (error) {
-      console.error('Error refreshing appointments:', error);
-    }
-  }, [weekDays]);
-
-  // Realtime-Subscription für Termine
+  // Realtime-Subscription für Termine → triggert SWR revalidation
   useRealtimeAppointments({
-    startDate: weekDays[0]?.dateStr,
-    endDate: weekDays[weekDays.length - 1]?.dateStr,
-    onUpdate: refreshAppointments,
+    startDate,
+    endDate,
+    onUpdate: mutateAppointments,
     enabled: weekDays.length > 0,
   });
-
-  // Polling-Fallback: Alle 15 Sekunden Termine neu laden (falls Realtime ausfällt)
-  useEffect(() => {
-    if (weekDays.length === 0) return;
-    const interval = setInterval(() => {
-      refreshAppointments();
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [refreshAppointments, weekDays.length]);
-
-  // Load all data
-  useEffect(() => {
-    async function loadData() {
-      setIsLoading(true);
-      const startDate = weekDays[0].dateStr;
-      const endDate = weekDays[weekDays.length - 1].dateStr;
-
-      const [appointmentsData, seriesData, teamData, servicesData, staffTimeOffData, freeDayExceptionsData, openSundaysData, openSundayStaffData] = await Promise.all([
-        getAppointments(startDate, endDate),
-        getSeries(),
-        getTeam(),
-        getCalendarServices(),
-        getStaffTimeOffForDateRange(startDate, endDate),
-        getFreeDayExceptions(),
-        getOpenSundays(),
-        getOpenSundayStaff(),
-      ]);
-
-      setAppointments(appointmentsData);
-      setSeries(seriesData);
-      setTeam(teamData);
-      setServices(servicesData);
-      setStaffTimeOff(staffTimeOffData);
-      setFreeDayExceptions(freeDayExceptionsData);
-      setOpenSundays(openSundaysData);
-      setOpenSundayStaff(openSundayStaffData);
-      setIsLoading(false);
-    }
-
-    loadData();
-  }, [weekDays]);
 
   // Create appointment lookup map (confirmed appointments have priority over cancelled)
   const appointmentMap = useMemo(() => {
@@ -596,18 +574,12 @@ export function WeekView({
   // Block (Teilzeit-Blockierung) löschen
   const handleDeleteBlock = async (blockId: string) => {
     await deleteStaffTimeOff(blockId);
-    const startDate = weekDays[0].dateStr;
-    const endDate = weekDays[weekDays.length - 1].dateStr;
-    const updated = await getStaffTimeOffForDateRange(startDate, endDate);
-    setStaffTimeOff(updated);
+    swrMutateStaffTimeOff();
   };
 
   // Callback wenn ein Block erstellt wurde
   const handleBlockCreated = async () => {
-    const startDate = weekDays[0].dateStr;
-    const endDate = weekDays[weekDays.length - 1].dateStr;
-    const updated = await getStaffTimeOffForDateRange(startDate, endDate);
-    setStaffTimeOff(updated);
+    swrMutateStaffTimeOff();
     setSelectedSlot(null);
   };
 

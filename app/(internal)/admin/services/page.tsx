@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
-  getAllServices,
   createService,
   updateService,
   deleteService,
@@ -11,11 +10,11 @@ import {
   formatPrice,
   formatDuration,
 } from '@/lib/supabase';
+import { useAllServices, mutateServices } from '@/hooks/swr/use-dashboard-data';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
 
 export default function ServicesPage() {
-  const [services, setServices] = useState<Service[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: services = [], isLoading } = useAllServices();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Service | null>(null);
@@ -29,22 +28,6 @@ export default function ServicesPage() {
     active: true,
     show_in_calendar: true,
   });
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadServices() {
-      const data = await getAllServices();
-      if (mounted) {
-        setServices(data);
-        setIsLoading(false);
-      }
-    }
-
-    loadServices();
-
-    return () => { mounted = false; };
-  }, []);
 
   function openCreateForm() {
     setFormData({
@@ -94,7 +77,7 @@ export default function ServicesPage() {
       });
 
       if (newService) {
-        setServices([...services, newService]);
+        mutateServices();
         closeForm();
       }
     } else if (editingId) {
@@ -107,7 +90,7 @@ export default function ServicesPage() {
       });
 
       if (updated) {
-        setServices(services.map(s => s.id === updated.id ? updated : s));
+        mutateServices();
         closeForm();
       }
     }
@@ -118,7 +101,7 @@ export default function ServicesPage() {
 
     const success = await deleteService(deleteTarget.id);
     if (success) {
-      setServices(services.filter(s => s.id !== deleteTarget.id));
+      mutateServices();
     }
     setDeleteTarget(null);
   }
@@ -129,7 +112,7 @@ export default function ServicesPage() {
     });
 
     if (updated) {
-      setServices(services.map(s => s.id === updated.id ? updated : s));
+      mutateServices();
     }
   }
 
@@ -139,7 +122,7 @@ export default function ServicesPage() {
     });
 
     if (updated) {
-      setServices(services.map(s => s.id === updated.id ? updated : s));
+      mutateServices();
     }
   }
 
@@ -149,14 +132,13 @@ export default function ServicesPage() {
     const newValue = !allActive;
 
     // Alle Services aktualisieren
-    const updatedServices = await Promise.all(
+    await Promise.all(
       services.map(async (service) => {
-        const updated = await updateService(service.id, { active: newValue });
-        return updated || service;
+        await updateService(service.id, { active: newValue });
       })
     );
 
-    setServices(updatedServices);
+    mutateServices();
   }
 
   // Alle Services für Kalender ein-/ausschalten
@@ -165,14 +147,13 @@ export default function ServicesPage() {
     const newValue = !allInCalendar;
 
     // Alle Services aktualisieren
-    const updatedServices = await Promise.all(
+    await Promise.all(
       services.map(async (service) => {
-        const updated = await updateService(service.id, { show_in_calendar: newValue });
-        return updated || service;
+        await updateService(service.id, { show_in_calendar: newValue });
       })
     );
 
-    setServices(updatedServices);
+    mutateServices();
   }
 
   async function handleMoveUp(index: number) {
@@ -181,7 +162,7 @@ export default function ServicesPage() {
     [newServices[index - 1], newServices[index]] = [newServices[index], newServices[index - 1]];
     const updates = newServices.map((s, i) => ({ id: s.id, sort_order: i }));
     await updateServiceOrder(updates);
-    setServices(newServices);
+    mutateServices();
   }
 
   async function handleMoveDown(index: number) {
@@ -190,7 +171,7 @@ export default function ServicesPage() {
     [newServices[index], newServices[index + 1]] = [newServices[index + 1], newServices[index]];
     const updates = newServices.map((s, i) => ({ id: s.id, sort_order: i }));
     await updateServiceOrder(updates);
-    setServices(newServices);
+    mutateServices();
   }
 
   // Inline Edit Form (als JSX-Variable wie bei Team)

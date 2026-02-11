@@ -11,13 +11,6 @@ import { DroppableCell } from './DroppableCell';
 import { MoveToBarberModal } from './MoveToBarberModal';
 import { BlockedSlot } from './BlockedSlot';
 import {
-  getAppointments,
-  getSeries,
-  getTeam,
-  getCalendarServices,
-  getStaffTimeOffForDateRange,
-  getClosedDates,
-  getOpenSundays,
   deleteAppointment,
   deleteStaffTimeOff,
   createAppointment,
@@ -32,6 +25,16 @@ import {
   OpenSunday,
   formatPrice,
 } from '@/lib/supabase';
+import {
+  useTeam,
+  useCalendarServices,
+  useAppointments,
+  useSeries,
+  useStaffTimeOff,
+  useClosedDates,
+  useOpenSundays,
+  mutateAppointments,
+} from '@/hooks/swr/use-dashboard-data';
 import { sendRescheduleEmail } from '@/lib/email-client';
 import { useRealtimeAppointments } from '@/hooks/useRealtimeAppointments';
 import { SelectionToolbar, SelectionFilter } from './SelectionToolbar';
@@ -102,14 +105,43 @@ export function BarberWeekView({
   onExitSelectionMode,
   onSelectedAppointmentsChange,
 }: BarberWeekViewProps) {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [series, setSeries] = useState<Series[]>([]);
-  const [team, setTeam] = useState<TeamMember[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
-  const [staffTimeOff, setStaffTimeOff] = useState<StaffTimeOff[]>([]);
-  const [closedDates, setClosedDates] = useState<ClosedDate[]>([]);
-  const [openSundays, setOpenSundays] = useState<OpenSunday[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const startDate = formatDateLocal(monday);
+  const endDate = formatDateLocal(new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000));
+
+  // SWR Data Hooks
+  const { data: appointments = [], mutate: swrMutateAppointments } = useAppointments(startDate, endDate);
+  const { data: series = [], mutate: swrMutateSeries } = useSeries();
+  const { data: team = [] } = useTeam();
+  const { data: services = [] } = useCalendarServices();
+  const { data: staffTimeOff = [], mutate: swrMutateStaffTimeOff } = useStaffTimeOff(startDate, endDate);
+  const { data: closedDates = [] } = useClosedDates();
+  const { data: openSundays = [] } = useOpenSundays();
+
+  const isLoading = !team.length && !appointments.length;
+
+  // Optimistic update wrappers (mimic setState pattern for SWR)
+  const setAppointments = useCallback((updater: Appointment[] | ((prev: Appointment[]) => Appointment[])) => {
+    swrMutateAppointments(current => {
+      const prev = current || [];
+      return typeof updater === 'function' ? updater(prev) : updater;
+    }, { revalidate: false });
+  }, [swrMutateAppointments]);
+
+  const setSeries = useCallback((updater: Series[] | ((prev: Series[]) => Series[])) => {
+    swrMutateSeries(current => {
+      const prev = current || [];
+      return typeof updater === 'function' ? updater(prev) : updater;
+    }, { revalidate: false });
+  }, [swrMutateSeries]);
+
+  const setStaffTimeOff = useCallback((data: StaffTimeOff[]) => {
+    swrMutateStaffTimeOff(data, { revalidate: false });
+  }, [swrMutateStaffTimeOff]);
+
+  const refreshAppointments = useCallback(() => {
+    swrMutateAppointments();
+  }, [swrMutateAppointments]);
+
   const [selectedSlot, setSelectedSlot] = useState<SlotInfo | null>(null);
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(initialBarberId || null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -182,70 +214,20 @@ export function BarberWeekView({
     return () => clearInterval(interval);
   }, []);
 
-  // Load all data
+  // Auto-select first barber if none selected
   useEffect(() => {
-    async function loadData() {
-      setIsLoading(true);
-      const startDate = formatDateLocal(monday);
-      const endDate = formatDateLocal(new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000));
-
-      const [appointmentsData, seriesData, teamData, servicesData, staffTimeOffData, closedDatesData, openSundaysData] = await Promise.all([
-        getAppointments(startDate, endDate),
-        getSeries(),
-        getTeam(),
-        getCalendarServices(),
-        getStaffTimeOffForDateRange(startDate, endDate),
-        getClosedDates(),
-        getOpenSundays(),
-      ]);
-
-      setAppointments(appointmentsData);
-      setSeries(seriesData);
-      setTeam(teamData);
-      setServices(servicesData);
-      setStaffTimeOff(staffTimeOffData);
-      setOpenSundays(openSundaysData);
-      setClosedDates(closedDatesData);
-
-      // Auto-select first barber if none selected
-      if (!selectedBarberId && teamData.length > 0) {
-        setSelectedBarberId(teamData[0].id);
-      }
-
-      setIsLoading(false);
+    if (!selectedBarberId && team.length > 0) {
+      setSelectedBarberId(team[0].id);
     }
+  }, [selectedBarberId, team]);
 
-    loadData();
-  }, [monday, selectedBarberId]);
-
-  // Realtime-Callback: Termine neu laden ohne Loading-State
-  const refreshAppointments = useCallback(async () => {
-    const startDate = formatDateLocal(monday);
-    const endDate = formatDateLocal(new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000));
-    try {
-      const appointmentsData = await getAppointments(startDate, endDate);
-      setAppointments(appointmentsData);
-    } catch (error) {
-      console.error('Error refreshing appointments:', error);
-    }
-  }, [monday]);
-
-  // Realtime-Subscription für Termine
+  // Realtime-Subscription → triggert SWR revalidation
   useRealtimeAppointments({
-    startDate: formatDateLocal(monday),
-    endDate: formatDateLocal(new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000)),
-    onUpdate: refreshAppointments,
-    enabled: !isLoading,
+    startDate,
+    endDate,
+    onUpdate: mutateAppointments,
+    enabled: weekDays.length > 0,
   });
-
-  // Polling-Fallback: Alle 15 Sekunden Termine neu laden (falls Realtime ausfällt)
-  useEffect(() => {
-    if (isLoading) return;
-    const interval = setInterval(() => {
-      refreshAppointments();
-    }, 15000);
-    return () => clearInterval(interval);
-  }, [refreshAppointments, isLoading]);
 
   // Get currently selected barber
   const selectedBarber = useMemo(() => {
@@ -563,18 +545,12 @@ export function BarberWeekView({
   // Block (Teilzeit-Blockierung) löschen
   const handleDeleteBlock = async (blockId: string) => {
     await deleteStaffTimeOff(blockId);
-    const startDate = formatDateLocal(monday);
-    const endDate = formatDateLocal(new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000));
-    const updated = await getStaffTimeOffForDateRange(startDate, endDate);
-    setStaffTimeOff(updated);
+    swrMutateStaffTimeOff();
   };
 
   // Callback wenn ein Block erstellt wurde
   const handleBlockCreated = async () => {
-    const startDate = formatDateLocal(monday);
-    const endDate = formatDateLocal(new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000));
-    const updated = await getStaffTimeOffForDateRange(startDate, endDate);
-    setStaffTimeOff(updated);
+    swrMutateStaffTimeOff();
     setSelectedSlot(null);
   };
 

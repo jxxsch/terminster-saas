@@ -1,7 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { SWRConfig } from 'swr';
 import { AppSidebar } from '@/components/shared/AppSidebar';
+import { OfflineIndicator } from '@/components/shared/OfflineIndicator';
+import { localStorageCacheProvider } from '@/hooks/swr/cache-provider';
 import { NextIntlClientProvider } from 'next-intl';
 import messages from '@/messages/de.json';
 
@@ -23,21 +26,36 @@ export default function InternalLayout({
 
   return (
     <NextIntlClientProvider messages={messages} locale="de" timeZone="Europe/Berlin">
-      <div className="h-screen flex overflow-hidden bg-white">
-        {/* Gemeinsame Sidebar - auf Mobile versteckt (erscheint als Drawer via AppSidebar selbst) */}
-        <div className="hidden md:flex py-5 pl-5 pr-2">
-          <AppSidebar onLogout={handleLogout} />
-        </div>
-        {/* Mobile Sidebar - wird als fixed overlay gerendert */}
-        <div className="md:hidden">
-          <AppSidebar onLogout={handleLogout} />
-        </div>
+      <SWRConfig
+        value={{
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          provider: localStorageCacheProvider as any,
+          revalidateOnFocus: true,
+          revalidateOnReconnect: true,
+          onError: (error) => {
+            // Ignore network errors when offline
+            if (!navigator.onLine) return;
+            console.error('SWR Error:', error);
+          },
+        }}
+      >
+        <OfflineIndicator />
+        <div className="h-screen flex overflow-hidden bg-white">
+          {/* Gemeinsame Sidebar - auf Mobile versteckt (erscheint als Drawer via AppSidebar selbst) */}
+          <div className="hidden md:flex py-5 pl-5 pr-2">
+            <AppSidebar onLogout={handleLogout} />
+          </div>
+          {/* Mobile Sidebar - wird als fixed overlay gerendert */}
+          <div className="md:hidden">
+            <AppSidebar onLogout={handleLogout} />
+          </div>
 
-        {/* Main Content Area */}
-        <main className="flex-1 p-2 md:py-5 md:pr-5 md:pl-0 overflow-hidden">
-          {children}
-        </main>
-      </div>
+          {/* Main Content Area */}
+          <main className="flex-1 p-2 md:py-5 md:pr-5 md:pl-0 overflow-hidden">
+            {children}
+          </main>
+        </div>
+      </SWRConfig>
     </NextIntlClientProvider>
   );
 }

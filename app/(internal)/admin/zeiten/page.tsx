@@ -4,48 +4,53 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
-  getAllTimeSlots,
   createTimeSlot,
   updateTimeSlot,
   deleteTimeSlot,
   TimeSlot,
-  getOpeningHours,
   updateOpeningHours,
-  getOpenSundays,
   createOpenSunday,
   deleteOpenSunday,
   OpeningHours,
-  OpenSunday,
-  getClosedDates,
   createClosedDate,
   deleteClosedDate,
   ClosedDate,
-  getOpenHolidays,
   createOpenHoliday,
   deleteOpenHoliday,
-  OpenHoliday,
-  getSetting,
   updateSetting,
-  getAllTeam,
   updateTeamMember,
-  TeamMember,
   // Arbeitszeiten
   StaffWorkingHours,
-  FreeDayException,
-  getStaffWorkingHours,
   setStaffWorkingHours as upsertStaffWorkingHours,
   deleteStaffWorkingHours,
-  getFreeDayExceptions,
   createFreeDayException,
   deleteFreeDayException,
   // Verkaufsoffene Sonntage - Mitarbeiter
-  OpenSundayStaff,
-  getOpenSundayStaff,
   createOpenSundayStaff,
   updateOpenSundayStaff,
   deleteOpenSundayStaff,
-  deleteOpenSundayStaffByOpenSunday,
 } from '@/lib/supabase';
+import {
+  useAllTimeSlots,
+  useOpeningHours as useOpeningHoursHook,
+  useOpenSundays as useOpenSundaysHook,
+  useOpenSundayStaff as useOpenSundayStaffHook,
+  useClosedDates as useClosedDatesHook,
+  useOpenHolidays as useOpenHolidaysHook,
+  useAllTeam,
+  useStaffWorkingHours as useStaffWorkingHoursHook,
+  useFreeDayExceptions as useFreeDayExceptionsHook,
+  useAllSettings,
+  mutateTimeSlots,
+  mutateOpeningHours,
+  mutateOpenSundays,
+  mutateClosedDates,
+  mutateOpenHolidays,
+  mutateTeam,
+  mutateStaffWorkingHours,
+  mutateFreeDayExceptions,
+  mutateSettings,
+} from '@/hooks/swr/use-dashboard-data';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
 import { SundayPicker } from '@/components/admin/SundayPicker';
 import { DatePicker } from '@/components/admin/DatePicker';
@@ -74,20 +79,36 @@ export default function ZeitenPage() {
   const tabParam = searchParams.get('tab') as TabId | null;
   const [activeTab, setActiveTab] = useState<TabId>(tabParam && TABS.some(t => t.id === tabParam) ? tabParam : 'slots');
 
+  // SWR data hooks
+  const { data: timeSlots = [], isLoading: loadingSlots } = useAllTimeSlots();
+  const { data: hours = [], isLoading: loadingHours } = useOpeningHoursHook();
+  const { data: openSundays = [] } = useOpenSundaysHook();
+  const { data: openSundayStaff = [] } = useOpenSundayStaffHook();
+  const { data: closedDates = [] } = useClosedDatesHook();
+  const { data: openHolidays = [] } = useOpenHolidaysHook();
+  const { data: allTeam = [], isLoading: loadingTeam } = useAllTeam();
+  const { data: staffWorkingHours = [] } = useStaffWorkingHoursHook();
+  const { data: freeDayExceptions = [] } = useFreeDayExceptionsHook();
+  const { data: settings, isLoading: loadingSettings } = useAllSettings();
+
+  // Derive active team from allTeam
+  const team = allTeam.filter(m => m.active);
+
+  // Derive bundesland from settings
+  const bundesland = (settings?.bundesland as Bundesland) || 'NW';
+
+  // Determine loading state from SWR hooks
+  const isLoading = loadingSlots || loadingHours || loadingTeam || loadingSettings;
+
   // Zeitslots State
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [isCreatingSlot, setIsCreatingSlot] = useState(false);
   const [deleteSlotTarget, setDeleteSlotTarget] = useState<TimeSlot | null>(null);
   const [newTime, setNewTime] = useState('10:00');
 
   // Öffnungszeiten State
-  const [hours, setHours] = useState<OpeningHours[]>([]);
   const [savingHour, setSavingHour] = useState<number | null>(null);
 
   // Sondertage State
-  const [openSundays, setOpenSundays] = useState<OpenSunday[]>([]);
-  const [openSundayStaff, setOpenSundayStaff] = useState<OpenSundayStaff[]>([]);
-  const [closedDates, setClosedDates] = useState<ClosedDate[]>([]);
   const [newSundayDate, setNewSundayDate] = useState('');
   const [newSundayOpenTime, setNewSundayOpenTime] = useState('10:00');
   const [newSundayCloseTime, setNewSundayCloseTime] = useState('14:00');
@@ -102,18 +123,13 @@ export default function ZeitenPage() {
   const [deleteClosedTarget, setDeleteClosedTarget] = useState<ClosedDate | null>(null);
 
   // Bundesland & Feiertage State
-  const [bundesland, setBundesland] = useState<Bundesland>('NW');
-  const [openHolidays, setOpenHolidays] = useState<OpenHoliday[]>([]);
   const [savingBundesland, setSavingBundesland] = useState(false);
 
   // Team & Freie Tage State
-  const [team, setTeam] = useState<TeamMember[]>([]);
   const [savingFreeDay, setSavingFreeDay] = useState<string | null>(null);
 
   // Arbeitszeiten State
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
-  const [staffWorkingHours, setStaffWorkingHours] = useState<StaffWorkingHours[]>([]);
-  const [freeDayExceptions, setFreeDayExceptions] = useState<FreeDayException[]>([]);
   const [editingWorkDay, setEditingWorkDay] = useState<number | null>(null);
   const [workStartTime, setWorkStartTime] = useState('10:00');
   const [workEndTime, setWorkEndTime] = useState('19:00');
@@ -165,41 +181,12 @@ export default function ZeitenPage() {
     }
   }, [showReplacementDatePicker]);
 
-  const [isLoading, setIsLoading] = useState(true);
-
+  // Ersten Mitarbeiter auswählen falls vorhanden
   useEffect(() => {
-    async function loadData() {
-      const [slotsData, hoursData, sundaysData, closedData, openHolidaysData, bundeslandData, teamData, workHoursData, exceptionsData, sundayStaffData] = await Promise.all([
-        getAllTimeSlots(),
-        getOpeningHours(),
-        getOpenSundays(),
-        getClosedDates(),
-        getOpenHolidays(),
-        getSetting<Bundesland>('bundesland'),
-        getAllTeam(),
-        getStaffWorkingHours(),
-        getFreeDayExceptions(),
-        getOpenSundayStaff(),
-      ]);
-      setTimeSlots(slotsData);
-      setHours(hoursData);
-      setOpenSundays(sundaysData);
-      setOpenSundayStaff(sundayStaffData);
-      setClosedDates(closedData);
-      setOpenHolidays(openHolidaysData);
-      if (bundeslandData) setBundesland(bundeslandData);
-      const activeTeam = teamData.filter(m => m.active);
-      setTeam(activeTeam);
-      setStaffWorkingHours(workHoursData);
-      setFreeDayExceptions(exceptionsData);
-      // Ersten Mitarbeiter auswählen falls vorhanden
-      if (activeTeam.length > 0 && !selectedStaffId) {
-        setSelectedStaffId(activeTeam[0].id);
-      }
-      setIsLoading(false);
+    if (team.length > 0 && !selectedStaffId) {
+      setSelectedStaffId(team[0].id);
     }
-    loadData();
-  }, []);
+  }, [team, selectedStaffId]);
 
   const handleTabChange = (tab: TabId) => {
     setActiveTab(tab);
@@ -219,8 +206,7 @@ export default function ZeitenPage() {
       active: true,
     });
     if (newSlot) {
-      const updated = [...timeSlots, newSlot].sort((a, b) => a.time.localeCompare(b.time));
-      setTimeSlots(updated);
+      mutateTimeSlots();
       setIsCreatingSlot(false);
       setNewTime('10:00');
     }
@@ -229,7 +215,7 @@ export default function ZeitenPage() {
   async function handleToggleSlotActive(slot: TimeSlot) {
     const updated = await updateTimeSlot(slot.id, { active: !slot.active });
     if (updated) {
-      setTimeSlots(timeSlots.map(s => s.id === updated.id ? updated : s));
+      mutateTimeSlots();
     }
   }
 
@@ -237,7 +223,7 @@ export default function ZeitenPage() {
     if (!deleteSlotTarget) return;
     const success = await deleteTimeSlot(deleteSlotTarget.id);
     if (success) {
-      setTimeSlots(timeSlots.filter(s => s.id !== deleteSlotTarget.id));
+      mutateTimeSlots();
     }
     setDeleteSlotTarget(null);
   }
@@ -247,7 +233,7 @@ export default function ZeitenPage() {
     setSavingHour(dayOfWeek);
     const updated = await updateOpeningHours(dayOfWeek, updates);
     if (updated) {
-      setHours(hours.map(h => h.day_of_week === dayOfWeek ? updated : h));
+      mutateOpeningHours();
     }
     setSavingHour(null);
   }
@@ -280,11 +266,9 @@ export default function ZeitenPage() {
       const staffPromises = newSundayStaff.map(s =>
         createOpenSundayStaff(created.id, s.staffId, s.startTime, s.endTime)
       );
-      const createdStaff = await Promise.all(staffPromises);
-      const validStaff = createdStaff.filter(s => s !== null) as OpenSundayStaff[];
+      await Promise.all(staffPromises);
 
-      setOpenSundays([...openSundays, created].sort((a, b) => a.date.localeCompare(b.date)));
-      setOpenSundayStaff([...openSundayStaff, ...validStaff]);
+      mutateOpenSundays();
       setNewSundayDate('');
       setNewSundayOpenTime('10:00');
       setNewSundayCloseTime('14:00');
@@ -296,9 +280,7 @@ export default function ZeitenPage() {
   async function handleDeleteOpenSunday(id: number) {
     const success = await deleteOpenSunday(id);
     if (success) {
-      setOpenSundays(openSundays.filter(s => s.id !== id));
-      // Mitarbeiter-Zuweisungen werden durch CASCADE automatisch gelöscht
-      setOpenSundayStaff(openSundayStaff.filter(s => s.open_sunday_id !== id));
+      mutateOpenSundays();
     }
   }
 
@@ -419,8 +401,7 @@ export default function ZeitenPage() {
     }
 
     // Daten neu laden
-    const updatedStaff = await getOpenSundayStaff();
-    setOpenSundayStaff(updatedStaff);
+    mutateOpenSundays();
 
     setSavingSundayStaff(false);
     setEditingSundayId(null);
@@ -432,7 +413,7 @@ export default function ZeitenPage() {
     if (!newClosedDate) return;
     const created = await createClosedDate(newClosedDate, newClosedReason || undefined);
     if (created) {
-      setClosedDates([...closedDates, created].sort((a, b) => a.date.localeCompare(b.date)));
+      mutateClosedDates();
       setNewClosedDate('');
       setNewClosedReason('');
     }
@@ -442,30 +423,30 @@ export default function ZeitenPage() {
     if (!deleteClosedTarget) return;
     const success = await deleteClosedDate(deleteClosedTarget.id);
     if (success) {
-      setClosedDates(closedDates.filter(d => d.id !== deleteClosedTarget.id));
+      mutateClosedDates();
     }
     setDeleteClosedTarget(null);
   }
 
   // === Bundesland & Feiertage Handlers ===
   async function handleBundeslandChange(newBundesland: Bundesland) {
-    setBundesland(newBundesland);
     setSavingBundesland(true);
     await updateSetting('bundesland', newBundesland);
+    mutateSettings();
     setSavingBundesland(false);
   }
 
   async function handleAddOpenHoliday(date: string, holidayName: string) {
     const created = await createOpenHoliday(date, holidayName);
     if (created) {
-      setOpenHolidays([...openHolidays, created].sort((a, b) => a.date.localeCompare(b.date)));
+      mutateOpenHolidays();
     }
   }
 
   async function handleDeleteOpenHoliday(id: number) {
     const success = await deleteOpenHoliday(id);
     if (success) {
-      setOpenHolidays(openHolidays.filter(h => h.id !== id));
+      mutateOpenHolidays();
     }
   }
 
@@ -474,7 +455,7 @@ export default function ZeitenPage() {
     setSavingFreeDay(memberId);
     const updated = await updateTeamMember(memberId, { free_day: freeDay });
     if (updated) {
-      setTeam(team.map(m => m.id === memberId ? updated : m));
+      mutateTeam();
     }
     setSavingFreeDay(null);
   }
@@ -497,15 +478,7 @@ export default function ZeitenPage() {
     setSavingWorkHours(dayOfWeek);
     const result = await upsertStaffWorkingHours(selectedStaffId, dayOfWeek, workStartTime, workEndTime);
     if (result) {
-      // Update oder hinzufügen
-      const exists = staffWorkingHours.find(wh => wh.staff_id === selectedStaffId && wh.day_of_week === dayOfWeek);
-      if (exists) {
-        setStaffWorkingHours(staffWorkingHours.map(wh =>
-          wh.staff_id === selectedStaffId && wh.day_of_week === dayOfWeek ? result : wh
-        ));
-      } else {
-        setStaffWorkingHours([...staffWorkingHours, result]);
-      }
+      mutateStaffWorkingHours();
     }
     setEditingWorkDay(null);
     setSavingWorkHours(null);
@@ -516,9 +489,7 @@ export default function ZeitenPage() {
     setSavingWorkHours(dayOfWeek);
     const success = await deleteStaffWorkingHours(selectedStaffId, dayOfWeek);
     if (success) {
-      setStaffWorkingHours(staffWorkingHours.filter(wh =>
-        !(wh.staff_id === selectedStaffId && wh.day_of_week === dayOfWeek)
-      ));
+      mutateStaffWorkingHours();
     }
     setSavingWorkHours(null);
   }
@@ -552,7 +523,7 @@ export default function ZeitenPage() {
       newExceptionReplacementDate || undefined
     );
     if (result) {
-      setFreeDayExceptions([...freeDayExceptions, result].sort((a, b) => a.date.localeCompare(b.date)));
+      mutateFreeDayExceptions();
       setNewExceptionDate('');
       setNewExceptionReplacementDate('');
       setNewExceptionStartTime('10:00');
@@ -564,7 +535,7 @@ export default function ZeitenPage() {
   async function handleDeleteFreeDayException(id: string) {
     const success = await deleteFreeDayException(id);
     if (success) {
-      setFreeDayExceptions(freeDayExceptions.filter(ex => ex.id !== id));
+      mutateFreeDayExceptions();
     }
   }
 

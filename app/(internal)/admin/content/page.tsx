@@ -1,23 +1,28 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
-  getAllGalleryImages,
   createGalleryImage,
   updateGalleryImage,
   deleteGalleryImage,
   updateGalleryOrder,
   uploadImage,
   GalleryImage,
-  getAllSettings,
   updateSetting,
-  getAllReviews,
   createReview,
   updateReview,
   deleteReview,
   Review,
 } from '@/lib/supabase';
+import {
+  useAllGalleryImages,
+  useAllSettings,
+  useAllReviews,
+  mutateGallery,
+  mutateSettings,
+  mutateReviews,
+} from '@/hooks/swr/use-dashboard-data';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
 import { DatePicker } from '@/components/admin/DatePicker';
 
@@ -154,54 +159,37 @@ export default function MedienPage() {
   const router = useRouter();
   const tabParam = searchParams.get('tab') as TabId | null;
   const [activeTab, setActiveTab] = useState<TabId>(tabParam && TABS.some(t => t.id === tabParam) ? tabParam : 'content');
-  const [isLoading, setIsLoading] = useState(true);
+  // SWR Data Hooks
+  const { data: images = [] } = useAllGalleryImages();
+  const { data: settingsData } = useAllSettings();
+  const { data: reviews = [] } = useAllReviews();
+
+  const isLoading = !settingsData;
 
   // Gallery State
-  const [images, setImages] = useState<GalleryImage[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<GalleryImage | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('all');
 
-  // Content State
+  // Content State - local form state, initialized from SWR
   const [settings, setSettings] = useState<SettingsState>(defaultSettings);
+  const [settingsInitialized, setSettingsInitialized] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [savedFields, setSavedFields] = useState<Set<string>>(new Set());
   const [activeSection, setActiveSection] = useState<string>('hero');
 
-  // Reviews State
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [editingReview, setEditingReview] = useState<Review | null>(null);
-  const [isAddingReview, setIsAddingReview] = useState(false);
-  const [reviewFormData, setReviewFormData] = useState({
-    author_name: '',
-    rating: 5,
-    text: '',
-    date: '',
-    active: true,
-    sort_order: 0,
-  });
   const [googleRating, setGoogleRating] = useState({ rating: 4.9, reviewCount: 100 });
 
-  useEffect(() => {
-    async function loadData() {
-      const [imagesData, settingsData, reviewsData] = await Promise.all([
-        getAllGalleryImages(),
-        getAllSettings(),
-        getAllReviews(),
-      ]);
-      setImages(imagesData);
-      setReviews(reviewsData);
-
-      // Load Google Rating
+  // Initialize local settings from SWR data
+  React.useEffect(() => {
+    if (settingsData && !settingsInitialized) {
       if (settingsData.google_rating) {
         setGoogleRating(settingsData.google_rating as { rating: number; reviewCount: number });
       }
-
       const newSettings = { ...defaultSettings };
       Object.keys(defaultSettings).forEach(key => {
         if (settingsData[key]) {
-          // Deep-merge für hero_background um Default-Werte zu erhalten
           if (key === 'hero_background' && typeof settingsData[key] === 'object') {
             (newSettings as Record<string, unknown>)[key] = {
               ...defaultSettings.hero_background,
@@ -213,10 +201,21 @@ export default function MedienPage() {
         }
       });
       setSettings(newSettings as SettingsState);
-      setIsLoading(false);
+      setSettingsInitialized(true);
     }
-    loadData();
-  }, []);
+  }, [settingsData, settingsInitialized]);
+
+  // Reviews State
+  const [editingReview, setEditingReview] = useState<Review | null>(null);
+  const [isAddingReview, setIsAddingReview] = useState(false);
+  const [reviewFormData, setReviewFormData] = useState({
+    author_name: '',
+    rating: 5,
+    text: '',
+    date: '',
+    active: true,
+    sort_order: 0,
+  });
 
   const handleTabChange = (tab: TabId) => {
     setActiveTab(tab);
@@ -227,7 +226,7 @@ export default function MedienPage() {
   async function handleDelete(id: string) {
     const success = await deleteGalleryImage(id);
     if (success) {
-      setImages(prev => prev.filter(img => img.id !== id));
+      mutateGallery();
     }
     setDeleteConfirm(null);
   }
@@ -235,7 +234,7 @@ export default function MedienPage() {
   async function handleToggleActive(image: GalleryImage) {
     const updated = await updateGalleryImage(image.id, { active: !image.active });
     if (updated) {
-      setImages(prev => prev.map(img => img.id === image.id ? updated : img));
+      mutateGallery();
     }
   }
 
@@ -246,7 +245,7 @@ export default function MedienPage() {
     const updates = newImages.map((img, i) => ({ id: img.id, sort_order: i }));
     const success = await updateGalleryOrder(updates);
     if (success) {
-      setImages(newImages.map((img, i) => ({ ...img, sort_order: i })));
+      mutateGallery();
     }
   }
 
@@ -257,7 +256,7 @@ export default function MedienPage() {
     const updates = newImages.map((img, i) => ({ id: img.id, sort_order: i }));
     const success = await updateGalleryOrder(updates);
     if (success) {
-      setImages(newImages.map((img, i) => ({ ...img, sort_order: i })));
+      mutateGallery();
     }
   }
 
@@ -267,6 +266,7 @@ export default function MedienPage() {
     const success = await updateSetting(key, settings[key]);
     setSaving(null);
     if (success) {
+      mutateSettings();
       setSavedFields(prev => new Set(prev).add(key));
       setTimeout(() => {
         setSavedFields(prev => {
@@ -309,17 +309,12 @@ export default function MedienPage() {
     e.preventDefault();
 
     if (editingReview) {
-      const updated = await updateReview(editingReview.id, reviewFormData);
-      if (updated) {
-        setReviews(reviews.map(r => r.id === updated.id ? updated : r));
-      }
+      await updateReview(editingReview.id, reviewFormData);
     } else {
-      const created = await createReview(reviewFormData);
-      if (created) {
-        setReviews([...reviews, created]);
-      }
+      await createReview(reviewFormData);
     }
 
+    mutateReviews();
     resetReviewForm();
   }
 
@@ -327,14 +322,14 @@ export default function MedienPage() {
     if (!confirm('Rezension wirklich löschen?')) return;
     const success = await deleteReview(id);
     if (success) {
-      setReviews(reviews.filter(r => r.id !== id));
+      mutateReviews();
     }
   }
 
   async function toggleReviewActive(review: Review) {
     const updated = await updateReview(review.id, { active: !review.active });
     if (updated) {
-      setReviews(reviews.map(r => r.id === updated.id ? updated : r));
+      mutateReviews();
     }
   }
 
@@ -343,6 +338,7 @@ export default function MedienPage() {
     const success = await updateSetting('google_rating', googleRating);
     setSaving(null);
     if (success) {
+      mutateSettings();
       setSavedFields(prev => new Set(prev).add('google_rating'));
       setTimeout(() => {
         setSavedFields(prev => {
@@ -590,20 +586,15 @@ export default function MedienPage() {
                 }}
                 onSave={async (data) => {
                   if (editingImage) {
-                    const updated = await updateGalleryImage(editingImage.id, data);
-                    if (updated) {
-                      setImages(prev => prev.map(img => img.id === editingImage.id ? updated : img));
-                    }
+                    await updateGalleryImage(editingImage.id, data);
                   } else {
-                    const created = await createGalleryImage({
+                    await createGalleryImage({
                       ...data,
                       sort_order: images.length,
                       active: true,
                     });
-                    if (created) {
-                      setImages(prev => [...prev, created]);
-                    }
                   }
+                  mutateGallery();
                   setShowAddModal(false);
                   setEditingImage(null);
                 }}

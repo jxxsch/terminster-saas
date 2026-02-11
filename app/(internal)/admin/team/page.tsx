@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  getAllTeam,
   createTeamMember,
   updateTeamMember,
   deleteTeamMember,
@@ -11,6 +10,7 @@ import {
   getUsedVacationDays,
   TeamMember,
 } from '@/lib/supabase';
+import { useAllTeam, mutateTeam } from '@/hooks/swr/use-dashboard-data';
 import { ConfirmModal } from '@/components/admin/ConfirmModal';
 import { DatePicker } from '@/components/admin/DatePicker';
 
@@ -46,14 +46,13 @@ function getDaysUntilBirthday(birthdayStr: string): { days: number; label: strin
 }
 
 export default function TeamPage() {
-  const [team, setTeam] = useState<TeamMember[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: team = [], isLoading } = useAllTeam();
+  const [usedVacationDays, setUsedVacationDays] = useState<Record<string, number>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TeamMember | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
-  const [usedVacationDays, setUsedVacationDays] = useState<Record<string, number>>({});
 
   // Which format is currently being edited
   const [activeFormat, setActiveFormat] = useState<ImageFormat>('square');
@@ -110,18 +109,13 @@ export default function TeamPage() {
 
   useEffect(() => {
     let mounted = true;
-    async function loadData() {
-      const [teamData, vacationData] = await Promise.all([
-        getAllTeam(),
-        getUsedVacationDays(new Date().getFullYear())
-      ]);
+    async function loadVacationDays() {
+      const vacationData = await getUsedVacationDays(new Date().getFullYear());
       if (mounted) {
-        setTeam(teamData);
         setUsedVacationDays(vacationData);
-        setIsLoading(false);
       }
     }
-    loadData();
+    loadVacationDays();
     return () => { mounted = false; };
   }, []);
 
@@ -449,7 +443,7 @@ export default function TeamPage() {
         free_day: formData.free_day,
       });
       if (newMember) {
-        setTeam([...team, newMember]);
+        mutateTeam();
         closeForm();
       }
     } else if (editingId) {
@@ -470,7 +464,7 @@ export default function TeamPage() {
         free_day: formData.free_day,
       });
       if (updated) {
-        setTeam(team.map(m => m.id === updated.id ? updated : m));
+        mutateTeam();
         closeForm();
       }
     }
@@ -480,7 +474,7 @@ export default function TeamPage() {
     if (!deleteTarget) return;
     const success = await deleteTeamMember(deleteTarget.id);
     if (success) {
-      setTeam(team.filter(m => m.id !== deleteTarget.id));
+      mutateTeam();
     }
     setDeleteTarget(null);
   }
@@ -488,7 +482,7 @@ export default function TeamPage() {
   async function handleToggleActive(member: TeamMember) {
     const updated = await updateTeamMember(member.id, { active: !member.active });
     if (updated) {
-      setTeam(team.map(m => m.id === updated.id ? updated : m));
+      mutateTeam();
     }
   }
 
@@ -498,7 +492,7 @@ export default function TeamPage() {
     [newTeam[index - 1], newTeam[index]] = [newTeam[index], newTeam[index - 1]];
     const updates = newTeam.map((m, i) => ({ id: m.id, sort_order: i }));
     await updateTeamOrder(updates);
-    setTeam(newTeam);
+    mutateTeam();
   }
 
   async function handleMoveDown(index: number) {
@@ -507,7 +501,7 @@ export default function TeamPage() {
     [newTeam[index], newTeam[index + 1]] = [newTeam[index + 1], newTeam[index]];
     const updates = newTeam.map((m, i) => ({ id: m.id, sort_order: i }));
     await updateTeamOrder(updates);
-    setTeam(newTeam);
+    mutateTeam();
   }
 
   // Image Preview Component - kompakt
