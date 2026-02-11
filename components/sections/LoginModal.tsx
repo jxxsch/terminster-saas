@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { resetPassword, setNewPassword, supabase } from '@/lib/supabase';
 import { useTranslations } from 'next-intl';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { openDatenschutz, openNewsletter } from '@/components/LegalModal';
 
 export interface PasswordSetupData {
   email: string;
@@ -44,6 +45,8 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
   const [successMessage, setSuccessMessage] = useState('');
   const [mounted, setMounted] = useState(false);
   const [closeHover, setCloseHover] = useState(false);
+  const [privacyConsent, setPrivacyConsent] = useState(false);
+  const [newsletterConsent, setNewsletterConsent] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -107,6 +110,10 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
       setError(t('errors.passwordTooShort'));
       return;
     }
+    if (!privacyConsent) {
+      setError(t('errors.acceptPrivacy'));
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -117,6 +124,8 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
       lastName: lastName.trim(),
       phone: phone.trim(),
       birthDate,
+      privacyConsent: true,
+      newsletterConsent,
     });
 
     if (result.error) {
@@ -765,6 +774,53 @@ export function LoginModal({ onClose, onSuccess, initialTab = 'login', passwordS
                   />
                 </div>
               </div>
+
+              {/* Consent Checkboxen */}
+              {!isPasswordSetupMode && (
+                <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={privacyConsent}
+                      onChange={(e) => setPrivacyConsent(e.target.checked)}
+                      style={{ marginTop: '0.2rem', accentColor: 'var(--color-gold)' }}
+                    />
+                    <span style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: '1.4' }}>
+                      {t.rich('privacyConsent', {
+                        link: (chunks) => (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.preventDefault(); openDatenschutz(); }}
+                            style={{ color: 'var(--color-gold)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit' }}
+                          >
+                            {chunks}
+                          </button>
+                        ),
+                      })}
+                    </span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={newsletterConsent}
+                      onChange={(e) => setNewsletterConsent(e.target.checked)}
+                      style={{ marginTop: '0.2rem', accentColor: 'var(--color-gold)' }}
+                    />
+                    <span style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: '1.4' }}>
+                      {t('newsletterConsent')}{' '}
+                      <span style={{ color: '#94a3b8' }}>{t('newsletterOptional')}</span>
+                      {' · '}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); openNewsletter(); }}
+                        style={{ color: 'var(--color-gold)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit' }}
+                      >
+                        {t('newsletterInfo')}
+                      </button>
+                    </span>
+                  </label>
+                </div>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
                 <button

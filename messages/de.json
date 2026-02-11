@@ -372,7 +372,15 @@
     "registerSuccess": "Registrierung erfolgreich! Du kannst dich jetzt anmelden.",
     "resetLinkSent": "Link zum Zurücksetzen wurde gesendet. Prüfe dein E-Mail-Postfach.",
     "resetDescription": "Gib deine E-Mail-Adresse ein und wir senden dir einen Link zum Zurücksetzen.",
+    "goToLogin": "Zur Anmeldung",
+    "privacyConsent": "Ich habe die <link>Datenschutzerklärung</link> gelesen und stimme der Verarbeitung meiner Daten zu.",
+    "newsletterConsent": "Newsletter erhalten",
+    "newsletterInfo": "Was ist der Newsletter?",
+    "newsletterModalTitle": "Newsletter",
+    "newsletterModalText": "Mit dem Newsletter informieren wir dich per E-Mail über aktuelle Angebote, Aktionen und verkaufsoffene Sonntage. Du kannst dich jederzeit abmelden. Deine E-Mail-Adresse wird ausschließlich für den Newsletter-Versand verwendet und nicht an Dritte weitergegeben.",
+    "newsletterOptional": "(optional)",
     "errors": {
+      "acceptPrivacy": "Bitte stimme der Datenschutzerklärung zu",
       "invalidCredentials": "E-Mail oder Passwort falsch",
       "emailNotConfirmed": "E-Mail noch nicht bestätigt",
       "userExists": "E-Mail bereits registriert",
@@ -385,8 +393,7 @@
       "enterBirthDate": "Bitte Geburtsdatum eingeben",
       "passwordMismatch": "Passwörter stimmen nicht überein",
       "passwordSetupFailed": "Passwort konnte nicht gesetzt werden"
-    },
-    "goToLogin": "Zur Anmeldung"
+    }
   },
   "customerPortal": {
     "title": "Mein Bereich",

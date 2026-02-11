@@ -1201,6 +1201,8 @@ export interface SignUpData {
   lastName: string;
   phone: string;
   birthDate: string; // Format: YYYY-MM-DD
+  privacyConsent?: boolean;
+  newsletterConsent?: boolean;
 }
 
 export async function signUp(data: SignUpData): Promise<{ user: Customer | null; error: string | null }> {
@@ -1232,6 +1234,19 @@ export async function signUp(data: SignUpData): Promise<{ user: Customer | null;
   await new Promise(resolve => setTimeout(resolve, 500));
 
   const customer = await getCustomerByAuthId(authData.user.id);
+
+  // Consent-Felder in customers-Tabelle speichern
+  if (customer && (data.privacyConsent || data.newsletterConsent)) {
+    const now = new Date().toISOString();
+    await supabase
+      .from('customers')
+      .update({
+        ...(data.privacyConsent ? { privacy_consent: true, privacy_consent_date: now } : {}),
+        ...(data.newsletterConsent ? { newsletter_consent: true, newsletter_consent_date: now } : {}),
+      })
+      .eq('id', customer.id);
+  }
+
   return { user: customer, error: null };
 }
 

@@ -372,7 +372,15 @@
     "registerSuccess": "Registration successful! You can now log in.",
     "resetLinkSent": "Reset link has been sent. Check your email inbox.",
     "resetDescription": "Enter your email address and we'll send you a reset link.",
+    "goToLogin": "Go to login",
+    "privacyConsent": "I have read the <link>Privacy Policy</link> and agree to the processing of my data.",
+    "newsletterConsent": "Receive newsletter",
+    "newsletterInfo": "What is the newsletter?",
+    "newsletterModalTitle": "Newsletter",
+    "newsletterModalText": "With our newsletter we inform you by email about current offers, promotions and special opening days. You can unsubscribe at any time. Your email address will only be used for newsletter delivery and will not be shared with third parties.",
+    "newsletterOptional": "(optional)",
     "errors": {
+      "acceptPrivacy": "Please accept the privacy policy",
       "invalidCredentials": "Email or password incorrect",
       "emailNotConfirmed": "Email not yet confirmed",
       "userExists": "Email already registered",
@@ -385,8 +393,7 @@
       "enterBirthDate": "Please enter date of birth",
       "passwordMismatch": "Passwords do not match",
       "passwordSetupFailed": "Could not set password"
-    },
-    "goToLogin": "Go to login"
+    }
   },
   "customerPortal": {
     "title": "My Area",

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 
-type LegalType = 'impressum' | 'datenschutz' | null;
+type LegalType = 'impressum' | 'datenschutz' | 'newsletter' | null;
 
 export function LegalModal() {
   const [type, setType] = useState<LegalType>(null);
@@ -52,7 +52,7 @@ export function LegalModal() {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
           <span className="text-xl font-light text-black tracking-wide">
-            {type === 'impressum' ? <ImpressumTitle /> : <DatenschutzTitle />}
+            {type === 'impressum' ? <ImpressumTitle /> : type === 'datenschutz' ? <DatenschutzTitle /> : <NewsletterTitle />}
           </span>
           <button
             onClick={() => setType(null)}
@@ -67,25 +67,27 @@ export function LegalModal() {
 
         {/* Scrollable Content */}
         <div className="overflow-y-auto px-6 py-6 flex-1">
-          {type === 'impressum' ? <ImpressumContent /> : <DatenschutzContent />}
+          {type === 'impressum' ? <ImpressumContent /> : type === 'datenschutz' ? <DatenschutzContent /> : <NewsletterContent />}
         </div>
 
-        {/* Footer with toggle */}
-        <div className="flex items-center justify-center gap-4 px-6 py-3 border-t border-gray-100 shrink-0">
-          <button
-            onClick={() => setType('impressum')}
-            className={`text-xs transition-colors ${type === 'impressum' ? 'text-gold font-medium' : 'text-gray-400 hover:text-gray-600'}`}
-          >
-            Impressum
-          </button>
-          <span className="text-gray-300">|</span>
-          <button
-            onClick={() => setType('datenschutz')}
-            className={`text-xs transition-colors ${type === 'datenschutz' ? 'text-gold font-medium' : 'text-gray-400 hover:text-gray-600'}`}
-          >
-            Datenschutz
-          </button>
-        </div>
+        {/* Footer with toggle (not for newsletter) */}
+        {type !== 'newsletter' && (
+          <div className="flex items-center justify-center gap-4 px-6 py-3 border-t border-gray-100 shrink-0">
+            <button
+              onClick={() => setType('impressum')}
+              className={`text-xs transition-colors ${type === 'impressum' ? 'text-gold font-medium' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              Impressum
+            </button>
+            <span className="text-gray-300">|</span>
+            <button
+              onClick={() => setType('datenschutz')}
+              className={`text-xs transition-colors ${type === 'datenschutz' ? 'text-gold font-medium' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              Datenschutz
+            </button>
+          </div>
+        )}
       </div>
     </div>,
     document.body
@@ -267,6 +269,36 @@ function DatenschutzContent() {
   );
 }
 
+// --- Newsletter Content ---
+function NewsletterTitle() {
+  const t = useTranslations('auth');
+  return <>{t('newsletterModalTitle')}</>;
+}
+
+function NewsletterContent() {
+  const t = useTranslations('auth');
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 text-gold">
+        <svg className="w-8 h-8 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+        </svg>
+        <span className="text-lg font-medium text-black">Beban Barbershop Newsletter</span>
+      </div>
+      <p className="text-gray-600 text-sm leading-relaxed">{t('newsletterModalText')}</p>
+      <div className="bg-stone-50 rounded-lg p-4 text-sm text-gray-500 space-y-2">
+        <p className="font-medium text-gray-700">Du erhältst Infos zu:</p>
+        <ul className="list-disc list-inside space-y-1">
+          <li>Sonderangebote & Rabattaktionen</li>
+          <li>Verkaufsoffene Sonntage</li>
+          <li>Neue Produkte & Services</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 // --- Helper-Funktionen (exportiert wie openCookieSettings) ---
 export function openImpressum(): void {
   window.dispatchEvent(new CustomEvent('open-legal-modal', { detail: 'impressum' }));
@@ -274,4 +306,8 @@ export function openImpressum(): void {
 
 export function openDatenschutz(): void {
   window.dispatchEvent(new CustomEvent('open-legal-modal', { detail: 'datenschutz' }));
+}
+
+export function openNewsletter(): void {
+  window.dispatchEvent(new CustomEvent('open-legal-modal', { detail: 'newsletter' }));
 }

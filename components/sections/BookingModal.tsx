@@ -41,6 +41,7 @@ import { CustomerPortal } from '@/components/sections/CustomerPortal';
 import { Bundesland, isHoliday, getHolidayName } from '@/lib/holidays';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { useRealtimeAppointments } from '@/hooks/useRealtimeAppointments';
+import { openDatenschutz, openNewsletter } from '@/components/LegalModal';
 
 // Day/Month names are now passed via i18n - see getDayNames() and getMonthNames() below
 const DAY_KEYS_SHORT = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
@@ -758,6 +759,8 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
   const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [authPrivacyConsent, setAuthPrivacyConsent] = useState(false);
+  const [authNewsletterConsent, setAuthNewsletterConsent] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -1137,6 +1140,10 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
       setAuthError(tAuth('passwordTooShort'));
       return;
     }
+    if (!authPrivacyConsent) {
+      setAuthError(tAuth('errors.acceptPrivacy'));
+      return;
+    }
 
     setAuthSubmitting(true);
 
@@ -1148,6 +1155,8 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
         lastName: authLastName,
         phone: authPhone,
         birthDate: authBirthDate,
+        privacyConsent: true,
+        newsletterConsent: authNewsletterConsent,
       });
 
       if (result.error) {
@@ -2015,6 +2024,50 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
                               <div style={{ ...styles.inputGridTwo, marginBottom: '0.5rem' }}>
                                 <input type="email" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} placeholder={tAuth('email')} autoComplete="email" style={styles.input} required />
                                 <input type="password" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} placeholder={tAuth('passwordMinLength')} autoComplete="new-password" style={styles.input} required minLength={6} />
+                              </div>
+                              {/* Consent Checkboxen */}
+                              <div style={{ marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={authPrivacyConsent}
+                                    onChange={(e) => setAuthPrivacyConsent(e.target.checked)}
+                                    style={{ marginTop: '0.2rem', accentColor: 'var(--color-gold)' }}
+                                  />
+                                  <span style={{ fontSize: '0.7rem', color: '#64748b', lineHeight: '1.4' }}>
+                                    {tAuth.rich('privacyConsent', {
+                                      link: (chunks) => (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.preventDefault(); openDatenschutz(); }}
+                                          style={{ color: 'var(--color-gold)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit' }}
+                                        >
+                                          {chunks}
+                                        </button>
+                                      ),
+                                    })}
+                                  </span>
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={authNewsletterConsent}
+                                    onChange={(e) => setAuthNewsletterConsent(e.target.checked)}
+                                    style={{ marginTop: '0.2rem', accentColor: 'var(--color-gold)' }}
+                                  />
+                                  <span style={{ fontSize: '0.7rem', color: '#64748b', lineHeight: '1.4' }}>
+                                    {tAuth('newsletterConsent')}{' '}
+                                    <span style={{ color: '#94a3b8' }}>{tAuth('newsletterOptional')}</span>
+                                    {' · '}
+                                    <button
+                                      type="button"
+                                      onClick={(e) => { e.preventDefault(); openNewsletter(); }}
+                                      style={{ color: 'var(--color-gold)', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer', padding: 0, font: 'inherit' }}
+                                    >
+                                      {tAuth('newsletterInfo')}
+                                    </button>
+                                  </span>
+                                </label>
                               </div>
                               <button type="submit" disabled={authSubmitting} style={{ ...styles.submitBtn, width: '100%', justifyContent: 'center', opacity: authSubmitting ? 0.5 : 1 }}>
                                 {authSubmitting ? tAuth('registering') : tAuth('register')}

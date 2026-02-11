@@ -29,7 +29,6 @@ function getYearOptions(minYear: number, maxYear: number): number[] {
 export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, max, required, style }: DatePickerProps) {
   const tMonths = useTranslations('months');
   const tDays = useTranslations('days');
-  const tCommon = useTranslations('common');
 
   const MONTHS = useMemo(() => MONTH_KEYS.map(key => tMonths(key)), [tMonths]);
   const MONTHS_SHORT = useMemo(() => MONTH_KEYS.map(key => tMonths(`short.${key}`)), [tMonths]);
@@ -77,9 +76,8 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
     const dropdownWidth = 280;
     const padding = 8;
 
-    // Measure actual dropdown height, with calculated fallback
-    const numRows = Math.ceil((getFirstDayOfMonth(viewDate.year, viewDate.month) + getDaysInMonth(viewDate.year, viewDate.month)) / 7);
-    const dropdownHeight = dropdownRef.current?.offsetHeight || (155 + numRows * 38);
+    // Fixed height: 6 rows always
+    const dropdownHeight = dropdownRef.current?.offsetHeight || (130 + 6 * 38);
 
     // Calculate left position - check if it goes off screen to the right
     let left = rect.left;
@@ -243,25 +241,6 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
     });
   }
 
-  // Go to today
-  function goToToday() {
-    const today = new Date();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    const dateStr = `${today.getFullYear()}-${month}-${day}`;
-
-    if (!isDateDisabled(today.getFullYear(), today.getMonth(), today.getDate())) {
-      onChange(dateStr);
-    }
-    setViewDate({ year: today.getFullYear(), month: today.getMonth() });
-    setIsOpen(false);
-  }
-
-  // Clear date
-  function clearDate() {
-    onChange('');
-    setIsOpen(false);
-  }
 
   // Generate calendar days
   const daysInMonth = getDaysInMonth(viewDate.year, viewDate.month);
@@ -275,6 +254,10 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
   // Add actual days
   for (let i = 1; i <= daysInMonth; i++) {
     days.push(i);
+  }
+  // Pad to 42 cells (6 rows × 7 columns) for consistent height
+  while (days.length < 42) {
+    days.push(null);
   }
 
   const styles: Record<string, React.CSSProperties> = {
@@ -395,28 +378,6 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
     },
     dayToday: {
       border: '2px solid #d4a853',
-    },
-    footer: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      marginTop: '0.75rem',
-      paddingTop: '0.75rem',
-      borderTop: '1px solid #f1f5f9',
-    },
-    footerBtn: {
-      padding: '0.375rem 0.75rem',
-      fontSize: '0.75rem',
-      fontWeight: 500,
-      border: 'none',
-      backgroundColor: 'transparent',
-      borderRadius: '0.375rem',
-      cursor: 'pointer',
-      color: '#64748b',
-      transition: 'all 0.15s',
-    },
-    footerBtnPrimary: {
-      color: '#d4a853',
-      fontWeight: 600,
     },
   };
 
@@ -540,27 +501,6 @@ export function DatePicker({ value, onChange, placeholder = 'tt.mm.jjjj', min, m
         })}
       </div>
 
-      {/* Footer */}
-      <div style={styles.footer}>
-        <button
-          type="button"
-          onClick={clearDate}
-          style={styles.footerBtn}
-          onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
-          onMouseLeave={(e) => e.currentTarget.style.color = '#64748b'}
-        >
-          {tCommon('delete')}
-        </button>
-        <button
-          type="button"
-          onClick={goToToday}
-          style={{ ...styles.footerBtn, ...styles.footerBtnPrimary }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(212, 168, 83, 0.1)'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-        >
-          {tCommon('today')}
-        </button>
-      </div>
     </div>
   );
 
