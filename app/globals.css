@@ -349,6 +349,18 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
   animation: glow-pulse 4s ease-in-out infinite;
 }
 
+/* Cookie Banner - Slide Up Animation */
+@keyframes cookieBannerSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Hero CTA Button - Floating/Levitate */
 .hero-cta-btn {
   padding: 18px 44px;

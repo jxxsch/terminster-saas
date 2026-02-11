@@ -6,7 +6,6 @@ import {
   saveConsent,
   CONSENT_CATEGORIES,
   ConsentCategory,
-  ConsentState,
 } from '@/lib/consent';
 
 interface Props {
@@ -62,9 +61,6 @@ export function CookieSettingsModal({ onClose, onSaved }: Props) {
     onSaved();
   }, [onSaved]);
 
-  // Debug info (dev only)
-  const isDev = process.env.NODE_ENV === 'development';
-
   return (
     <div
       ref={overlayRef}
@@ -74,7 +70,7 @@ export function CookieSettingsModal({ onClose, onSaved }: Props) {
       aria-modal="true"
       aria-label="Cookie-Einstellungen"
     >
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl overflow-y-auto" style={{ width: '100%', maxWidth: 512, maxHeight: '85vh' }}>
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">Cookie-Einstellungen</h2>
@@ -105,7 +101,7 @@ export function CookieSettingsModal({ onClose, onSaved }: Props) {
               key={cat.id}
               className={`rounded-xl border p-4 transition-colors ${
                 categories[cat.id]
-                  ? 'border-amber-200 bg-amber-50/50'
+                  ? 'border-gold/30 bg-gold/5'
                   : 'border-gray-100 bg-gray-50/50'
               }`}
             >
@@ -130,9 +126,9 @@ export function CookieSettingsModal({ onClose, onSaved }: Props) {
                     aria-label={`${cat.labelDe} ${categories[cat.id] ? 'deaktivieren' : 'aktivieren'}`}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                       cat.required
-                        ? 'bg-amber-400 cursor-not-allowed'
+                        ? 'bg-gold cursor-not-allowed'
                         : categories[cat.id]
-                        ? 'bg-amber-500 cursor-pointer'
+                        ? 'bg-gold cursor-pointer'
                         : 'bg-gray-300 cursor-pointer hover:bg-gray-400'
                     }`}
                   >
@@ -148,16 +144,6 @@ export function CookieSettingsModal({ onClose, onSaved }: Props) {
           ))}
         </div>
 
-        {/* Debug (Dev only) */}
-        {isDev && (
-          <div className="mx-5 mb-2 p-3 bg-gray-900 rounded-lg">
-            <p className="text-[10px] font-mono text-green-400 mb-1">DEV: Consent State</p>
-            <pre className="text-[10px] font-mono text-gray-400 whitespace-pre-wrap">
-              {JSON.stringify({ stored: getConsent(), pending: categories }, null, 2)}
-            </pre>
-          </div>
-        )}
-
         {/* Footer Buttons */}
         <div className="flex gap-2 p-5 border-t border-gray-100">
           <button
@@ -168,7 +154,7 @@ export function CookieSettingsModal({ onClose, onSaved }: Props) {
           </button>
           <button
             onClick={handleAcceptAll}
-            className="flex-1 px-4 py-2.5 bg-amber-50 text-amber-700 text-xs font-semibold rounded-xl hover:bg-amber-100 transition-colors border border-amber-200"
+            className="flex-1 px-4 py-2.5 bg-gold/10 text-gold-dark text-xs font-semibold rounded-xl hover:bg-gold/20 transition-colors border border-gold/30"
           >
             Alle akzeptieren
           </button>
