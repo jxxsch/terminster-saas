@@ -1112,6 +1112,17 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
   };
   handleCloseRef.current = handleClose;
 
+  const translateError = (error: string): string => {
+    const errorMap: Record<string, string> = {
+      'Invalid login credentials': tAuth('errors.invalidCredentials'),
+      'Email not confirmed': tAuth('errors.emailNotConfirmed'),
+      'User already registered': tAuth('errors.userExists'),
+      'Password should be at least 6 characters': tAuth('errors.passwordTooShort'),
+      'Unable to validate email address: invalid format': tAuth('errors.invalidEmail'),
+    };
+    return errorMap[error] || error;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -1120,7 +1131,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     try {
       const result = await signIn(authEmail, authPassword);
       if (result.error) {
-        setAuthError(result.error || tAuth('loginFailed'));
+        setAuthError(translateError(result.error));
       } else {
         resetAuthForm();
         setContactMode('choice');
@@ -1137,7 +1148,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     setAuthError('');
 
     if (authPassword.length < 6) {
-      setAuthError(tAuth('passwordTooShort'));
+      setAuthError(tAuth('errors.passwordTooShort'));
       return;
     }
     if (!authPrivacyConsent) {
@@ -1160,7 +1171,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
       });
 
       if (result.error) {
-        setAuthError(result.error || tAuth('registrationFailed'));
+        setAuthError(translateError(result.error));
       } else {
         setAuthSuccess(tAuth('registrationSuccess'));
       }
@@ -1179,7 +1190,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     try {
       const result = await resetPassword(authEmail);
       if (result.error) {
-        setAuthError(result.error || tAuth('resetFailed'));
+        setAuthError(translateError(result.error));
       } else {
         setAuthSuccess(tAuth('resetEmailSent'));
       }
@@ -1209,7 +1220,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     try {
       const result = await setNewPassword(authPassword);
       if (result.error) {
-        setAuthError(result.error || tAuth('errors.passwordSetupFailed'));
+        setAuthError(translateError(result.error));
       } else {
         // Erfolg: Customer Portal öffnen
         setIsPasswordSetupMode(false);
