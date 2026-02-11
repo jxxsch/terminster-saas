@@ -319,14 +319,10 @@ export function AppointmentSlot({
 
     const handleDeleteSeriesFromHere = async (e: React.MouseEvent) => {
       e.stopPropagation();
-      const { cancelSeriesFuture, deleteSeries } = await import('@/lib/supabase');
+      const { cancelSeriesFuture } = await import('@/lib/supabase');
       const result = await cancelSeriesFuture(series.id, date);
-      if (result.success) {
-        // Serie komplett löschen
-        await deleteSeries(series.id);
-        if (onSeriesDelete) {
-          onSeriesDelete(series.id);
-        }
+      if (result.success && onSeriesDelete) {
+        onSeriesDelete(series.id);
       }
       setShowDetails(false);
     };
@@ -769,13 +765,10 @@ export function AppointmentSlot({
                 {/* Serie ab hier löschen */}
                 <button
                   onClick={async () => {
-                    const { cancelSeriesFuture, deleteSeries } = await import('@/lib/supabase');
+                    const { cancelSeriesFuture } = await import('@/lib/supabase');
                     const result = await cancelSeriesFuture(series.id, date);
-                    if (result.success) {
-                      await deleteSeries(series.id);
-                      if (onSeriesDelete) {
-                        onSeriesDelete(series.id);
-                      }
+                    if (result.success && onSeriesDelete) {
+                      onSeriesDelete(series.id);
                     }
                     setShowSeriesCancelModal(false);
                     setShowDetails(false);
@@ -845,13 +838,10 @@ export function AppointmentSlot({
   const handleDeletePauseSeriesFromHere = async () => {
     if (!appointment?.series_id) return;
     setIsDeletingPause(true);
-    const { cancelSeriesFuture, deleteSeries } = await import('@/lib/supabase');
+    const { cancelSeriesFuture } = await import('@/lib/supabase');
     const result = await cancelSeriesFuture(appointment.series_id, date);
-    if (result.success) {
-      await deleteSeries(appointment.series_id);
-      if (onSeriesDelete) {
-        onSeriesDelete(appointment.series_id);
-      }
+    if (result.success && onSeriesDelete) {
+      onSeriesDelete(appointment.series_id);
     }
     // Auch den einzelnen Termin-Eintrag aus der UI entfernen
     onDelete(appointment.id, appointment);
@@ -864,13 +854,10 @@ export function AppointmentSlot({
   const handleDeleteBookedSeriesFromHere = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!series) return;
-    const { cancelSeriesFuture, deleteSeries } = await import('@/lib/supabase');
+    const { cancelSeriesFuture } = await import('@/lib/supabase');
     const result = await cancelSeriesFuture(series.id, date);
-    if (result.success) {
-      await deleteSeries(series.id);
-      if (onSeriesDelete) {
-        onSeriesDelete(series.id);
-      }
+    if (result.success && onSeriesDelete) {
+      onSeriesDelete(series.id);
     }
     setShowDetails(false);
   };
@@ -1455,13 +1442,10 @@ export function AppointmentSlot({
               {series && (
                 <button
                   onClick={async () => {
-                    const { cancelSeriesFuture, deleteSeries } = await import('@/lib/supabase');
+                    const { cancelSeriesFuture } = await import('@/lib/supabase');
                     const result = await cancelSeriesFuture(series.id, date);
-                    if (result.success) {
-                      await deleteSeries(series.id);
-                      if (onSeriesDelete) {
-                        onSeriesDelete(series.id);
-                      }
+                    if (result.success && onSeriesDelete) {
+                      onSeriesDelete(series.id);
                     }
                     setShowSeriesCancelModal(false);
                   }}
