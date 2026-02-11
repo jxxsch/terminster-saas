@@ -22,10 +22,15 @@ export async function POST(request: NextRequest) {
     const referer = request.headers.get('referer') || '';
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
 
-    if (process.env.NODE_ENV === 'production' && siteUrl) {
-      const host = new URL(siteUrl).host;
-      const isValidOrigin = origin && origin.includes(host);
-      const isValidReferer = referer && referer.includes(host);
+    if (process.env.NODE_ENV === 'production') {
+      if (!siteUrl) {
+        return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+      }
+      const allowedHost = new URL(siteUrl).host;
+      let isValidOrigin = false;
+      let isValidReferer = false;
+      try { isValidOrigin = !!origin && new URL(origin).host === allowedHost; } catch {}
+      try { isValidReferer = !!referer && new URL(referer).host === allowedHost; } catch {}
       if (!isValidOrigin && !isValidReferer) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
@@ -42,16 +47,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Appointment-Existenz prüfen: Nur E-Mails für echte Termine senden
-    if (data.appointmentId) {
-      const { data: apt, error: aptError } = await supabaseAdmin
-        .from('appointments')
-        .select('id')
-        .eq('id', data.appointmentId)
-        .single();
+    if (!data.appointmentId) {
+      return NextResponse.json({ error: 'appointmentId is required' }, { status: 400 });
+    }
 
-      if (aptError || !apt) {
-        return NextResponse.json({ error: 'Invalid appointment' }, { status: 403 });
-      }
+    const { data: apt, error: aptError } = await supabaseAdmin
+      .from('appointments')
+      .select('id')
+      .eq('id', data.appointmentId)
+      .single();
+
+    if (aptError || !apt) {
+      return NextResponse.json({ error: 'Invalid appointment' }, { status: 403 });
     }
 
     let result;

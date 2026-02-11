@@ -530,7 +530,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   inputGridTwo: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
     gap: '0.5rem',
   },
   input: {
@@ -818,14 +818,27 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     };
   }, [isOpen]);
 
-  // ESC-Key schließt das Modal
+  // Stable ref für handleClose (vermeidet stale closures in ESC/Focus-Trap)
+  const handleCloseRef = useRef<(() => void) | null>(null);
+
+  // Trigger-Element merken für Fokus-Wiederherstellung
+  const triggerRef = useRef<Element | null>(null);
+
+  // ESC-Key schließt das Modal + Fokus-Wiederherstellung
   useEffect(() => {
     if (!isOpen) return;
+    triggerRef.current = document.activeElement;
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleClose();
+      if (e.key === 'Escape') handleCloseRef.current?.();
     };
     document.addEventListener('keydown', handleEsc);
-    return () => document.removeEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('keydown', handleEsc);
+      // Fokus zurück auf Trigger-Element
+      if (triggerRef.current && triggerRef.current instanceof HTMLElement) {
+        triggerRef.current.focus();
+      }
+    };
   }, [isOpen]);
 
   // Focus Trap: Tab-Navigation innerhalb des Modals halten
@@ -1094,6 +1107,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     resetForm();
     onClose();
   };
+  handleCloseRef.current = handleClose;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
