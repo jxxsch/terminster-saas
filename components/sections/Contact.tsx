@@ -249,30 +249,14 @@ export function Contact() {
                 {/* Map Container */}
                 <div className="absolute inset-0">
                   <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m10!1m8!1m3!1d830!2d6.98787!3d51.03345!3m2!1i1024!2i768!4f13.1!5e0!3m2!1sde!2sde"
+                    src="https://maps.google.com/maps?q=Beban+Barber+Shop+2.0,+Friedrich-Ebert-Platz+2,+51373+Leverkusen&z=17&ie=UTF8&iwloc=B&output=embed"
                     width="100%"
                     height="100%"
-                    style={{ border: 0, pointerEvents: 'none' }}
+                    style={{ border: 0 }}
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
                     title="Beban Barber Shop Standort"
                   />
-                </div>
-
-                {/* Custom Gold Marker Overlay */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full pointer-events-none z-10">
-                  <div className="relative">
-                    {/* Marker Pin */}
-                    <div className="w-8 h-8 bg-gold rounded-full flex items-center justify-center shadow-lg shadow-gold/40">
-                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0 0L12 12" />
-                      </svg>
-                    </div>
-                    {/* Pin Tail */}
-                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-gold" />
-                    {/* Pulse Effect */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-gold/20 rounded-full animate-ping" />
-                  </div>
                 </div>
 
                 {/* Location Badge - Bottom Right */}
