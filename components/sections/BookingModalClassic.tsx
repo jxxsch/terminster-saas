@@ -764,7 +764,7 @@ export function BookingModalClassic({ isOpen, onClose, preselectedBarber, passwo
   // Realtime-Subscription für Termine im BookingModal
   useRealtimeAppointments({
     onUpdate: refreshAppointments,
-    enabled: isOpen && !isLoading,
+    enabled: isOpen,
   });
 
   // Wochen-Range für Header berechnen

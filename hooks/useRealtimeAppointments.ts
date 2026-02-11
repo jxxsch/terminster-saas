@@ -1,24 +1,25 @@
 'use client';
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface UseRealtimeAppointmentsOptions {
-  // Filter für spezifischen Kunden (optional)
   customerId?: string;
-  // Filter für Datumsbereich (optional)
   startDate?: string;
   endDate?: string;
-  // Callback wenn sich Daten ändern
   onUpdate: () => void;
-  // Ob Realtime aktiv sein soll
   enabled?: boolean;
 }
 
 /**
- * Hook für Echtzeit-Synchronisation von Terminen
- * Wird benachrichtigt bei INSERT, UPDATE, DELETE auf appointments-Tabelle
+ * Hook für Echtzeit-Synchronisation von Terminen.
+ *
+ * Stabile Subscription:
+ * - Nur `enabled` und `customerId` verursachen Re-Subscribe
+ *   (customerId ändert den Supabase-Filter, enabled schaltet an/aus)
+ * - `startDate`, `endDate`, `onUpdate` werden über Refs gelesen → kein Re-Subscribe
+ * - Stabiler Channel-Name (kein Date.now())
  */
 export function useRealtimeAppointments({
   customerId,
@@ -29,73 +30,56 @@ export function useRealtimeAppointments({
 }: UseRealtimeAppointmentsOptions) {
   const channelRef = useRef<RealtimeChannel | null>(null);
   const onUpdateRef = useRef(onUpdate);
+  const startDateRef = useRef(startDate);
+  const endDateRef = useRef(endDate);
 
-  // Callback-Ref aktualisieren
+  // Refs aktualisieren (kein Re-Subscribe nötig)
+  onUpdateRef.current = onUpdate;
+  startDateRef.current = startDate;
+  endDateRef.current = endDate;
+
   useEffect(() => {
-    onUpdateRef.current = onUpdate;
-  }, [onUpdate]);
-
-  const setupSubscription = useCallback(() => {
-    if (!enabled) return;
-
-    // Alten Channel entfernen falls vorhanden
+    // Aufräumen falls bereits aktiv
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
     }
 
-    // Neuen Channel erstellen
+    if (!enabled) return;
+
+    // Stabiler Channel-Name
     const channelName = customerId
       ? `appointments-customer-${customerId}`
-      : `appointments-all-${Date.now()}`;
+      : 'appointments-all';
 
     const channel = supabase
       .channel(channelName)
       .on(
         'postgres_changes',
         {
-          event: '*', // INSERT, UPDATE, DELETE
+          event: '*',
           schema: 'public',
           table: 'appointments',
-          // Filter nur für spezifischen Kunden wenn angegeben
           ...(customerId && { filter: `customer_id=eq.${customerId}` }),
         },
         (payload) => {
-          console.log('Realtime appointment change:', payload.eventType, payload);
-
-          // Bei Datumsfilter prüfen ob relevante Änderung
-          if (startDate && endDate && payload.new) {
+          // Client-seitiger Datumsfilter
+          if (startDateRef.current && endDateRef.current && payload.new) {
             const appointmentDate = (payload.new as { date?: string }).date;
-            if (appointmentDate && (appointmentDate < startDate || appointmentDate > endDate)) {
-              return; // Außerhalb des Datumsbereichs
+            if (appointmentDate && (appointmentDate < startDateRef.current || appointmentDate > endDateRef.current)) {
+              return;
             }
           }
-
-          // Daten neu laden
           onUpdateRef.current();
         }
       )
-      .subscribe((status) => {
-        console.log('Realtime subscription status:', status);
-      });
+      .subscribe();
 
     channelRef.current = channel;
-  }, [enabled, customerId, startDate, endDate]);
-
-  useEffect(() => {
-    setupSubscription();
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      supabase.removeChannel(channel);
+      channelRef.current = null;
     };
-  }, [setupSubscription]);
-
-  // Manuelle Neuverbindung ermöglichen
-  const reconnect = useCallback(() => {
-    setupSubscription();
-  }, [setupSubscription]);
-
-  return { reconnect };
+  }, [enabled, customerId]);
 }
