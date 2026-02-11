@@ -1,11 +1,14 @@
 'use client';
 
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSectionSettings } from '@/hooks/useSiteSettings';
 import { useGoogleRating } from '@/hooks/useGoogleRating';
 import { useReviews } from '@/hooks/useReviews';
+
+const CircularGallery = dynamic(() => import('@/components/ui/CircularGallery'), { ssr: false });
 
 export function About() {
   const [isVisible, setIsVisible] = useState(false);
@@ -46,6 +49,21 @@ export function About() {
       aboutContent: null, // Use i18n paragraphs instead
     };
   }, [locale, title, subtitle, aboutText, getLocalizedText, t]);
+
+  // Mobile Circular Gallery: 2 About-Bilder + 3 zufällige Gallery-Bilder
+  const galleryItems = useMemo(() => {
+    const aboutImages = [
+      { image: '/about-1.jpg', text: '' },
+      { image: '/about-2.jpg', text: '' },
+    ];
+    const galleryPool = [
+      '/gallery/1.jpg', '/gallery/2.jpg', '/gallery/3.jpg', '/gallery/4.jpg',
+      '/gallery/5.jpg', '/gallery/6.jpg', '/gallery/7.jpg', '/gallery/8.jpg',
+    ];
+    const shuffled = [...galleryPool].sort(() => Math.random() - 0.5);
+    const randomThree = shuffled.slice(0, 3).map(img => ({ image: img, text: '' }));
+    return [...aboutImages, ...randomThree].sort(() => Math.random() - 0.5);
+  }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -140,13 +158,13 @@ export function About() {
         </div>
 
         {/* Goldene Trennlinie */}
-        <div className={`flex items-center gap-6 mb-20 transition-all duration-700 delay-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`flex items-center gap-6 mb-4 lg:mb-20 transition-all duration-700 delay-500 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
           <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/50 to-transparent" />
         </div>
 
-        {/* Bilder Grid - Staggered Slide */}
+        {/* Bilder Grid - Desktop: 2-Spalten (unverändert) */}
         <div
-          className={`grid grid-cols-1 lg:grid-cols-2 gap-12 mb-20 transition-all duration-700 delay-600 ${isVisible ? 'opacity-100 translate-y-0 is-visible' : 'opacity-0 translate-y-4'}`}
+          className={`hidden lg:grid grid-cols-2 gap-12 mb-20 transition-all duration-700 delay-600 ${isVisible ? 'opacity-100 translate-y-0 is-visible' : 'opacity-0 translate-y-4'}`}
         >
           {/* Linkes Bild */}
           <div
@@ -159,7 +177,7 @@ export function About() {
                 src="/about-1.jpg"
                 alt="Beban Barber Shop Interior"
                 fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
+                sizes="50vw"
                 className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
               />
             </div>
@@ -176,11 +194,27 @@ export function About() {
                 src="/about-2.jpg"
                 alt="Beban Barber Shop Arbeit"
                 fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
+                sizes="50vw"
                 className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
               />
             </div>
           </div>
+        </div>
+
+        {/* Mobile: Circular Gallery — volle Viewport-Breite, kein Seitenabstand */}
+        <div
+          className={`lg:hidden my-4 w-screen relative left-1/2 -translate-x-1/2 transition-all duration-700 delay-600 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+          style={{ height: 300 }}
+        >
+          <CircularGallery
+            items={galleryItems}
+            bend={0}
+            textColor="#ffffff"
+            borderRadius={0.05}
+            font="bold 30px sans-serif"
+            scrollSpeed={2}
+            scrollEase={0.05}
+          />
         </div>
 
         {/* Rezensionen Karussell */}

@@ -188,7 +188,7 @@ export function CookieBanner() {
       <button
         onClick={() => setShowSettings(true)}
         aria-label="Cookie-Einstellungen öffnen"
-        className="fixed bottom-20 left-5 z-[9998] w-10 h-10 rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center cursor-pointer hover:shadow-xl hover:scale-110 transition-all duration-200"
+        className="hidden lg:flex fixed bottom-20 left-5 z-[9998] w-10 h-10 rounded-full bg-white shadow-lg border border-gray-200 items-center justify-center cursor-pointer hover:shadow-xl hover:scale-110 transition-all duration-200"
         style={{ animation: 'cookieBannerSlideUp 0.3s ease-out' }}
       >
         <svg
