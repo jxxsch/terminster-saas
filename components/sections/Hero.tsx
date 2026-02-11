@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useBooking } from '@/context/BookingContext';
 import { useHeroSettings, useHeroContent } from '@/hooks/useSiteSettings';
 import { useTranslations, useLocale } from 'next-intl';
+import { ConsentGate } from '@/components/ConsentGate';
 
 // Filter-CSS-Mappings
 const FILTER_CSS: Record<string, (intensity: number) => string> = {
@@ -84,22 +85,24 @@ export function Hero() {
     <section id="hero" className="relative w-full overflow-hidden" style={{ height: '100dvh', minHeight: '100dvh' }}>
       {/* Video/Image Background */}
       {background.type === 'video' && youtubeEmbedUrl ? (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{ filter: filterStyle || undefined }}
-        >
-          <iframe
-            src={youtubeEmbedUrl}
-            allow="autoplay; encrypted-media"
-            allowFullScreen
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-            style={{
-              border: 'none',
-              width: '250vh',
-              height: '140vh',
-            }}
-          />
-        </div>
+        <ConsentGate category="functional" fallback={<div className="absolute inset-0 bg-black" />} className="absolute inset-0">
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{ filter: filterStyle || undefined }}
+          >
+            <iframe
+              src={youtubeEmbedUrl}
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+              style={{
+                border: 'none',
+                width: '250vh',
+                height: '140vh',
+              }}
+            />
+          </div>
+        </ConsentGate>
       ) : background.type === 'image' && background.image_url ? (
         <div
           className="absolute inset-0 bg-cover"
@@ -110,19 +113,21 @@ export function Hero() {
           }}
         />
       ) : (
-        <div className="absolute inset-0 pointer-events-none">
-          <iframe
-            src="https://www.youtube.com/embed/3vCGQvscX34?start=24&end=54&autoplay=1&mute=1&loop=1&playlist=3vCGQvscX34&controls=0&showinfo=0&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&playsinline=1"
-            allow="autoplay; encrypted-media"
-            allowFullScreen
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-            style={{
-              border: 'none',
-              width: '250vh',
-              height: '140vh',
-            }}
-          />
-        </div>
+        <ConsentGate category="functional" fallback={<div className="absolute inset-0 bg-black" />} className="absolute inset-0">
+          <div className="absolute inset-0 pointer-events-none">
+            <iframe
+              src="https://www.youtube.com/embed/3vCGQvscX34?start=24&end=54&autoplay=1&mute=1&loop=1&playlist=3vCGQvscX34&controls=0&showinfo=0&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&playsinline=1"
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+              style={{
+                border: 'none',
+                width: '250vh',
+                height: '140vh',
+              }}
+            />
+          </div>
+        </ConsentGate>
       )}
 
       {/* Dark Overlay */}

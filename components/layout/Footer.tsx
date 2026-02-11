@@ -4,6 +4,7 @@ import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { useLogoUrl } from '@/hooks/useLogoUrl';
 import { useContactSettings } from '@/hooks/useSiteSettings';
+import { openCookieSettings } from '@/components/CookieBanner';
 
 export function Footer() {
   const t = useTranslations('footer');
@@ -45,6 +46,12 @@ export function Footer() {
             <div className="flex items-center gap-4 text-xs text-gray-500">
               <Link href="/impressum" className="hover:text-gold transition-colors">{t('imprint')}</Link>
               <Link href="/datenschutz" className="hover:text-gold transition-colors">{t('privacy')}</Link>
+              <button
+                onClick={openCookieSettings}
+                className="hover:text-gold transition-colors"
+              >
+                Cookies
+              </button>
               <span className="text-gray-300">·</span>
               <span>© {currentYear}</span>
             </div>

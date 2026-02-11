@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { CookieBanner } from "@/components/CookieBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,6 +41,7 @@ export default function RootLayout({
       </head>
       <body className={`${geistSans.variable} ${playfair.variable} ${plusJakarta.variable} antialiased bg-black text-white`}>
         {children}
+        <CookieBanner />
       </body>
     </html>
   );
