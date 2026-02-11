@@ -20,6 +20,7 @@ export function StickyBookingBar() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
+  const isFooterVisibleRef = useRef(false);
 
   // Einmalig erfasste Werte — kein State, kein Re-Render
   const initialValues = useRef<{
@@ -61,25 +62,41 @@ export function StickyBookingBar() {
 
     const stickyBottom = 48;
     const stickyTop = windowHeight - stickyBottom - buttonHeight;
-
-    const startTop = buttonTopInDocument;
-    const endTop = stickyTop;
     const centeredLeft = (window.innerWidth - buttonWidth) / 2;
 
     const scrollEnd = heroHeight * 0.7;
     const progress = Math.min(Math.max(scrollY / scrollEnd, 0), 1);
 
-    const currentTop = startTop + (endTop - startTop) * progress;
+    // Viewport-relative Position (fixed Element = viewport-Koordinaten)
+    const currentTop = buttonTopInDocument + (stickyTop - buttonTopInDocument) * progress;
     const currentLeft = buttonLeft + (centeredLeft - buttonLeft) * progress;
+    const currentScale = 1 + 0.12 * progress;
 
-    const startScale = 1;
-    const endScale = 1.12;
-    const currentScale = startScale + (endScale - startScale) * progress;
+    // Footer erreicht → sanft ausblenden
+    const hide = isFooterVisibleRef.current;
 
-    // Direkt auf dem DOM-Element — kein React-Overhead
-    el.style.transform = `translate(${currentLeft}px, ${currentTop - scrollY}px) scale(${currentScale})`;
-    el.style.opacity = '1';
+    el.style.transform = `translate(${currentLeft}px, ${currentTop}px) scale(${currentScale})`;
+    el.style.opacity = hide ? '0' : '1';
+    el.style.pointerEvents = hide ? 'none' : '';
   }, []);
+
+  // IntersectionObserver für Footer — kein getBoundingClientRect pro Frame
+  useEffect(() => {
+    const contactSection = document.getElementById('contact');
+    if (!contactSection) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        isFooterVisibleRef.current = entries[0].isIntersecting;
+        // Sofort Position/Sichtbarkeit aktualisieren
+        updatePosition();
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(contactSection);
+    return () => observer.disconnect();
+  }, [updatePosition]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -88,7 +105,6 @@ export function StickyBookingBar() {
     };
 
     const handleResize = () => {
-      // Position neu erfassen
       initialValues.current = null;
       const heroButton = document.querySelector('#hero .hero-cta-btn') as HTMLElement;
       if (heroButton) {
@@ -115,7 +131,6 @@ export function StickyBookingBar() {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
 
-      // Hero-Button wieder sichtbar machen
       const heroButton = document.querySelector('#hero .hero-cta-btn') as HTMLElement;
       if (heroButton) {
         heroButton.style.opacity = '1';
@@ -127,7 +142,7 @@ export function StickyBookingBar() {
   return (
     <div
       ref={containerRef}
-      className="fixed top-0 left-0 z-30"
+      className="fixed top-0 left-0 z-30 transition-opacity duration-300"
       style={{ opacity: 0, willChange: 'transform' }}
     >
       <button
