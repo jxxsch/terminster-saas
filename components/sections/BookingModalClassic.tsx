@@ -727,6 +727,14 @@ export function BookingModalClassic({ isOpen, onClose, preselectedBarber, passwo
     }
   }, [isOpen]);
 
+  // Refs für stabile refreshAppointments-Callback (vermeidet Neuerstellen bei Selection-Wechsel)
+  const selectedSlotRef = useRef(selectedSlot);
+  const selectedBarberRef = useRef(selectedBarber);
+  const selectedDayRef = useRef(selectedDay);
+  selectedSlotRef.current = selectedSlot;
+  selectedBarberRef.current = selectedBarber;
+  selectedDayRef.current = selectedDay;
+
   // Realtime-Callback: Termine neu laden wenn sich etwas ändert
   const refreshAppointments = useCallback(async () => {
     const today = new Date();
@@ -737,11 +745,11 @@ export function BookingModalClassic({ isOpen, onClose, preselectedBarber, passwo
       setBookedAppointments(appointmentsData);
 
       // Wenn aktuell ausgewählter Slot jetzt gebucht ist, Auswahl aufheben
-      if (selectedSlot && selectedBarber && selectedDay) {
+      if (selectedSlotRef.current && selectedBarberRef.current && selectedDayRef.current) {
         const isNowBooked = appointmentsData.some(
-          apt => apt.barber_id === selectedBarber &&
-                 apt.date === selectedDay &&
-                 apt.time_slot === selectedSlot &&
+          apt => apt.barber_id === selectedBarberRef.current &&
+                 apt.date === selectedDayRef.current &&
+                 apt.time_slot === selectedSlotRef.current &&
                  apt.status === 'confirmed'
         );
         if (isNowBooked) {
@@ -751,7 +759,7 @@ export function BookingModalClassic({ isOpen, onClose, preselectedBarber, passwo
     } catch (error) {
       console.error('Error refreshing appointments:', error);
     }
-  }, [selectedSlot, selectedBarber, selectedDay]);
+  }, []);
 
   // Realtime-Subscription für Termine im BookingModal
   useRealtimeAppointments({

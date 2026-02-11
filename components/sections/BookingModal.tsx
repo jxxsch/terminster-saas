@@ -950,6 +950,14 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
 
   // Scroll wird jetzt via onAnimationComplete auf den motion.div Elementen gesteuert
 
+  // Refs für stabile refreshAppointments-Callback (vermeidet Neuerstellen bei Selection-Wechsel)
+  const selectedSlotRef = useRef(selectedSlot);
+  const selectedBarberRef = useRef(selectedBarber);
+  const selectedDayRef = useRef(selectedDay);
+  selectedSlotRef.current = selectedSlot;
+  selectedBarberRef.current = selectedBarber;
+  selectedDayRef.current = selectedDay;
+
   const refreshAppointments = useCallback(async () => {
     const today = new Date();
     const startDate = formatDateLocal(today);
@@ -958,9 +966,9 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
       const appointmentsData = await getAppointments(startDate, endDate);
       setBookedAppointments(appointmentsData);
 
-      if (selectedSlot && selectedBarber && selectedDay) {
+      if (selectedSlotRef.current && selectedBarberRef.current && selectedDayRef.current) {
         const isNowBooked = appointmentsData.some(
-          apt => apt.barber_id === selectedBarber && apt.date === selectedDay && apt.time_slot === selectedSlot && apt.status === 'confirmed'
+          apt => apt.barber_id === selectedBarberRef.current && apt.date === selectedDayRef.current && apt.time_slot === selectedSlotRef.current && apt.status === 'confirmed'
         );
         if (isNowBooked) {
           setSelectedSlot(null);
@@ -970,7 +978,7 @@ export function BookingModal({ isOpen, onClose, preselectedBarber, passwordSetup
     } catch (error) {
       console.error('Error refreshing appointments:', error);
     }
-  }, [selectedSlot, selectedBarber, selectedDay]);
+  }, []);
 
   useRealtimeAppointments({ onUpdate: refreshAppointments, enabled: isOpen });
 
