@@ -317,12 +317,16 @@ export function AppointmentSlot({
       setShowDetails(!showDetails);
     };
 
-    const handleDeleteSeries = async (e: React.MouseEvent) => {
+    const handleDeleteSeriesFromHere = async (e: React.MouseEvent) => {
       e.stopPropagation();
-      const { deleteSeries } = await import('@/lib/supabase');
-      const success = await deleteSeries(series.id);
-      if (success && onSeriesDelete) {
-        onSeriesDelete(series.id);
+      const { cancelSeriesFuture, deleteSeries } = await import('@/lib/supabase');
+      const result = await cancelSeriesFuture(series.id, date);
+      if (result.success) {
+        // Serie komplett löschen
+        await deleteSeries(series.id);
+        if (onSeriesDelete) {
+          onSeriesDelete(series.id);
+        }
       }
       setShowDetails(false);
     };
@@ -691,13 +695,13 @@ export function AppointmentSlot({
 
                   {/* Gesamte Serie löschen */}
                   <button
-                    onClick={handleDeleteSeries}
+                    onClick={handleDeleteSeriesFromHere}
                       className="w-full py-1.5 px-2 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors flex items-center justify-center gap-1"
                     >
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
-                      Gesamte Serie löschen
+                      Serie ab hier löschen
                     </button>
                 </div>
               </div>
@@ -762,30 +766,16 @@ export function AppointmentSlot({
                   )}
                 </button>
 
-                {/* Rhythmus ändern */}
-                {!isPast && (
-                <button
-                  onClick={() => {
-                    setShowSeriesCancelModal(false);
-                    setShowDetails(true);
-                    setIsEditingRhythm(true);
-                  }}
-                  className="w-full py-3 px-4 text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors flex items-center justify-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Rhythmus ändern
-                </button>
-                )}
-
-                {/* Gesamte Serie löschen */}
+                {/* Serie ab hier löschen */}
                 <button
                   onClick={async () => {
-                    const { deleteSeries } = await import('@/lib/supabase');
-                    const success = await deleteSeries(series.id);
-                    if (success && onSeriesDelete) {
-                      onSeriesDelete(series.id);
+                    const { cancelSeriesFuture, deleteSeries } = await import('@/lib/supabase');
+                    const result = await cancelSeriesFuture(series.id, date);
+                    if (result.success) {
+                      await deleteSeries(series.id);
+                      if (onSeriesDelete) {
+                        onSeriesDelete(series.id);
+                      }
                     }
                     setShowSeriesCancelModal(false);
                     setShowDetails(false);
@@ -795,7 +785,7 @@ export function AppointmentSlot({
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
-                  Gesamte Serie löschen
+                  Serie ab hier löschen
                 </button>
 
                 {/* Abbrechen */}
@@ -851,19 +841,37 @@ export function AppointmentSlot({
     setIsDeletingPause(false);
   };
 
-  // Handler für Pause-Serie löschen
-  const handleDeletePauseSeries = async () => {
+  // Handler für Pause-Serie ab hier löschen
+  const handleDeletePauseSeriesFromHere = async () => {
     if (!appointment?.series_id) return;
     setIsDeletingPause(true);
-    const { deleteSeries } = await import('@/lib/supabase');
-    const success = await deleteSeries(appointment.series_id);
-    if (success && onSeriesDelete) {
-      onSeriesDelete(appointment.series_id);
+    const { cancelSeriesFuture, deleteSeries } = await import('@/lib/supabase');
+    const result = await cancelSeriesFuture(appointment.series_id, date);
+    if (result.success) {
+      await deleteSeries(appointment.series_id);
+      if (onSeriesDelete) {
+        onSeriesDelete(appointment.series_id);
+      }
     }
     // Auch den einzelnen Termin-Eintrag aus der UI entfernen
     onDelete(appointment.id, appointment);
     setIsDeletingPause(false);
     setShowPauseDeleteModal(false);
+    setShowDetails(false);
+  };
+
+  // Handler für Serie ab hier löschen (für gebuchte Serientermine)
+  const handleDeleteBookedSeriesFromHere = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!series) return;
+    const { cancelSeriesFuture, deleteSeries } = await import('@/lib/supabase');
+    const result = await cancelSeriesFuture(series.id, date);
+    if (result.success) {
+      await deleteSeries(series.id);
+      if (onSeriesDelete) {
+        onSeriesDelete(series.id);
+      }
+    }
     setShowDetails(false);
   };
 
@@ -945,14 +953,14 @@ export function AppointmentSlot({
                 {/* Gesamte Pause-Serie löschen - nur anzeigen wenn series_id existiert */}
                 {appointment?.series_id && (
                   <button
-                    onClick={handleDeletePauseSeries}
+                    onClick={handleDeletePauseSeriesFromHere}
                     disabled={isDeletingPause}
                     className="w-full py-3 px-4 text-sm text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
                   >
                     <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
-                    Gesamte Serie löschen
+                    Serie ab hier löschen
                   </button>
                 )}
 
@@ -1327,24 +1335,16 @@ export function AppointmentSlot({
                       </svg>
                       {isSeries ? 'Nur diesen Termin stornieren' : 'Stornieren'}
                     </button>
-                    {/* Gesamte Serie löschen */}
+                    {/* Serie ab hier löschen */}
                     {isSeries && series && (
                       <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          const { deleteSeries } = await import('@/lib/supabase');
-                          const success = await deleteSeries(series.id);
-                          if (success && onSeriesDelete) {
-                            onSeriesDelete(series.id);
-                          }
-                          setShowDetails(false);
-                        }}
+                        onClick={handleDeleteBookedSeriesFromHere}
                         className="w-full py-1.5 px-2 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors flex items-center justify-center gap-1"
                       >
                         <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
-                        Gesamte Serie löschen
+                        Serie ab hier löschen
                       </button>
                     )}
                   </>
@@ -1451,33 +1451,17 @@ export function AppointmentSlot({
                 )}
               </button>
 
-              {/* Rhythmus ändern */}
-              {!isPast && series && (
-                <button
-                  onClick={() => {
-                    setShowSeriesCancelModal(false);
-                    calculatePopupPosition();
-                    setSelectedRhythm((series.interval_type as 'weekly' | 'biweekly' | 'monthly') || 'weekly');
-                    setIsEditingRhythm(true);
-                    setShowDetails(true);
-                  }}
-                  className="w-full py-3 px-4 text-sm text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors flex items-center justify-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Rhythmus ändern
-                </button>
-              )}
-
-              {/* Gesamte Serie löschen */}
+              {/* Serie ab hier löschen */}
               {series && (
                 <button
                   onClick={async () => {
-                    const { deleteSeries } = await import('@/lib/supabase');
-                    const success = await deleteSeries(series.id);
-                    if (success && onSeriesDelete) {
-                      onSeriesDelete(series.id);
+                    const { cancelSeriesFuture, deleteSeries } = await import('@/lib/supabase');
+                    const result = await cancelSeriesFuture(series.id, date);
+                    if (result.success) {
+                      await deleteSeries(series.id);
+                      if (onSeriesDelete) {
+                        onSeriesDelete(series.id);
+                      }
                     }
                     setShowSeriesCancelModal(false);
                   }}
@@ -1486,7 +1470,7 @@ export function AppointmentSlot({
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
-                  Gesamte Serie löschen
+                  Serie ab hier löschen
                 </button>
               )}
 
