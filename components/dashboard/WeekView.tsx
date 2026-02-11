@@ -22,6 +22,7 @@ import {
   getFreeDayExceptions,
   getOpenSundays,
   getOpenSundayStaff,
+  deleteSeriesExceptionByDate,
   Appointment,
   Series,
   TeamMember,
@@ -238,12 +239,15 @@ export function WeekView({
     loadData();
   }, [weekDays]);
 
-  // Create appointment lookup map
+  // Create appointment lookup map (confirmed appointments have priority over cancelled)
   const appointmentMap = useMemo(() => {
     const map = new Map<string, Appointment>();
     appointments.forEach(apt => {
       const key = `${apt.barber_id}-${apt.date}-${apt.time_slot}`;
-      map.set(key, apt);
+      const existing = map.get(key);
+      if (!existing || (existing.status === 'cancelled' && apt.status !== 'cancelled')) {
+        map.set(key, apt);
+      }
     });
     return map;
   }, [appointments]);
@@ -563,11 +567,18 @@ export function WeekView({
       ...newAppointments,
     ]);
 
-    // Serien-Stornierungen parallel löschen
+    // Serien-Stornierungen parallel löschen + Exceptions entfernen
     if (deletedItems.seriesCancellations.length > 0) {
       await Promise.all(deletedItems.seriesCancellations.map(id => deleteAppointment(id)));
       const cancelIds = new Set(deletedItems.seriesCancellations);
       setAppointments(prev => prev.filter(apt => !cancelIds.has(apt.id)));
+    }
+
+    // Serien-Exceptions entfernen (damit Cron-Job die Termine wieder generieren kann)
+    for (const apt of deletedItems.appointments) {
+      if (apt.series_id) {
+        await deleteSeriesExceptionByDate(apt.series_id, apt.date);
+      }
     }
 
     setDeletedItems(null);
@@ -612,6 +623,8 @@ export function WeekView({
   const handleSeriesCreated = (newSeries: Series) => {
     setSeries(prev => [...prev, newSeries]);
     setSelectedSlot(null);
+    // Appointment-Rows wurden in DB erstellt → Kalender sofort aktualisieren
+    refreshAppointments();
   };
 
   // Interner Handler ohne Undo (für Multi-Delete)

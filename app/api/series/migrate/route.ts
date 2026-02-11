@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, generateSeriesAppointments, updateSeries } from '@/lib/supabase';
+import { supabase, generateSeriesAppointments, updateSeries, formatDateLocal, parseDateNoon, addDaysLocal } from '@/lib/supabase';
 import type { Series } from '@/lib/supabase';
 
 // Einmalige Migration: Generiert echte Appointment-Rows für alle bestehenden Serien
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateLocal(new Date());
 
     // Alle aktiven Serien laden
     const { data: allSeries, error } = await supabase
@@ -42,10 +42,9 @@ export async function GET(request: NextRequest) {
       const result = await generateSeriesAppointments(series, fromDate, 52);
 
       // last_generated_date setzen
-      const endLimit = new Date(today);
-      endLimit.setDate(endLimit.getDate() + 52 * 7);
+      const endLimit = addDaysLocal(parseDateNoon(today), 52 * 7);
       await updateSeries(series.id, {
-        last_generated_date: endLimit.toISOString().split('T')[0],
+        last_generated_date: formatDateLocal(endLimit),
       } as Partial<Series>);
 
       results.push({

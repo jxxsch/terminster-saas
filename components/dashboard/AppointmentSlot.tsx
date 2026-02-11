@@ -14,6 +14,7 @@ import {
   getCustomerById,
   updateCustomer,
   getSetting,
+  createSeriesException,
 } from '@/lib/supabase';
 
 interface AppointmentSlotProps {
@@ -363,6 +364,17 @@ export function AppointmentSlot({
       });
 
       if (result.success && result.appointment) {
+        // Exception erstellen, damit Cron-Job diesen Termin nicht regeneriert
+        await createSeriesException({
+          series_id: series.id,
+          exception_date: date,
+          exception_type: 'deleted',
+          original_time_slot: timeSlot,
+          original_barber_id: barberId,
+          moved_to_appointment_id: null,
+          reason: 'single_cancellation',
+        });
+
         if (onAppointmentCreated) {
           onAppointmentCreated(result.appointment);
         }
@@ -959,12 +971,24 @@ export function AppointmentSlot({
     );
   }
 
-  // Cancelled appointment from series - show as empty slot (the cancelled record stays as exception marker)
+  // Cancelled appointment from series - show as empty clickable slot (exception stays in DB)
   if (isCancelled && appointment?.series_id) {
-    // Stornierter Serientermin = leerer Slot (Ausnahme bleibt in DB)
+    if (isDisabled) {
+      return <div className="h-full bg-gray-100/50" />;
+    }
+    if (isPast) {
+      return <div className="h-full bg-gray-50/30" />;
+    }
     return (
-      <div className="p-1 h-full">
-        {/* Leerer Slot - die Stornierung bleibt als Ausnahme in der DB */}
+      <div
+        onClick={onClick}
+        className="h-full cursor-pointer transition-colors group hover:bg-gold/10"
+      >
+        <div className="w-full h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <svg className="w-3 h-3 text-gold/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </div>
       </div>
     );
   }

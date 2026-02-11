@@ -410,6 +410,25 @@ export async function createAppointment(appointment: Omit<Appointment, 'id' | 'c
 }
 
 export async function deleteAppointment(id: string): Promise<boolean> {
+  // Vor dem Löschen: Wenn Serientermin → Exception "deleted" erstellen
+  const { data: apt } = await supabase
+    .from('appointments')
+    .select('series_id, date, time_slot, barber_id')
+    .eq('id', id)
+    .single();
+
+  if (apt?.series_id) {
+    await createSeriesException({
+      series_id: apt.series_id,
+      exception_date: apt.date,
+      exception_type: 'deleted',
+      original_time_slot: apt.time_slot,
+      original_barber_id: apt.barber_id,
+      moved_to_appointment_id: null,
+      reason: 'appointment_deleted',
+    });
+  }
+
   const { error } = await supabase
     .from('appointments')
     .delete()
@@ -479,11 +498,37 @@ export async function moveAppointment(
     return { success: false, appointment: null, error: 'Fehler beim Verschieben des Termins' };
   }
 
+  // 5. Wenn Serientermin + Datum/Zeit geändert → Exception "moved" am Original-Datum
+  if (currentAppointment.series_id) {
+    const dateChanged = targetDate !== currentAppointment.date;
+    const timeChanged = targetTimeSlot !== currentAppointment.time_slot;
+    const barberChanged = targetBarberId !== currentAppointment.barber_id;
+
+    if (dateChanged || timeChanged || barberChanged) {
+      await createSeriesException({
+        series_id: currentAppointment.series_id,
+        exception_date: currentAppointment.date,
+        exception_type: 'moved',
+        original_time_slot: currentAppointment.time_slot,
+        original_barber_id: currentAppointment.barber_id,
+        moved_to_appointment_id: id,
+        reason: 'appointment_moved',
+      });
+    }
+  }
+
   return { success: true, appointment: updatedAppointment, error: null };
 }
 
 // Admin-Funktion: Termin stornieren (ohne 24h-Regel)
 export async function cancelAppointmentAdmin(id: string): Promise<boolean> {
+  // Vor dem Stornieren: Termin-Daten laden für Exception
+  const { data: apt } = await supabase
+    .from('appointments')
+    .select('series_id, date, time_slot, barber_id')
+    .eq('id', id)
+    .single();
+
   const { error } = await supabase
     .from('appointments')
     .update({ status: 'cancelled', cancelled_by: 'barber', cancelled_at: new Date().toISOString() })
@@ -492,6 +537,19 @@ export async function cancelAppointmentAdmin(id: string): Promise<boolean> {
   if (error) {
     console.error('Error cancelling appointment:', error);
     return false;
+  }
+
+  // Nach dem Stornieren: wenn Serientermin → Exception "deleted" erstellen
+  if (apt?.series_id) {
+    await createSeriesException({
+      series_id: apt.series_id,
+      exception_date: apt.date,
+      exception_type: 'deleted',
+      original_time_slot: apt.time_slot,
+      original_barber_id: apt.barber_id,
+      moved_to_appointment_id: null,
+      reason: 'appointment_cancelled',
+    });
   }
 
   return true;
@@ -593,6 +651,13 @@ export async function createSeries(series: Omit<Series, 'id' | 'created_at'>): P
 }
 
 export async function deleteSeries(id: string): Promise<boolean> {
+  // CASCADE löscht Appointments + Exceptions automatisch,
+  // aber explizites Löschen stellt sicher, dass der Count stimmt
+  await supabase
+    .from('appointments')
+    .delete()
+    .eq('series_id', id);
+
   const { error } = await supabase
     .from('series')
     .delete()
@@ -603,6 +668,7 @@ export async function deleteSeries(id: string): Promise<boolean> {
     return false;
   }
 
+  invalidateCache('appointments');
   return true;
 }
 
@@ -623,15 +689,151 @@ export async function updateSeries(id: string, updates: Partial<Series>): Promis
 }
 
 // ============================================
+// SERIES EXCEPTIONS - Ausnahmen für Serientermine
+// ============================================
+
+export interface SeriesException {
+  id: string;
+  series_id: string;
+  exception_date: string;
+  exception_type: 'deleted' | 'moved' | 'skipped';
+  original_time_slot: string | null;
+  original_barber_id: string | null;
+  moved_to_appointment_id: string | null;
+  reason: string | null;
+  created_at: string;
+}
+
+// Upsert: Exception erstellen oder überschreiben
+export async function createSeriesException(
+  exception: Omit<SeriesException, 'id' | 'created_at'>
+): Promise<SeriesException | null> {
+  const { data, error } = await supabase
+    .from('series_exceptions')
+    .upsert(exception, { onConflict: 'series_id,exception_date' })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating series exception:', error);
+    return null;
+  }
+
+  return data;
+}
+
+// Exception löschen (für Undo)
+export async function deleteSeriesException(id: string): Promise<boolean> {
+  const { error } = await supabase
+    .from('series_exceptions')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting series exception:', error);
+    return false;
+  }
+
+  return true;
+}
+
+// Exception per Datum löschen (für Undo per Datum)
+export async function deleteSeriesExceptionByDate(
+  seriesId: string,
+  exceptionDate: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('series_exceptions')
+    .delete()
+    .eq('series_id', seriesId)
+    .eq('exception_date', exceptionDate);
+
+  if (error) {
+    console.error('Error deleting series exception by date:', error);
+    return false;
+  }
+
+  return true;
+}
+
+// Alle Exceptions einer Serie laden (für Debug/Admin)
+export async function getSeriesExceptions(seriesId: string): Promise<SeriesException[]> {
+  const { data, error } = await supabase
+    .from('series_exceptions')
+    .select('*')
+    .eq('series_id', seriesId)
+    .order('exception_date');
+
+  if (error) {
+    console.error('Error fetching series exceptions:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+// Zukünftige Exceptions einer Serie löschen (für cancelSeriesFuture/updateSeriesRhythm)
+export async function deleteSeriesExceptionsFuture(
+  seriesId: string,
+  fromDate: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from('series_exceptions')
+    .delete()
+    .eq('series_id', seriesId)
+    .gte('exception_date', fromDate);
+
+  if (error) {
+    console.error('Error deleting future series exceptions:', error);
+    return false;
+  }
+
+  return true;
+}
+
+// ============================================
+// DST-SAFE DATE HELPERS
+// ============================================
+
+/**
+ * Formatiert ein Date-Objekt als "YYYY-MM-DD" in lokaler Zeitzone.
+ * Verwendet NICHT toISOString() (UTC), sondern getFullYear/getMonth/getDate (lokal).
+ */
+export function formatDateLocal(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Parst einen "YYYY-MM-DD" String als Date-Objekt in lokaler Zeitzone um 12:00 Uhr.
+ * Die Mittagszeit verhindert DST-Probleme (Sprung um 02:00/03:00 betrifft Mittag nicht).
+ */
+export function parseDateNoon(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d, 12, 0, 0, 0);
+}
+
+/**
+ * Addiert Tage zu einem Datum. Erzeugt ein neues Date um 12:00 Uhr lokal (DST-sicher).
+ */
+export function addDaysLocal(date: Date, days: number): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days, 12, 0, 0, 0);
+}
+
+// ============================================
 // SERIES APPOINTMENTS - Echte Termine generieren
 // ============================================
 
 export interface SeriesGenerationResult {
   created: number;
   skipped: number;
+  exceptionSkipped: number;    // Durch Exceptions übersprungene Daten
   total: number;
   createdDates: string[];  // Erfolgreich erstellte Daten
   skippedDates: string[];  // Übersprungene Daten (Konflikte)
+  exceptionSkippedDates: string[];  // Durch Exceptions übersprungene Daten
 }
 
 /**
@@ -644,9 +846,8 @@ export async function generateSeriesAppointments(
   weeksAhead: number = 52
 ): Promise<SeriesGenerationResult> {
   const appointments: Record<string, unknown>[] = [];
-  const endLimit = new Date(fromDate);
-  endLimit.setDate(endLimit.getDate() + weeksAhead * 7);
-  const endLimitStr = endLimit.toISOString().split('T')[0];
+  const endLimit = addDaysLocal(parseDateNoon(fromDate), weeksAhead * 7);
+  const endLimitStr = formatDateLocal(endLimit);
 
   // Effektives Enddatum: series.end_date oder weeksAhead
   const effectiveEnd = series.end_date && series.end_date < endLimitStr
@@ -654,19 +855,19 @@ export async function generateSeriesAppointments(
     : endLimitStr;
 
   // Startdatum finden: nächstes Datum mit passendem Wochentag ab fromDate
-  const from = new Date(fromDate);
+  const from = parseDateNoon(fromDate);
   // day_of_week: 1=Mo, 2=Di, ..., 6=Sa, 7=So
   // JS getDay(): 0=So, 1=Mo, ..., 6=Sa
   const targetJsDay = series.day_of_week === 7 ? 0 : series.day_of_week;
 
-  let current = new Date(from);
+  let current = new Date(from.getFullYear(), from.getMonth(), from.getDate(), 12, 0, 0, 0);
   // Zum nächsten passenden Wochentag springen
   while (current.getDay() !== targetJsDay) {
     current.setDate(current.getDate() + 1);
   }
 
   // Wenn series.start_date nach current liegt, dort starten
-  const seriesStart = new Date(series.start_date);
+  const seriesStart = parseDateNoon(series.start_date);
   if (seriesStart > current) {
     current = new Date(seriesStart);
     while (current.getDay() !== targetJsDay) {
@@ -675,12 +876,12 @@ export async function generateSeriesAppointments(
   }
 
   // Für biweekly: Referenzpunkt ist start_date der Serie
-  const seriesStartTime = new Date(series.start_date).getTime();
+  const seriesStartTime = parseDateNoon(series.start_date).getTime();
 
   const isPause = series.customer_name.toLowerCase().includes('pause');
 
-  while (current.toISOString().split('T')[0] <= effectiveEnd) {
-    const dateStr = current.toISOString().split('T')[0];
+  while (formatDateLocal(current) <= effectiveEnd) {
+    const dateStr = formatDateLocal(current);
 
     let shouldGenerate = false;
     if (series.interval_type === 'weekly') {
@@ -720,33 +921,53 @@ export async function generateSeriesAppointments(
   }
 
   if (appointments.length === 0) {
-    return { created: 0, skipped: 0, total: 0, createdDates: [], skippedDates: [] };
+    return { created: 0, skipped: 0, exceptionSkipped: 0, total: 0, createdDates: [], skippedDates: [], exceptionSkippedDates: [] };
   }
 
-  // Batch-Insert via RPC
+  // Batch-Insert via RPC (prüft automatisch series_exceptions)
   const { data, error } = await supabase.rpc('batch_insert_series_appointments', {
     appointments_json: appointments,
   });
 
   if (error) {
     console.error('Error generating series appointments:', error);
-    return { created: 0, skipped: 0, total: appointments.length, createdDates: [], skippedDates: [] };
+    return { created: 0, skipped: 0, exceptionSkipped: 0, total: appointments.length, createdDates: [], skippedDates: [], exceptionSkippedDates: [] };
   }
 
   const result = data as {
     inserted: number;
     skipped: number;
+    exception_skipped: number;
     total: number;
     inserted_dates: string[];
     skipped_dates: string[];
+    exception_skipped_dates: string[];
   };
+
+  // Übersprungene Slots permanent als Exception markieren,
+  // damit der Cron-Job sie nie nachträglich erzeugt
+  if (result.skipped_dates && result.skipped_dates.length > 0) {
+    for (const skippedDate of result.skipped_dates) {
+      await createSeriesException({
+        series_id: series.id,
+        exception_date: skippedDate,
+        exception_type: 'skipped',
+        original_time_slot: series.time_slot,
+        original_barber_id: series.barber_id,
+        moved_to_appointment_id: null,
+        reason: 'conflict_at_generation',
+      });
+    }
+  }
 
   return {
     created: result.inserted,
     skipped: result.skipped,
+    exceptionSkipped: result.exception_skipped || 0,
     total: result.total,
     createdDates: result.inserted_dates || [],
     skippedDates: result.skipped_dates || [],
+    exceptionSkippedDates: result.exception_skipped_dates || [],
   };
 }
 
@@ -779,7 +1000,7 @@ export async function createSeriesWithAppointments(
     : series;
 
   // 2. Echte Termine generieren (52 Wochen ab start_date)
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatDateLocal(new Date());
   const fromDate = series.start_date > today ? series.start_date : today;
 
   const genResult = await generateSeriesAppointments(
@@ -788,10 +1009,16 @@ export async function createSeriesWithAppointments(
     52
   );
 
-  // 3. last_generated_date aktualisieren
-  const endLimit = new Date(fromDate);
-  endLimit.setDate(endLimit.getDate() + 52 * 7);
-  const lastDate = endLimit.toISOString().split('T')[0];
+  // Rollback: Wenn keine Termine generiert wurden und welche erwartet waren
+  if (genResult.created === 0 && genResult.total > 0 && genResult.skipped === 0 && genResult.exceptionSkipped === 0) {
+    console.error('Series generation failed completely, rolling back series:', series.id);
+    await deleteSeries(series.id);
+    return { series: null, appointmentsCreated: 0, appointmentsSkipped: 0, createdDates: [], skippedDates: [] };
+  }
+
+  // 3. last_generated_date aktualisieren (nur bei Erfolg)
+  const endLimit = addDaysLocal(parseDateNoon(fromDate), 52 * 7);
+  const lastDate = formatDateLocal(endLimit);
 
   await updateSeries(series.id, { last_generated_date: lastDate } as Partial<Series>);
 
@@ -855,6 +1082,9 @@ export async function cancelSeriesFuture(
     return { success: false, deletedCount: 0 };
   }
 
+  // 3. Zukünftige Exceptions aufräumen (nicht mehr nötig da Serie endet)
+  await deleteSeriesExceptionsFuture(seriesId, fromDate);
+
   invalidateCache('series');
 
   return { success: true, deletedCount: deleted?.length || 0 };
@@ -867,6 +1097,8 @@ export async function cancelSeriesFuture(
 export async function extendSeriesAppointments(
   seriesId: string
 ): Promise<SeriesGenerationResult> {
+  const emptyResult: SeriesGenerationResult = { created: 0, skipped: 0, exceptionSkipped: 0, total: 0, createdDates: [], skippedDates: [], exceptionSkippedDates: [] };
+
   // Serie laden
   const { data: series, error } = await supabase
     .from('series')
@@ -876,21 +1108,22 @@ export async function extendSeriesAppointments(
 
   if (error || !series) {
     console.error('Error loading series for extension:', error);
-    return { created: 0, skipped: 0, total: 0, createdDates: [], skippedDates: [] };
+    return emptyResult;
   }
 
   // Von wo aus generieren?
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatDateLocal(new Date());
   const fromDate = series.last_generated_date || today;
 
   const result = await generateSeriesAppointments(series as Series, fromDate, 52);
 
-  // last_generated_date aktualisieren
-  const endLimit = new Date(today);
-  endLimit.setDate(endLimit.getDate() + 52 * 7);
-  const lastDate = endLimit.toISOString().split('T')[0];
+  // last_generated_date nur bei Erfolg aktualisieren (Idempotenz)
+  if (result.created > 0 || result.skipped > 0 || result.exceptionSkipped > 0) {
+    const endLimit = addDaysLocal(parseDateNoon(fromDate), 52 * 7);
+    const lastDate = formatDateLocal(endLimit);
 
-  await updateSeries(seriesId, { last_generated_date: lastDate } as Partial<Series>);
+    await updateSeries(seriesId, { last_generated_date: lastDate } as Partial<Series>);
+  }
 
   return result;
 }
@@ -902,7 +1135,8 @@ export async function updateSeriesRhythm(
   seriesId: string,
   newIntervalType: 'weekly' | 'biweekly' | 'monthly'
 ): Promise<SeriesGenerationResult> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatDateLocal(new Date());
+  const emptyResult: SeriesGenerationResult = { created: 0, skipped: 0, exceptionSkipped: 0, total: 0, createdDates: [], skippedDates: [], exceptionSkippedDates: [] };
 
   // 1. Serie updaten
   await updateSeries(seriesId, { interval_type: newIntervalType } as Partial<Series>);
@@ -915,7 +1149,10 @@ export async function updateSeriesRhythm(
     .gte('date', today)
     .eq('status', 'confirmed');
 
-  // 3. Serie neu laden und regenerieren
+  // 3. Zukünftige Exceptions löschen (Daten ändern sich komplett bei Rhythmuswechsel)
+  await deleteSeriesExceptionsFuture(seriesId, today);
+
+  // 4. Serie neu laden und regenerieren
   const { data: series, error } = await supabase
     .from('series')
     .select('*')
@@ -923,15 +1160,14 @@ export async function updateSeriesRhythm(
     .single();
 
   if (error || !series) {
-    return { created: 0, skipped: 0, total: 0, createdDates: [], skippedDates: [] };
+    return emptyResult;
   }
 
   const result = await generateSeriesAppointments(series as Series, today, 52);
 
   // last_generated_date aktualisieren
-  const endLimit = new Date(today);
-  endLimit.setDate(endLimit.getDate() + 52 * 7);
-  await updateSeries(seriesId, { last_generated_date: endLimit.toISOString().split('T')[0] } as Partial<Series>);
+  const endLimit = addDaysLocal(parseDateNoon(today), 52 * 7);
+  await updateSeries(seriesId, { last_generated_date: formatDateLocal(endLimit) } as Partial<Series>);
 
   invalidateCache('series');
 

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, extendSeriesAppointments } from '@/lib/supabase';
+import { supabase, extendSeriesAppointments, SeriesGenerationResult, formatDateLocal } from '@/lib/supabase';
 
 // Cron-Job: Verlängert alle aktiven Serien um weitere 52 Wochen
 // Schedule: Jeden Montag 02:00 UTC (in vercel.json)
+// Idempotent: Exception-Check in batch_insert_series_appointments verhindert Duplikate
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDateLocal(new Date());
 
     // Alle aktiven Serien laden (end_date IS NULL oder > today)
     const { data: activeSeries, error } = await supabase
@@ -32,20 +33,32 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const results = [];
+    const results: (SeriesGenerationResult & { seriesId: string })[] = [];
+    const errors: { seriesId: string; error: string }[] = [];
+
+    // Pro Serie: try/catch für isolierte Fehlerbehandlung
     for (const series of activeSeries || []) {
-      const result = await extendSeriesAppointments(series.id);
-      results.push({ seriesId: series.id, ...result });
+      try {
+        const result = await extendSeriesAppointments(series.id);
+        results.push({ seriesId: series.id, ...result });
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+        console.error(`Error extending series ${series.id}:`, errorMsg);
+        errors.push({ seriesId: series.id, error: errorMsg });
+      }
     }
 
     const totalCreated = results.reduce((sum, r) => sum + r.created, 0);
     const totalSkipped = results.reduce((sum, r) => sum + r.skipped, 0);
+    const totalExceptionSkipped = results.reduce((sum, r) => sum + r.exceptionSkipped, 0);
 
     return NextResponse.json({
       success: true,
       seriesProcessed: results.length,
       totalCreated,
       totalSkipped,
+      totalExceptionSkipped,
+      errors: errors.length > 0 ? errors : undefined,
     });
   } catch (err) {
     console.error('Error in series extend cron:', err);
