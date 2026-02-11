@@ -22,10 +22,17 @@ const plusJakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | Premium Barbershop',
-    default: 'Premium Barbershop - Herrenkultur seit 2016'
+    template: '%s | Beban Barber Shop 2.0',
+    default: 'Beban Barber Shop 2.0 | Der Barber Ihres Vertrauens in der Rathaus Galerie Leverkusen'
   },
-  description: "Premium Barbershop für professionelle Haar- und Bartpflege. Buchen Sie jetzt Ihren Termin online.",
+  description: "Beban Barber Shop 2.0 – Der Barber Ihres Vertrauens in der Rathaus Galerie Leverkusen. Buchen Sie jetzt Ihren Termin online.",
+  icons: {
+    icon: [
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export default function RootLayout({
