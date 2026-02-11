@@ -711,10 +711,10 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
   // Barber-Label & Border
   const barberLabel = data.barberChanged ? 'NEUER BARBER' : 'BARBER';
   const barberBoxBorder = data.barberChanged ? '2px solid #10b981' : '1px solid #e5e7eb';
-  // Status: Immer blau, grauer Rand
+  // Status: Orange/Gold für "Verschoben"
   const statusBoxBorder = '1px solid #e5e7eb';
-  const statusColor = '#3b82f6';
-  const statusBgColor = '#eff6ff';
+  const statusColor = '#d97706';
+  const statusBgColor = '#fffbeb';
 
   return `
 <!DOCTYPE html>
@@ -800,7 +800,7 @@ function generateRescheduleHtml(data: RescheduleEmailData, logoUrl: string): str
                             <tr>
                               <td style="width: 42px; vertical-align: middle;">
                                 <div style="width: 42px; height: 42px; background-color: ${statusBgColor}; border-radius: 50%; text-align: center; line-height: 42px;">
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${statusColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                  <span style="display: inline-block; width: 14px; height: 14px; background-color: ${statusColor}; border-radius: 50%;"></span>
                                 </div>
                               </td>
                               <td style="padding-left: 10px; vertical-align: middle; text-align: left;">
