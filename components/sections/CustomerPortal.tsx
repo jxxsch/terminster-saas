@@ -37,6 +37,7 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [cancellationHours, setCancellationHours] = useState<number>(24);
   const [mounted, setMounted] = useState(false);
@@ -642,7 +643,7 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                             </div>
                             {canCancelAppointment(apt) ? (
                               <button
-                                onClick={() => handleCancel(apt.id)}
+                                onClick={() => setConfirmCancelId(apt.id)}
                                 disabled={cancellingId === apt.id}
                                 className="cancel-btn"
                                 style={styles.cancelButton}
@@ -803,6 +804,55 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
           </p>
         </div>
       </div>
+
+      {/* Bestätigungsdialog */}
+      {confirmCancelId && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+          onClick={() => setConfirmCancelId(null)}
+        >
+          <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)' }} />
+          <div
+            style={{ position: 'relative', backgroundColor: 'white', borderRadius: '0.75rem', padding: '1.5rem', maxWidth: '22rem', width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#0f172a', marginBottom: '0.75rem' }}>
+              {t('cancelAppointment')}
+            </p>
+            {(() => {
+              const apt = upcomingAppointments.find(a => a.id === confirmCancelId);
+              if (!apt) return null;
+              return (
+                <div style={{ padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.8125rem' }}>
+                  <p style={{ fontWeight: 600, color: '#0f172a' }}>{formatDate(apt.date)}</p>
+                  <p style={{ color: '#64748b' }}>{apt.time_slot} {tCommon('oclock')} · {getBarberName(apt.barber_id)}</p>
+                </div>
+              );
+            })()}
+            <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '1.25rem' }}>
+              {t('cancelConfirm')}
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setConfirmCancelId(null)}
+                style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', backgroundColor: '#f1f5f9', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}
+              >
+                {tCommon('cancel')}
+              </button>
+              <button
+                onClick={() => {
+                  const id = confirmCancelId;
+                  setConfirmCancelId(null);
+                  handleCancel(id);
+                }}
+                style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: 'white', backgroundColor: '#ef4444', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}
+              >
+                {t('cancelAppointment')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
