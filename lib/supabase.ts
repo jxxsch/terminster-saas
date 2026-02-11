@@ -900,7 +900,9 @@ export async function generateSeriesAppointments(
       shouldGenerate = diffWeeks >= 0 && diffWeeks % 2 === 0;
     } else if (series.interval_type === 'monthly') {
       const startDay = parseInt(series.start_date.split('-')[2], 10);
-      shouldGenerate = current.getDate() === startDay;
+      const daysInMonth = new Date(current.getFullYear(), current.getMonth() + 1, 0).getDate();
+      const targetDay = Math.min(startDay, daysInMonth);
+      shouldGenerate = current.getDate() === targetDay;
     }
 
     if (shouldGenerate) {
@@ -922,7 +924,13 @@ export async function generateSeriesAppointments(
 
     // Nächstes Datum
     if (series.interval_type === 'monthly') {
-      current.setMonth(current.getMonth() + 1);
+      const targetMonth = current.getMonth() + 1;
+      current.setMonth(targetMonth);
+      // Edge-Case: 31. Jan → setMonth(1) ergibt 3. März
+      // Fix: Auf letzten Tag des Zielmonats zurücksetzen
+      if (current.getMonth() !== targetMonth % 12) {
+        current.setDate(0); // Letzter Tag des vorherigen Monats
+      }
     } else {
       current.setDate(current.getDate() + 7);
     }
