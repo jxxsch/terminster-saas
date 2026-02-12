@@ -1057,24 +1057,31 @@ export function AddAppointmentModal({
                         >
                           Monatlich
                         </button>
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-2">
-                        <span className="text-xs text-gray-500">Alle</span>
-                        <input
-                          type="number"
-                          min={1}
-                          value={intervalWeeks}
-                          onChange={(e) => {
-                            const val = Math.max(1, parseInt(e.target.value) || 1);
-                            setIntervalWeeks(val);
-                            if (val === 1) setIntervalType('weekly');
-                            else if (val === 2) setIntervalType('biweekly');
-                            else if (val === 4) setIntervalType('monthly');
-                            else setIntervalType('custom');
-                          }}
-                          className="w-14 text-center text-xs px-2 py-1 border border-gray-200 rounded-lg focus:border-gold focus:outline-none"
-                        />
-                        <span className="text-xs text-gray-500">Wochen</span>
+                        <label
+                          className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all border cursor-pointer ${
+                            ![1, 2, 4].includes(intervalWeeks)
+                              ? 'border-gold bg-gold/10 text-gold'
+                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                          }`}
+                        >
+                          <span>Alle</span>
+                          <input
+                            type="number"
+                            min={1}
+                            value={intervalWeeks}
+                            onFocus={() => { if ([1, 2, 4].includes(intervalWeeks)) { setIntervalWeeks(3); setIntervalType('custom'); } }}
+                            onChange={(e) => {
+                              const val = Math.max(1, parseInt(e.target.value) || 1);
+                              setIntervalWeeks(val);
+                              if (val === 1) setIntervalType('weekly');
+                              else if (val === 2) setIntervalType('biweekly');
+                              else if (val === 4) setIntervalType('monthly');
+                              else setIntervalType('custom');
+                            }}
+                            className="w-8 text-center text-xs text-black bg-transparent border-b border-gray-300 focus:border-gold focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <span>Wo.</span>
+                        </label>
                       </div>
                     </div>
                   )}
