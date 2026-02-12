@@ -1058,18 +1058,18 @@ export function AddAppointmentModal({
                           Monatlich
                         </button>
                         <label
-                          className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs transition-all border cursor-pointer ${
+                          className={`flex items-center gap-0 px-2.5 py-1 rounded-lg text-xs transition-all border cursor-text ${
                             ![1, 2, 4].includes(intervalWeeks)
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
-                          <span>Alle</span>
+                          <span>Alle&nbsp;</span>
                           <input
                             type="number"
                             min={1}
                             value={intervalWeeks}
-                            onFocus={() => { if ([1, 2, 4].includes(intervalWeeks)) { setIntervalWeeks(3); setIntervalType('custom'); } }}
+                            onFocus={(e) => { e.target.select(); if ([1, 2, 4].includes(intervalWeeks)) { setIntervalWeeks(3); setIntervalType('custom'); } }}
                             onChange={(e) => {
                               const val = Math.max(1, parseInt(e.target.value) || 1);
                               setIntervalWeeks(val);
@@ -1078,9 +1078,9 @@ export function AddAppointmentModal({
                               else if (val === 4) setIntervalType('monthly');
                               else setIntervalType('custom');
                             }}
-                            className="w-8 text-center text-xs text-black bg-transparent border-b border-gray-300 focus:border-gold focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            className="w-[1.2em] text-center text-xs font-semibold bg-transparent border-none outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
-                          <span>Wo.</span>
+                          <span>&nbsp;Wo.</span>
                         </label>
                       </div>
                     </div>
