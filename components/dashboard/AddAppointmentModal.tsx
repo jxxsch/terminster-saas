@@ -1057,31 +1057,40 @@ export function AddAppointmentModal({
                         >
                           Monatlich
                         </button>
-                        <label
-                          className={`flex items-center gap-0 px-2.5 py-1 rounded-lg text-xs transition-all border cursor-text ${
+                        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs transition-all border ${
                             ![1, 2, 4].includes(intervalWeeks)
                               ? 'border-gold bg-gold/10 text-gold'
-                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                          }`}
-                        >
-                          <span>Alle&nbsp;</span>
-                          <input
-                            type="number"
-                            min={1}
-                            value={intervalWeeks}
-                            onFocus={(e) => { e.target.select(); if ([1, 2, 4].includes(intervalWeeks)) { setIntervalWeeks(3); setIntervalType('custom'); } }}
-                            onChange={(e) => {
-                              const val = Math.max(1, parseInt(e.target.value) || 1);
-                              setIntervalWeeks(val);
-                              if (val === 1) setIntervalType('weekly');
-                              else if (val === 2) setIntervalType('biweekly');
-                              else if (val === 4) setIntervalType('monthly');
-                              else setIntervalType('custom');
-                            }}
-                            className="w-[1.2em] text-center text-xs font-semibold bg-transparent border-none outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-                          <span>&nbsp;Wo.</span>
-                        </label>
+                              : 'border-gray-200 text-gray-400'
+                          }`}>
+                          <span className={![1, 2, 4].includes(intervalWeeks) ? '' : 'opacity-50'}>Alle</span>
+                          <div className="flex items-center border border-gray-200 rounded overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const val = Math.max(1, intervalWeeks - 1);
+                                setIntervalWeeks(val);
+                                if (val === 1) setIntervalType('weekly');
+                                else if (val === 2) setIntervalType('biweekly');
+                                else if (val === 4) setIntervalType('monthly');
+                                else setIntervalType('custom');
+                              }}
+                              className="w-6 h-6 flex items-center justify-center text-xs bg-gray-50 hover:bg-gray-100 transition-colors"
+                            >−</button>
+                            <span className="w-6 h-6 flex items-center justify-center text-xs font-bold bg-white">{intervalWeeks}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const val = intervalWeeks + 1;
+                                setIntervalWeeks(val);
+                                if (val === 2) setIntervalType('biweekly');
+                                else if (val === 4) setIntervalType('monthly');
+                                else setIntervalType('custom');
+                              }}
+                              className="w-6 h-6 flex items-center justify-center text-xs bg-gray-50 hover:bg-gray-100 transition-colors"
+                            >+</button>
+                          </div>
+                          <span className={![1, 2, 4].includes(intervalWeeks) ? '' : 'opacity-50'}>{intervalWeeks === 1 ? 'Woche' : 'Wochen'}</span>
+                        </div>
                       </div>
                     </div>
                   )}
