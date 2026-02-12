@@ -1010,12 +1010,14 @@ export function AddAppointmentModal({
                         </svg>
                         Serientermin
                       </span>
-                      <span className="text-xs text-gray-500">
-                        {intervalWeeks === 1
-                          ? `Jeden ${DAY_NAMES[dateObj.getDay()]}`
-                          : `Alle ${intervalWeeks} Wochen ${DAY_NAMES[dateObj.getDay()]}`
-                        }
-                      </span>
+                      {isSeries && (
+                        <span className="text-xs text-gray-500">
+                          {intervalWeeks === 1
+                            ? `Jeden ${DAY_NAMES[dateObj.getDay()]}`
+                            : `Alle ${intervalWeeks} Wochen ${DAY_NAMES[dateObj.getDay()]}`
+                          }
+                        </span>
+                      )}
                     </div>
                     <button
                       type="button"
