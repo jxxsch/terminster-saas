@@ -1023,44 +1023,38 @@ export function AddAppointmentModal({
                   {/* Intervall-Auswahl (only shown when series is enabled) */}
                   {isSeries && (
                     <div className="mt-3 pl-8">
-                      <div className="flex gap-1.5 flex-wrap items-center">
+                      <div className="flex gap-1.5 flex-wrap items-stretch">
                         <div
                           onClick={() => { setIntervalType('weekly'); setIntervalWeeks(1); }}
-                          className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs transition-all border cursor-pointer ${
+                          className={`flex items-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-all border cursor-pointer ${
                             intervalWeeks === 1
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
-                          <div className="flex items-center rounded overflow-hidden">
-                            <span className="h-6 px-2.5 flex items-center justify-center text-xs">Wöchentlich</span>
-                          </div>
+                          Wöchentlich
                         </div>
                         <div
                           onClick={() => { setIntervalType('biweekly'); setIntervalWeeks(2); }}
-                          className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs transition-all border cursor-pointer ${
+                          className={`flex items-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-all border cursor-pointer ${
                             intervalWeeks === 2
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
-                          <div className="flex items-center rounded overflow-hidden">
-                            <span className="h-6 px-2.5 flex items-center justify-center text-xs">14-tägig</span>
-                          </div>
+                          14-tägig
                         </div>
                         <div
                           onClick={() => { setIntervalType('monthly'); setIntervalWeeks(4); }}
-                          className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs transition-all border cursor-pointer ${
+                          className={`flex items-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-all border cursor-pointer ${
                             intervalWeeks === 4
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
-                          <div className="flex items-center rounded overflow-hidden">
-                            <span className="h-6 px-2.5 flex items-center justify-center text-xs">Monatlich</span>
-                          </div>
+                          Monatlich
                         </div>
-                        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs transition-all border ${
+                        <div className={`flex items-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-all border ${
                             ![1, 2, 4].includes(intervalWeeks)
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-400'
