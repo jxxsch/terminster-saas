@@ -1026,7 +1026,7 @@ export function AddAppointmentModal({
                       <div className="flex gap-1.5 flex-wrap items-stretch">
                         <div
                           onClick={() => { setIntervalType('weekly'); setIntervalWeeks(1); }}
-                          className={`flex items-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-all border cursor-pointer ${
+                          className={`flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-all border cursor-pointer ${
                             intervalWeeks === 1
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
@@ -1036,7 +1036,7 @@ export function AddAppointmentModal({
                         </div>
                         <div
                           onClick={() => { setIntervalType('biweekly'); setIntervalWeeks(2); }}
-                          className={`flex items-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-all border cursor-pointer ${
+                          className={`flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-all border cursor-pointer ${
                             intervalWeeks === 2
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
@@ -1046,7 +1046,7 @@ export function AddAppointmentModal({
                         </div>
                         <div
                           onClick={() => { setIntervalType('monthly'); setIntervalWeeks(4); }}
-                          className={`flex items-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-all border cursor-pointer ${
+                          className={`flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-all border cursor-pointer ${
                             intervalWeeks === 4
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
