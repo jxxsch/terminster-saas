@@ -78,6 +78,8 @@ export function AppointmentSlot({
   const [isCancelling, setIsCancelling] = useState(false);
   const [isDeletingPause, setIsDeletingPause] = useState(false);
   const [isCancellingSingle, setIsCancellingSingle] = useState(false);
+  const [showDeleteEntireSeriesConfirm, setShowDeleteEntireSeriesConfirm] = useState<string | null>(null);
+  const [isDeletingEntireSeries, setIsDeletingEntireSeries] = useState(false);
   const [isEditingRhythm, setIsEditingRhythm] = useState(false);
   const [isSavingRhythm, setIsSavingRhythm] = useState(false);
   const [selectedRhythm, setSelectedRhythm] = useState<'weekly' | 'biweekly' | 'monthly'>('weekly');
@@ -291,6 +293,70 @@ export function AppointmentSlot({
       </div>
     );
   }
+
+  // Handler für gesamte Serie löschen (alle Termine + Serie-Datensatz)
+  const handleDeleteEntireSeries = async () => {
+    const seriesId = showDeleteEntireSeriesConfirm;
+    if (!seriesId) return;
+    setIsDeletingEntireSeries(true);
+    const { deleteSeries } = await import('@/lib/supabase');
+    const success = await deleteSeries(seriesId);
+    if (success && onSeriesDelete) {
+      onSeriesDelete(seriesId);
+    }
+    setIsDeletingEntireSeries(false);
+    setShowDeleteEntireSeriesConfirm(null);
+    setShowPauseDeleteModal(false);
+    setShowSeriesCancelModal(false);
+    setShowDetails(false);
+  };
+
+  // Bestätigungs-Modal für "Gesamte Serie löschen" (wiederverwendbar in allen return-Blöcken)
+  const deleteEntireSeriesConfirmModal = showDeleteEntireSeriesConfirm && (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="absolute inset-0 bg-black/50"
+        onClick={() => !isDeletingEntireSeries && setShowDeleteEntireSeriesConfirm(null)}
+      />
+      <div className="relative bg-white rounded-2xl shadow-xl p-6 mx-4 text-center" style={{ minWidth: '320px', maxWidth: '400px' }}>
+        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-1">Gesamte Serie löschen?</h3>
+        <p className="text-sm text-gray-500 mb-5">
+          Alle Termine dieser Serie (Vergangenheit + Zukunft) werden unwiderruflich gelöscht. Die Zeitslots werden sofort wieder freigegeben.
+        </p>
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={() => setShowDeleteEntireSeriesConfirm(null)}
+            disabled={isDeletingEntireSeries}
+            className="py-2 px-5 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+          >
+            Abbrechen
+          </button>
+          <button
+            onClick={handleDeleteEntireSeries}
+            disabled={isDeletingEntireSeries}
+            className="py-2 px-5 text-sm text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {isDeletingEntireSeries ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                Löschen...
+              </>
+            ) : (
+              'Ja, komplett löschen'
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   // Series slot (virtual appointment from series)
   if (series && !appointment) {
@@ -683,7 +749,7 @@ export function AppointmentSlot({
                     Nur diesen Termin stornieren
                   </button>
 
-                  {/* Gesamte Serie löschen */}
+                  {/* Serie ab hier löschen */}
                   <button
                     onClick={handleDeleteSeriesFromHere}
                       className="w-full py-1.5 px-2 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors flex items-center justify-center gap-1"
@@ -692,6 +758,16 @@ export function AppointmentSlot({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                       Serie ab hier löschen
+                    </button>
+                  {/* Gesamte Serie löschen */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowDeleteEntireSeriesConfirm(series.id); }}
+                      className="w-full py-1.5 px-2 text-xs text-red-700 border border-red-300 bg-red-50 rounded hover:bg-red-100 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Gesamte Serie löschen
                     </button>
                 </div>
               </div>
@@ -775,6 +851,17 @@ export function AppointmentSlot({
                   Serie ab hier löschen
                 </button>
 
+                {/* Gesamte Serie löschen */}
+                <button
+                  onClick={() => setShowDeleteEntireSeriesConfirm(series.id)}
+                  className="w-full py-3 px-4 text-sm text-red-700 bg-red-100 hover:bg-red-200 border border-red-300 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Gesamte Serie löschen
+                </button>
+
                 {/* Abbrechen */}
                 <button
                   onClick={() => setShowSeriesCancelModal(false)}
@@ -786,6 +873,8 @@ export function AppointmentSlot({
             </div>
           </div>
         )}
+
+        {deleteEntireSeriesConfirmModal}
       </div>
     );
   }
@@ -931,7 +1020,7 @@ export function AppointmentSlot({
                   )}
                 </button>
 
-                {/* Gesamte Pause-Serie löschen - nur anzeigen wenn series_id existiert */}
+                {/* Pause-Serie ab hier löschen - nur anzeigen wenn series_id existiert */}
                 {appointment?.series_id && (
                   <button
                     onClick={handleDeletePauseSeriesFromHere}
@@ -942,6 +1031,20 @@ export function AppointmentSlot({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                     Serie ab hier löschen
+                  </button>
+                )}
+
+                {/* Gesamte Pause-Serie löschen */}
+                {appointment?.series_id && (
+                  <button
+                    onClick={() => setShowDeleteEntireSeriesConfirm(appointment.series_id!)}
+                    disabled={isDeletingPause}
+                    className="w-full py-3 px-4 text-sm text-red-700 bg-red-100 hover:bg-red-200 border border-red-300 rounded-lg transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
+                  >
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Gesamte Serie löschen
                   </button>
                 )}
 
@@ -956,6 +1059,8 @@ export function AppointmentSlot({
             </div>
           </div>
         )}
+
+        {deleteEntireSeriesConfirmModal}
       </div>
     );
   }
@@ -1328,6 +1433,18 @@ export function AppointmentSlot({
                         Serie ab hier löschen
                       </button>
                     )}
+                    {/* Gesamte Serie löschen */}
+                    {isSeries && series && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setShowDeleteEntireSeriesConfirm(series.id); }}
+                        className="w-full py-1.5 px-2 text-xs text-red-700 border border-red-300 bg-red-50 rounded hover:bg-red-100 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Gesamte Serie löschen
+                      </button>
+                    )}
                   </>
                 )}
               </div>
@@ -1452,6 +1569,19 @@ export function AppointmentSlot({
                 </button>
               )}
 
+              {/* Gesamte Serie löschen */}
+              {series && (
+                <button
+                  onClick={() => setShowDeleteEntireSeriesConfirm(series.id)}
+                  className="w-full py-3 px-4 text-sm text-red-700 bg-red-100 hover:bg-red-200 border border-red-300 rounded-lg transition-colors flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Gesamte Serie löschen
+                </button>
+              )}
+
               <button
                 onClick={() => setShowSeriesCancelModal(false)}
                 className="w-full py-2 px-4 text-sm text-gray-600 hover:text-gray-800 transition-colors"
@@ -1462,6 +1592,8 @@ export function AppointmentSlot({
           </div>
         </div>
       )}
+
+      {deleteEntireSeriesConfirmModal}
     </div>
   );
 }
