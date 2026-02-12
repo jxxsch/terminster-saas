@@ -989,21 +989,19 @@ export function AddAppointmentModal({
                 {/* Series Toggle */}
                 <div className="border-t border-gray-100 pt-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isSeries ? 'bg-gold/20' : 'bg-gray-100'}`}>
-                        <svg className={`w-3 h-3 ${isSeries ? 'text-gold' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div>
+                      <span className="flex items-center gap-1.5 text-xs font-medium text-black">
+                        <svg className={`w-3.5 h-3.5 ${isSeries ? 'text-gold' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
-                      </div>
-                      <div>
-                        <span className="block text-xs font-medium text-black">Serientermin</span>
-                        <span className="text-[10px] text-gray-500">
-                          {intervalWeeks === 1
-                            ? `Jeden ${DAY_NAMES[dateObj.getDay()]}`
-                            : `Alle ${intervalWeeks} Wochen ${DAY_NAMES[dateObj.getDay()]}`
-                          }
-                        </span>
-                      </div>
+                        Serientermin
+                      </span>
+                      <span className="text-[10px] text-gray-500">
+                        {intervalWeeks === 1
+                          ? `Jeden ${DAY_NAMES[dateObj.getDay()]}`
+                          : `Alle ${intervalWeeks} Wochen ${DAY_NAMES[dateObj.getDay()]}`
+                        }
+                      </span>
                     </div>
                     <button
                       type="button"
