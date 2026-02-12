@@ -1057,39 +1057,37 @@ export function AddAppointmentModal({
                         >
                           Monatlich
                         </button>
-                        <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs transition-all border ${
+                        <div className={`flex items-center gap-0 px-2 py-0.5 rounded-lg text-xs transition-all border ${
                             ![1, 2, 4].includes(intervalWeeks)
                               ? 'border-gold bg-gold/10 text-gold'
-                              : 'border-gray-200 text-gray-400'
+                              : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}>
-                          <span className={![1, 2, 4].includes(intervalWeeks) ? '' : 'opacity-50'}>Alle</span>
-                          <div className="flex items-center border border-gray-200 rounded overflow-hidden">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const val = Math.max(1, intervalWeeks - 1);
-                                setIntervalWeeks(val);
-                                if (val === 1) setIntervalType('weekly');
-                                else if (val === 2) setIntervalType('biweekly');
-                                else if (val === 4) setIntervalType('monthly');
-                                else setIntervalType('custom');
-                              }}
-                              className="w-6 h-6 flex items-center justify-center text-xs bg-gray-50 hover:bg-gray-100 transition-colors"
-                            >−</button>
-                            <span className="w-6 h-6 flex items-center justify-center text-xs font-bold bg-white">{intervalWeeks}</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const val = intervalWeeks + 1;
-                                setIntervalWeeks(val);
-                                if (val === 2) setIntervalType('biweekly');
-                                else if (val === 4) setIntervalType('monthly');
-                                else setIntervalType('custom');
-                              }}
-                              className="w-6 h-6 flex items-center justify-center text-xs bg-gray-50 hover:bg-gray-100 transition-colors"
-                            >+</button>
-                          </div>
-                          <span className={![1, 2, 4].includes(intervalWeeks) ? '' : 'opacity-50'}>{intervalWeeks === 1 ? 'Woche' : 'Wochen'}</span>
+                          <span>Alle&nbsp;</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const val = Math.max(1, intervalWeeks - 1);
+                              setIntervalWeeks(val);
+                              if (val === 1) setIntervalType('weekly');
+                              else if (val === 2) setIntervalType('biweekly');
+                              else if (val === 4) setIntervalType('monthly');
+                              else setIntervalType('custom');
+                            }}
+                            className="hover:opacity-60 transition-opacity px-0.5"
+                          >−</button>
+                          <span className="font-semibold min-w-[1em] text-center">{intervalWeeks}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const val = intervalWeeks + 1;
+                              setIntervalWeeks(val);
+                              if (val === 2) setIntervalType('biweekly');
+                              else if (val === 4) setIntervalType('monthly');
+                              else setIntervalType('custom');
+                            }}
+                            className="hover:opacity-60 transition-opacity px-0.5"
+                          >+</button>
+                          <span>&nbsp;Wo.</span>
                         </div>
                       </div>
                     </div>
