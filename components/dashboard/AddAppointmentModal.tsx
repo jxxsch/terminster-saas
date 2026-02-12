@@ -1027,7 +1027,7 @@ export function AddAppointmentModal({
                         <button
                           type="button"
                           onClick={() => { setIntervalType('weekly'); setIntervalWeeks(1); }}
-                          className={`px-2.5 py-1 rounded-lg text-xs transition-all border ${
+                          className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs transition-all border ${
                             intervalWeeks === 1
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
@@ -1038,7 +1038,7 @@ export function AddAppointmentModal({
                         <button
                           type="button"
                           onClick={() => { setIntervalType('biweekly'); setIntervalWeeks(2); }}
-                          className={`px-2.5 py-1 rounded-lg text-xs transition-all border ${
+                          className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs transition-all border ${
                             intervalWeeks === 2
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
@@ -1049,7 +1049,7 @@ export function AddAppointmentModal({
                         <button
                           type="button"
                           onClick={() => { setIntervalType('monthly'); setIntervalWeeks(4); }}
-                          className={`px-2.5 py-1 rounded-lg text-xs transition-all border ${
+                          className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs transition-all border ${
                             intervalWeeks === 4
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
