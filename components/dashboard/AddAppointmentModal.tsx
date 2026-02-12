@@ -1032,7 +1032,9 @@ export function AddAppointmentModal({
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
-                          Wöchentlich
+                          <div className="flex items-center border border-gray-200 rounded overflow-hidden">
+                            <span className="h-6 px-2.5 flex items-center justify-center text-xs bg-white">Wöchentlich</span>
+                          </div>
                         </div>
                         <div
                           onClick={() => { setIntervalType('biweekly'); setIntervalWeeks(2); }}
@@ -1042,7 +1044,9 @@ export function AddAppointmentModal({
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
-                          14-tägig
+                          <div className="flex items-center border border-gray-200 rounded overflow-hidden">
+                            <span className="h-6 px-2.5 flex items-center justify-center text-xs bg-white">14-tägig</span>
+                          </div>
                         </div>
                         <div
                           onClick={() => { setIntervalType('monthly'); setIntervalWeeks(4); }}
@@ -1052,7 +1056,9 @@ export function AddAppointmentModal({
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
-                          Monatlich
+                          <div className="flex items-center border border-gray-200 rounded overflow-hidden">
+                            <span className="h-6 px-2.5 flex items-center justify-center text-xs bg-white">Monatlich</span>
+                          </div>
                         </div>
                         <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs transition-all border ${
                             ![1, 2, 4].includes(intervalWeeks)
