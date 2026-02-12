@@ -634,6 +634,12 @@ export function WeekView({
     setAppointments(prev => prev.filter(a => a.series_id !== seriesId));
   };
 
+  // Serie ab hier löschen: Serie behält end_date, nur zukünftige Termine entfernen
+  const handleSeriesFutureDeleted = (seriesId: string, fromDate: string) => {
+    setSeries(prev => prev.map(s => s.id === seriesId ? { ...s, end_date: fromDate } : s));
+    setAppointments(prev => prev.filter(a => !(a.series_id === seriesId && a.date >= fromDate)));
+  };
+
   const handleSeriesUpdated = (updated: Series) => {
     setSeries(prev => prev.map(s => s.id === updated.id ? updated : s));
   };
@@ -966,6 +972,7 @@ export function WeekView({
                                 onDelete={handleAppointmentDeleted}
                                 onUpdate={handleAppointmentUpdated}
                                 onSeriesDelete={handleSeriesDeleted}
+                                onSeriesFutureDeleted={handleSeriesFutureDeleted}
                                 onSeriesUpdate={handleSeriesUpdated}
                                 onAppointmentCreated={handleNewAppointmentFromSeries}
                                 onSeriesSingleCancelled={handleSeriesSingleCancelled}
