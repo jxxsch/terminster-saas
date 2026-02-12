@@ -1020,7 +1020,7 @@ export function AddAppointmentModal({
 
                   {/* Intervall-Auswahl (only shown when series is enabled) */}
                   {isSeries && (
-                    <div className="mt-3 pl-8">
+                    <div className="mt-3">
                       <div className="flex gap-1.5 flex-wrap items-stretch">
                         <div
                           onClick={() => { setIntervalType('weekly'); setIntervalWeeks(1); }}
