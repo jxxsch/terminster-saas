@@ -584,10 +584,17 @@ export function AddAppointmentModal({
         {/* Content */}
         <div className="p-5">
           {/* Info Bar */}
-          <div className="flex items-center justify-between text-xs text-gray-600 mb-4 pb-4 border-b border-gray-100">
-            <span className="font-medium text-gold">{barberName}</span>
-            <span>{formattedDate}</span>
-            <span className="font-semibold">{timeSlot} Uhr</span>
+          <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
+            <div className="flex-1 flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center">
+                <span className="text-sm font-bold text-gold">{barberName.charAt(0)}</span>
+              </div>
+              <span className="text-sm font-semibold text-gold">{barberName}</span>
+            </div>
+            <div className="text-right">
+              <span className="block text-sm font-semibold text-gray-900">{formattedDate}</span>
+              <span className="block text-xs text-gray-500">{timeSlot} Uhr</span>
+            </div>
           </div>
 
           {/* Form */}
@@ -996,7 +1003,7 @@ export function AddAppointmentModal({
                         </svg>
                         Serientermin
                       </span>
-                      <span className="text-[10px] text-gray-500">
+                      <span className="text-xs text-gray-500">
                         {intervalWeeks === 1
                           ? `Jeden ${DAY_NAMES[dateObj.getDay()]}`
                           : `Alle ${intervalWeeks} Wochen ${DAY_NAMES[dateObj.getDay()]}`
