@@ -13,7 +13,6 @@ import {
   updateSeries,
   getCustomerById,
   updateCustomer,
-  getSetting,
   createSeriesException,
 } from '@/lib/supabase';
 
@@ -43,6 +42,8 @@ interface AppointmentSlotProps {
   formatName?: (name: string) => string;
   // Read-only für vergangene Termine
   isPast?: boolean;
+  // Kundendaten bearbeitbar?
+  allowEditCustomer?: boolean;
 }
 
 export function AppointmentSlot({
@@ -67,6 +68,7 @@ export function AppointmentSlot({
   onToggleSelect,
   formatName = (name) => name,
   isPast = false,
+  allowEditCustomer = false,
 }: AppointmentSlotProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [backdropReady, setBackdropReady] = useState(false);
@@ -89,15 +91,7 @@ export function AppointmentSlot({
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [popupPosition, setPopupPosition] = useState<'bottom' | 'top'>('bottom');
-  const [allowEditCustomer, setAllowEditCustomer] = useState(false);
   const slotRef = useRef<HTMLDivElement>(null);
-
-  // Setting laden: Kundendaten bearbeitbar?
-  useEffect(() => {
-    getSetting<boolean>('allow_edit_customer_in_modal').then((val) => {
-      if (val !== null) setAllowEditCustomer(val);
-    });
-  }, []);
 
   // Bestimme Popup-Position basierend auf verfügbarem Platz
   // Popup braucht ca. 350px Höhe für alle Inhalte

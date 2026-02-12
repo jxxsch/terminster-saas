@@ -15,6 +15,7 @@ import {
   createAppointment,
   isBarberFreeDay,
   deleteSeriesExceptionByDate,
+  getSetting,
   Appointment,
   Series,
   TeamMember,
@@ -165,6 +166,12 @@ export function WeekView({
   const refreshAppointments = useCallback(() => {
     swrMutateAppointments();
   }, [swrMutateAppointments]);
+
+  // Setting einmalig laden (statt pro AppointmentSlot)
+  const [allowEditCustomer, setAllowEditCustomer] = useState(false);
+  useEffect(() => {
+    getSetting<boolean>('allow_edit_customer_in_modal').then((val) => setAllowEditCustomer(!!val));
+  }, []);
 
   const [selectedSlot, setSelectedSlot] = useState<SlotInfo | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -969,6 +976,7 @@ export function WeekView({
                                 onToggleSelect={(shiftKey) => handleSelectAppointment(appointment.id, barber.id, shiftKey)}
                                 formatName={formatName}
                                 isPast={isPast}
+                                allowEditCustomer={allowEditCustomer}
                               />
                             </DraggableSlot>
                           ) : !appointment && isPartialBlock ? (
@@ -1002,6 +1010,7 @@ export function WeekView({
                                 : undefined}
                               formatName={formatName}
                               isPast={isPast}
+                              allowEditCustomer={allowEditCustomer}
                             />
                           )}
                         </DroppableCell>
