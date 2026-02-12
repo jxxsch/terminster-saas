@@ -584,16 +584,23 @@ export function AddAppointmentModal({
         {/* Content */}
         <div className="p-5">
           {/* Info Bar */}
-          <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-100">
-            <div className="flex-1 flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gold/10 flex items-center justify-center">
-                <span className="text-sm font-bold text-gold">{barberName.charAt(0)}</span>
+          <div className="bg-[#faf7f0] rounded-xl px-3.5 py-3 mb-4">
+            <div className="text-[15px] font-bold text-gold mb-1">{barberName}</div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+                <span className="text-[13px] text-gray-600">{formattedDate}</span>
               </div>
-              <span className="text-sm font-semibold text-gold">{barberName}</span>
-            </div>
-            <div className="text-right">
-              <span className="block text-sm font-semibold text-gray-900">{formattedDate}</span>
-              <span className="block text-xs text-gray-500">{timeSlot} Uhr</span>
+              <div className="flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+                <span className="text-[13px] font-semibold text-gray-600">{timeSlot} Uhr</span>
+              </div>
             </div>
           </div>
 
