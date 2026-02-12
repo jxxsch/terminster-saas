@@ -189,7 +189,7 @@ export function BarberWeekView({
   const weekDays = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const days: { date: Date; dateStr: string; dayName: string; dayNum: number; isToday: boolean; isSunday: boolean; isOpenSunday: boolean }[] = [];
+    const days: { date: Date; dateStr: string; dayName: string; dayNum: number; isToday: boolean; isPast: boolean; isSunday: boolean; isOpenSunday: boolean }[] = [];
     for (let i = 0; i < 7; i++) {
       const date = new Date(monday);
       date.setDate(monday.getDate() + i);
@@ -206,6 +206,7 @@ export function BarberWeekView({
         dayName: DAY_NAMES[date.getDay()],
         dayNum: date.getDate(),
         isToday: date.getTime() === today.getTime(),
+        isPast: date < today,
         isSunday,
         isOpenSunday,
       });
@@ -766,10 +767,10 @@ export function BarberWeekView({
                     <th
                       key={day.dateStr}
                       className={`px-1 text-center border-b border-r border-gray-200 font-normal ${
-                        isDisabled ? 'bg-gray-100' : ''
+                        isDisabled ? 'bg-gray-100' : day.isPast ? 'bg-slate-200/80' : ''
                       } ${day.isToday && !day.isSunday ? 'bg-gold/10' : ''}`}
                     >
-                      <span className={`text-[11px] font-medium ${isDisabled ? 'text-gray-400' : 'text-black'}`}>
+                      <span className={`text-[11px] font-medium ${isDisabled ? 'text-gray-400' : day.isPast ? 'text-slate-400' : 'text-black'}`}>
                         {day.dayName} {day.dayNum}
                       </span>
                       {(isClosed || isOff) && !day.isSunday && (
@@ -826,6 +827,9 @@ export function BarberWeekView({
                           className={`border-r border-gray-200 p-0 relative ${isCurrentSlotToday ? 'bg-red-50/50 z-10' : ''}`}
                           style={isCurrentSlotToday ? { boxShadow: 'inset 0 0 0 1px rgb(248, 113, 113)' } : undefined}
                         >
+                          {day.isPast && (
+                            <div className="absolute inset-0 bg-slate-200/40 pointer-events-none z-[1]" />
+                          )}
                           {/* Absolut positionierter Container verhindert Zellen-Dehnung */}
                           <div className="absolute inset-0 overflow-visible">
                             <DroppableCell id={dropId} disabled={isDisabled || isPast}>

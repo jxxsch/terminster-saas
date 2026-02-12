@@ -245,12 +245,13 @@ export default function DashboardPage() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const days: { date: Date; dateStr: string; dayName: string; dayNum: number; isToday: boolean; isSunday: boolean; isOpenSunday: boolean; isClosed: boolean; closedReason?: string }[] = [];
+    const days: { date: Date; dateStr: string; dayName: string; dayNum: number; isToday: boolean; isPast: boolean; isSunday: boolean; isOpenSunday: boolean; isClosed: boolean; closedReason?: string }[] = [];
     for (let i = 0; i < 7; i++) {
       const date = new Date(monday);
       date.setDate(monday.getDate() + i);
       const dateStr = formatDateLocal(date);
       const isToday = date.getTime() === today.getTime();
+      const isPast = date < today;
       const isActuallySunday = date.getDay() === 0;
       const isOpenSunday = isActuallySunday && openSundays.some(os => os.date === dateStr);
       const isSunday = isActuallySunday && !isOpenSunday;
@@ -261,6 +262,7 @@ export default function DashboardPage() {
         dayName: tDays(`short.${DAY_KEYS[date.getDay()]}`),
         dayNum: date.getDate(),
         isToday,
+        isPast,
         isSunday,
         isOpenSunday,
         isClosed: !!closedDate,
@@ -564,6 +566,10 @@ export default function DashboardPage() {
                     ? isSelected
                       ? 'bg-red-100 text-red-600 border-red-200'
                       : 'bg-slate-100 text-slate-400 border-transparent'
+                    : day.isPast
+                    ? isSelected
+                      ? 'bg-slate-100 text-slate-400 shadow-sm border-slate-300'
+                      : 'bg-slate-100 text-slate-400 border-transparent'
                     : isSelected
                     ? 'bg-white text-slate-900 shadow-sm border-gold'
                     : 'bg-slate-100 text-slate-500 border-transparent'
@@ -832,6 +838,10 @@ export default function DashboardPage() {
                     : isClosedDay
                     ? isSelected
                       ? 'bg-red-100 text-red-600 border-red-200'
+                      : 'bg-slate-100 text-slate-400 border-transparent'
+                    : day.isPast
+                    ? isSelected
+                      ? 'bg-slate-100 text-slate-400 shadow-sm border-slate-300'
                       : 'bg-slate-100 text-slate-400 border-transparent'
                     : isSelected
                     ? 'bg-white text-slate-900 shadow-sm border-gold'

@@ -1000,8 +1000,7 @@ export function AppointmentSlot({
               Pause
             </span>
           </div>
-          {/* X zum Löschen - nicht bei vergangenen */}
-          {!isPast && (
+          {/* X zum Löschen */}
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -1014,7 +1013,6 @@ export function AppointmentSlot({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
-          )}
         </div>
 
         {/* Pause Löschen Bestätigungs-Modal */}
@@ -1160,18 +1158,16 @@ export function AppointmentSlot({
               </span>
             </div>
           </div>
-          {/* X zum direkten Löschen - nicht bei vergangenen */}
-          {!isPast && (
-            <button
-              onClick={handleDeleteCancelledDirect}
-              className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded border border-red-300 bg-red-50 hover:bg-red-100 transition-colors"
-              title="Endgültig löschen"
-            >
-              <svg className="w-2.5 h-2.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
+          {/* X zum direkten Löschen */}
+          <button
+            onClick={handleDeleteCancelledDirect}
+            className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded border border-red-300 bg-red-50 hover:bg-red-100 transition-colors"
+            title="Endgültig löschen"
+          >
+            <svg className="w-2.5 h-2.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       </div>
     );

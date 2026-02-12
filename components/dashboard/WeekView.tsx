@@ -713,6 +713,14 @@ export function WeekView({
 
   const currentDay = weekDays[selectedDay] || weekDays[0];
 
+  // Prüfe ob der angezeigte Tag vergangen ist (heute gilt NICHT als vergangen)
+  const isDayPast = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const check = new Date(currentDay.dateStr + 'T00:00:00');
+    return check < today;
+  }, [currentDay.dateStr]);
+
   // Handler für "Alle Termine löschen" eines Barbers
   const handleDeleteAllForBarber = async () => {
     if (!deleteAllModal) return;
@@ -807,6 +815,9 @@ export function WeekView({
 
         {/* Schedule Grid - Table-Layout für durchgehende Linien */}
         <div className={`bg-white rounded-lg border border-gray-200 shadow-sm flex-1 min-h-0 overflow-hidden relative ${isClosed ? 'grayscale opacity-40' : ''}`}>
+          {isDayPast && !isClosed && (
+            <div className="absolute inset-0 bg-slate-200/40 pointer-events-none z-[5] rounded-lg" />
+          )}
           <div className="absolute inset-0 overflow-x-auto overflow-y-hidden">
             {/* Mobile: min-width basierend auf Barber-Anzahl, damit horizontal gescrollt werden kann */}
             <table
