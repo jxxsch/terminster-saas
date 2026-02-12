@@ -186,6 +186,29 @@ a:not([class*="nav"]):not([class*="tracking"]):hover {
   color: var(--color-gold);
 }
 
+/* Search field expand/collapse animation */
+@keyframes expandSearch {
+  from {
+    width: 40px;
+    opacity: 0.5;
+  }
+  to {
+    width: 192px;
+    opacity: 1;
+  }
+}
+
+@keyframes collapseSearch {
+  from {
+    width: 192px;
+    opacity: 1;
+  }
+  to {
+    width: 40px;
+    opacity: 0;
+  }
+}
+
 /* Progress fill animation for drag hover */
 @keyframes progress-fill {
   from {

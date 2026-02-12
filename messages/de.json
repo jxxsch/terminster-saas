@@ -413,6 +413,7 @@
     "cancelled": "Storniert",
     "cancelAppointment": "Termin absagen",
     "cancelConfirm": "Möchtest du diesen Termin wirklich absagen?",
+    "time": "Uhrzeit",
     "barber": "Friseur",
     "service": "Leistung",
     "price": "Preis",
@@ -428,7 +429,15 @@
     "saveChanges": "Änderungen speichern",
     "logoutConfirm": "Möchtest du dich wirklich abmelden?",
     "connectionError": "Verbindungsfehler",
-    "dataLoadFailed": "Daten konnten nicht geladen werden"
+    "dataLoadFailed": "Daten konnten nicht geladen werden",
+    "deleteAccount": "Konto löschen",
+    "deleteAccountDesc": "Dein Konto und alle persönlichen Daten werden unwiderruflich gelöscht. Deine bestehenden Termine bleiben anonym erhalten.",
+    "deleteAccountConfirm": "Konto unwiderruflich löschen?",
+    "deleteAccountWarning": "Diese Aktion kann nicht rückgängig gemacht werden. Alle deine Daten werden gelöscht.",
+    "deleteAccountType": "Gib LÖSCHEN ein, um zu bestätigen",
+    "deleteAccountButton": "Konto endgültig löschen",
+    "deleteAccountSuccess": "Dein Konto wurde gelöscht",
+    "deleting": "Lösche..."
   },
   "status": {
     "open": "Geöffnet",

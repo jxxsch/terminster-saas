@@ -52,6 +52,13 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
 
+  // Delete account
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   useEffect(() => {
     setMounted(true);
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -231,6 +238,31 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
     setIsSavingProfile(false);
   };
 
+  const handleDeleteAccount = async () => {
+    if (!customer) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const res = await fetch('/api/customer/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId: customer.id }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Delete failed');
+      }
+
+      signOut();
+      onClose();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Delete failed');
+      setIsDeleting(false);
+    }
+  };
+
   const hasProfileChanges = () => {
     if (!customer) return false;
     return (
@@ -277,8 +309,8 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
       backgroundColor: '#f8fafc',
       width: '100%',
       maxWidth: isMobile ? '100%' : '40rem',
-      height: isMobile ? '100%' : '70vh',
-      minHeight: isMobile ? '100%' : '500px',
+      height: isMobile ? '100%' : '80vh',
+      minHeight: isMobile ? '100%' : '580px',
       borderRadius: isMobile ? 0 : '1rem',
       overflow: 'hidden',
       boxShadow: isMobile ? 'none' : '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
@@ -352,6 +384,8 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
       flex: 1,
       padding: '1.25rem',
       overflowY: 'auto' as const,
+      display: 'flex',
+      flexDirection: 'column' as const,
     },
     label: {
       display: 'block',
@@ -502,6 +536,10 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
         .apt-card:hover {
           border-color: #d4a853 !important;
         }
+        .delete-account-btn:hover {
+          border-color: #fecaca !important;
+          background-color: #fef2f2 !important;
+        }
       `}</style>
 
       <div style={styles.backdrop} onClick={onClose} />
@@ -636,10 +674,12 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                     ) : (
                       upcomingAppointments.map(apt => (
                         <div key={apt.id} className="apt-card" style={styles.appointmentCard}>
-                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div>
                               <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#0f172a' }}>{formatDate(apt.date)}</p>
-                              <p style={{ fontSize: '0.75rem', color: '#64748b' }}>{apt.time_slot} {tCommon('oclock')}</p>
+                              <p style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                {t('time')}: {apt.time_slot} {tCommon('oclock')} <span style={{ color: '#cbd5e1' }}>·</span> {t('barber')}: {getBarberName(apt.barber_id)}
+                              </p>
                             </div>
                             {canCancelAppointment(apt) ? (
                               <button
@@ -655,10 +695,6 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                                 &lt; {cancellationHours}h
                               </span>
                             )}
-                          </div>
-                          <div style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>
-                            <span style={{ color: '#94a3b8' }}>{t('barber')}:</span>{' '}
-                            <span style={{ color: '#0f172a' }}>{getBarberName(apt.barber_id)}</span>
                           </div>
                         </div>
                       ))
@@ -679,22 +715,20 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                     ) : (
                       pastAppointments.map(apt => (
                         <div key={apt.id} style={apt.status === 'cancelled' ? styles.appointmentCardCancelled : styles.appointmentCard}>
-                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div>
                               <p style={{ fontSize: '0.875rem', fontWeight: 600, color: apt.status === 'cancelled' ? '#ef4444' : '#64748b' }}>
                                 {formatDate(apt.date)}
                               </p>
-                              <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{apt.time_slot} {tCommon('oclock')}</p>
+                              <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                                {t('time')}: {apt.time_slot} {tCommon('oclock')} <span style={{ color: '#e2e8f0' }}>·</span> {t('barber')}: {getBarberName(apt.barber_id)}
+                              </p>
                             </div>
                             {apt.status === 'cancelled' && (
                               <span style={{ padding: '0.375rem 0.625rem', fontSize: '0.6875rem', color: '#ef4444', backgroundColor: '#fee2e2', borderRadius: '0.375rem' }}>
                                 {t('cancelled')}
                               </span>
                             )}
-                          </div>
-                          <div style={{ marginTop: '0.5rem', fontSize: '0.75rem' }}>
-                            <span style={{ color: '#94a3b8' }}>{t('barber')}:</span>{' '}
-                            <span style={{ color: '#64748b' }}>{getBarberName(apt.barber_id)}</span>
                           </div>
                         </div>
                       ))
@@ -704,7 +738,7 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
 
                 {/* Profile */}
                 {activeTab === 'profile' && (
-                  <div>
+                  <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%' }}>
                     {profileSuccess && (
                       <div style={styles.successBox}>
                         <svg style={{ width: '1rem', height: '1rem', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -715,7 +749,7 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                     )}
 
                     {/* Persönliche Daten */}
-                    <div style={{ marginBottom: '1.5rem' }}>
+                    <div style={{ marginBottom: '1rem' }}>
                       <label style={styles.label}>{t('personalData')}</label>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                         <input
@@ -738,7 +772,7 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                     </div>
 
                     {/* Kontakt */}
-                    <div style={{ marginBottom: '1.5rem' }}>
+                    <div style={{ marginBottom: '1rem' }}>
                       <label style={styles.label}>{t('contact')}</label>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '0.5rem' }}>
                         <input
@@ -760,7 +794,7 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                     </div>
 
                     {/* Geburtstag */}
-                    <div style={{ marginBottom: '1.5rem', maxWidth: '12rem' }}>
+                    <div style={{ marginBottom: '1rem', maxWidth: '12rem' }}>
                       <label style={styles.label}>{tAuth('birthDate')}</label>
                       <DatePicker
                         value={editBirthDate}
@@ -771,24 +805,43 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                       />
                     </div>
 
-                    {/* Mitglied seit */}
-                    <div style={{ marginBottom: '1.5rem' }}>
-                      <label style={styles.label}>{t('membership')}</label>
-                      <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
-                        {t('memberSince')} {formatBirthDate(customer.created_at)}
-                      </p>
-                    </div>
-
-                    {/* Speichern Button */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    {/* Mitglied seit + Speichern Button auf einer Zeile */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                      <div>
+                        <label style={{ ...styles.label, marginBottom: '0.25rem' }}>{t('membership')}</label>
+                        <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                          {t('memberSince')} {formatBirthDate(customer.created_at)}
+                        </p>
+                      </div>
                       <button
                         onClick={handleSaveProfile}
                         disabled={isSavingProfile || !hasProfileChanges()}
                         className="primary-btn"
-                        style={styles.primaryButton}
+                        style={{ ...styles.primaryButton, flexShrink: 0, marginLeft: '1rem' }}
                       >
                         {isSavingProfile ? tCommon('saving') : t('saveChanges')}
                       </button>
+                    </div>
+
+                    {/* Konto löschen */}
+                    <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <p style={{ fontSize: '0.75rem', fontWeight: 500, color: '#64748b' }}>
+                            {t('deleteAccount')}
+                          </p>
+                          <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.125rem' }}>
+                            {t('deleteAccountDesc')}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => { setShowDeleteConfirm(true); setDeleteStep(1); setDeleteConfirmText(''); setDeleteError(null); }}
+                          className="delete-account-btn"
+                          style={{ padding: '0.5rem 0.875rem', backgroundColor: '#f8fafc', color: '#ef4444', border: '1px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.6875rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s ease', flexShrink: 0, marginLeft: '1rem' }}
+                        >
+                          {t('deleteAccount')}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -850,6 +903,94 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                 {t('cancelAppointment')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Konto löschen Bestätigungsdialog */}
+      {showDeleteConfirm && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 10001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+          onClick={() => { if (!isDeleting) { setShowDeleteConfirm(false); } }}
+        >
+          <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)' }} />
+          <div
+            style={{ position: 'relative', backgroundColor: 'white', borderRadius: '0.75rem', padding: '1.5rem', maxWidth: '22rem', width: '100%', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {deleteStep === 1 ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                  <div style={{ width: '2.5rem', height: '2.5rem', borderRadius: '50%', backgroundColor: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="20" height="20" fill="none" stroke="#ef4444" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#0f172a' }}>
+                    {t('deleteAccountConfirm')}
+                  </p>
+                </div>
+                <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '1.25rem' }}>
+                  {t('deleteAccountWarning')}
+                </p>
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', backgroundColor: '#f1f5f9', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}
+                  >
+                    {tCommon('cancel')}
+                  </button>
+                  <button
+                    onClick={() => setDeleteStep(2)}
+                    style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: 'white', backgroundColor: '#ef4444', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}
+                  >
+                    {t('deleteAccount')}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#0f172a', marginBottom: '0.75rem' }}>
+                  {t('deleteAccountConfirm')}
+                </p>
+                <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '1rem' }}>
+                  {t('deleteAccountType')}
+                </p>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="LÖSCHEN / DELETE"
+                  disabled={isDeleting}
+                  className="portal-input"
+                  style={{ ...styles.input, marginBottom: '1rem' }}
+                />
+                {deleteError && (
+                  <div style={{ ...styles.errorBox, marginBottom: '1rem' }}>
+                    <svg style={{ width: '1rem', height: '1rem', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{deleteError}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={() => { setShowDeleteConfirm(false); setDeleteStep(1); setDeleteConfirmText(''); }}
+                    disabled={isDeleting}
+                    style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: '#64748b', backgroundColor: '#f1f5f9', border: 'none', borderRadius: '0.5rem', cursor: isDeleting ? 'not-allowed' : 'pointer', opacity: isDeleting ? 0.5 : 1 }}
+                  >
+                    {tCommon('cancel')}
+                  </button>
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={isDeleting || (deleteConfirmText !== 'LÖSCHEN' && deleteConfirmText !== 'DELETE')}
+                    style={{ padding: '0.5rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: 'white', backgroundColor: '#ef4444', border: 'none', borderRadius: '0.5rem', cursor: (isDeleting || (deleteConfirmText !== 'LÖSCHEN' && deleteConfirmText !== 'DELETE')) ? 'not-allowed' : 'pointer', opacity: (isDeleting || (deleteConfirmText !== 'LÖSCHEN' && deleteConfirmText !== 'DELETE')) ? 0.5 : 1 }}
+                  >
+                    {isDeleting ? t('deleting') : t('deleteAccountButton')}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

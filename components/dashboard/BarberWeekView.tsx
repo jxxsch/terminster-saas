@@ -86,6 +86,7 @@ interface BarberWeekViewProps {
   onClearSelection?: () => void;
   onExitSelectionMode?: () => void;
   onSelectedAppointmentsChange?: (ids: Set<string>) => void;
+  searchHighlightIds?: Set<string>;
 }
 
 interface SlotInfo {
@@ -104,6 +105,7 @@ export function BarberWeekView({
   onClearSelection,
   onExitSelectionMode,
   onSelectedAppointmentsChange,
+  searchHighlightIds = new Set(),
 }: BarberWeekViewProps) {
   const startDate = formatDateLocal(monday);
   const endDate = formatDateLocal(new Date(monday.getTime() + 6 * 24 * 60 * 60 * 1000));
@@ -852,6 +854,7 @@ export function BarberWeekView({
                                     onToggleSelect={(shiftKey) => handleSelectAppointment(appointment.id, day.dateStr, shiftKey)}
                                     isPast={isPast}
                                     allowEditCustomer={allowEditCustomer}
+                                    isSearchHighlight={searchHighlightIds.size > 0 ? searchHighlightIds.has(appointment.id) : undefined}
                                   />
                                 </DraggableSlot>
                               ) : !appointment && isPartialBlock ? (
@@ -884,6 +887,7 @@ export function BarberWeekView({
                                   isSelected={false}
                                   isPast={isPast}
                                   allowEditCustomer={allowEditCustomer}
+                                  isSearchHighlight={undefined}
                                 />
                               )}
                             </DroppableCell>

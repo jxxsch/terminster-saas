@@ -413,6 +413,7 @@
     "cancelled": "Cancelled",
     "cancelAppointment": "Cancel appointment",
     "cancelConfirm": "Do you really want to cancel this appointment?",
+    "time": "Time",
     "barber": "Barber",
     "service": "Service",
     "price": "Price",
@@ -428,7 +429,15 @@
     "saveChanges": "Save changes",
     "logoutConfirm": "Do you really want to log out?",
     "connectionError": "Connection error",
-    "dataLoadFailed": "Data could not be loaded"
+    "dataLoadFailed": "Data could not be loaded",
+    "deleteAccount": "Delete account",
+    "deleteAccountDesc": "Your account and all personal data will be permanently deleted. Your existing appointments will remain anonymously.",
+    "deleteAccountConfirm": "Permanently delete account?",
+    "deleteAccountWarning": "This action cannot be undone. All your data will be deleted.",
+    "deleteAccountType": "Type DELETE to confirm",
+    "deleteAccountButton": "Permanently delete account",
+    "deleteAccountSuccess": "Your account has been deleted",
+    "deleting": "Deleting..."
   },
   "status": {
     "open": "Open",

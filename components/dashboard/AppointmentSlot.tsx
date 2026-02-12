@@ -45,6 +45,8 @@ interface AppointmentSlotProps {
   isPast?: boolean;
   // Kundendaten bearbeitbar?
   allowEditCustomer?: boolean;
+  // Suche: Treffer hervorheben (undefined = Suche nicht aktiv)
+  isSearchHighlight?: boolean;
 }
 
 export function AppointmentSlot({
@@ -71,6 +73,7 @@ export function AppointmentSlot({
   formatName = (name) => name,
   isPast = false,
   allowEditCustomer = false,
+  isSearchHighlight,
 }: AppointmentSlotProps) {
   const [showDetails, setShowDetails] = useState(false);
   const [backdropReady, setBackdropReady] = useState(false);
@@ -1174,10 +1177,18 @@ export function AppointmentSlot({
     );
   }
 
+  // Search highlighting: isSearchHighlight === true → Treffer (goldener Ring),
+  // isSearchHighlight === false → Nicht-Treffer (dimmed), undefined → keine Suche aktiv
+  const searchHighlightClass = isSearchHighlight === true
+    ? 'ring-2 ring-amber-400 ring-inset'
+    : isSearchHighlight === false
+    ? 'opacity-30'
+    : '';
+
   return (
     <div
       ref={slotRef}
-      className={`relative p-1 h-full transition-colors select-none cursor-pointer ${
+      className={`relative p-1 h-full transition-all select-none cursor-pointer ${
         selectionMode
           ? isSelected
             ? 'bg-red-100 ring-2 ring-red-400 ring-inset'
@@ -1193,7 +1204,7 @@ export function AppointmentSlot({
           : isOnline
           ? 'bg-green-100 hover:bg-green-200'
           : 'bg-gold/30 hover:bg-gold/40'
-      }`}
+      } ${searchHighlightClass}`}
       onClick={handleClick}
     >
       <div className="flex items-center justify-between gap-1 h-full pl-1">

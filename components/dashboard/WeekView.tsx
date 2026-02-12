@@ -72,6 +72,7 @@ interface WeekViewProps {
   onExitSelectionMode?: () => void;
   onSelectedAppointmentsChange?: (ids: Set<string>) => void;
   formatName?: (name: string) => string;
+  searchHighlightIds?: Set<string>;
 }
 
 interface SlotInfo {
@@ -109,6 +110,7 @@ export function WeekView({
   onExitSelectionMode,
   onSelectedAppointmentsChange,
   formatName = (name) => name,
+  searchHighlightIds = new Set(),
 }: WeekViewProps) {
   // Generate week days (Mo-So, 7 Tage) - moved up for SWR key computation
   const weekDays = useMemo(() => {
@@ -984,6 +986,7 @@ export function WeekView({
                                 formatName={formatName}
                                 isPast={isPast}
                                 allowEditCustomer={allowEditCustomer}
+                                isSearchHighlight={searchHighlightIds.size > 0 ? searchHighlightIds.has(appointment.id) : undefined}
                               />
                             </DraggableSlot>
                           ) : !appointment && isPartialBlock ? (
@@ -1018,6 +1021,7 @@ export function WeekView({
                               formatName={formatName}
                               isPast={isPast}
                               allowEditCustomer={allowEditCustomer}
+                              isSearchHighlight={searchHighlightIds.size > 0 && appointment ? searchHighlightIds.has(appointment.id) : undefined}
                             />
                           )}
                         </DroppableCell>

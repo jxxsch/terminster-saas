@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { WeekView } from '@/components/dashboard/WeekView';
 import { BarberWeekView } from '@/components/dashboard/BarberWeekView';
 import { useClosedDates, useOpenSundays } from '@/hooks/swr/use-dashboard-data';
 import { useTranslations } from 'next-intl';
 import { useLogoUrl } from '@/hooks/useLogoUrl';
+import { AppointmentSearch } from '@/components/dashboard/AppointmentSearch';
 
 type ViewMode = 'day' | 'barber';
 type NameDisplayMode = 'firstName' | 'lastName' | 'fullName';
@@ -107,6 +108,9 @@ export default function DashboardPage() {
   const [selectedAppointments, setSelectedAppointments] = useState<Set<string>>(new Set());
   const [nameDisplayMode, setNameDisplayMode] = useState<NameDisplayMode>('lastName');
   const [showNameDropdown, setShowNameDropdown] = useState(false);
+  const [searchHighlightIds, setSearchHighlightIds] = useState<Set<string>>(new Set());
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [desktopSearchState, setDesktopSearchState] = useState<'closed' | 'open' | 'closing'>('closed');
   const [showCancelledModal, setShowCancelledModal] = useState(false);
   const [closeButtonHover, setCloseButtonHover] = useState(false);
   const [cancelledAppointments, setCancelledAppointments] = useState<Array<{
@@ -159,6 +163,55 @@ export default function DashboardPage() {
     loadCancelledAppointments();
     setShowCancelledModal(true);
   }, [loadCancelledAppointments]);
+
+  // Suche: Zum Termin navigieren
+  const handleSearchNavigate = useCallback((date: string, _appointmentIds: string[]) => {
+    // Berechne weekOffset und dayIndex für das Datum
+    const targetDate = new Date(date + 'T00:00:00');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Montag der Zielwoche berechnen
+    const targetDay = targetDate.getDay(); // 0=So, 1=Mo, ...
+    const targetMonday = new Date(targetDate);
+    const diffToMonday = targetDay === 0 ? -6 : 1 - targetDay;
+    targetMonday.setDate(targetDate.getDate() + diffToMonday);
+
+    // Montag der aktuellen Woche
+    const currentMonday = getMondayOfWeek(0);
+
+    // Wochendifferenz
+    const diffWeeks = Math.round((targetMonday.getTime() - currentMonday.getTime()) / (7 * 24 * 60 * 60 * 1000));
+    setCurrentWeekOffset(diffWeeks);
+
+    // Tag innerhalb der Woche (0=Mo, 1=Di, ..., 6=So)
+    const dayIndex = targetDay === 0 ? 6 : targetDay - 1;
+    setSelectedDay(dayIndex);
+  }, []);
+
+  // Suche: Highlighting aktualisieren
+  const handleSearchHighlightChange = useCallback((ids: Set<string>) => {
+    setSearchHighlightIds(ids);
+  }, []);
+
+  // Desktop-Suchpanel schließen (mit Animation)
+  const closeDesktopSearch = useCallback(() => {
+    setDesktopSearchState('closing');
+    setSearchHighlightIds(new Set());
+  }, []);
+
+  // Click-Outside: Suchfeld schließen
+  const desktopSearchRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (desktopSearchState !== 'open') return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (desktopSearchRef.current && !desktopSearchRef.current.contains(e.target as Node)) {
+        closeDesktopSearch();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [desktopSearchState, closeDesktopSearch]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -427,6 +480,18 @@ export default function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4l16 16" />
               </svg>
             </button>
+
+            {/* Suche - Mobile (Lupe-Icon) */}
+            <button
+              onClick={() => setShowMobileSearch(true)}
+              className={`p-1.5 rounded-lg transition-all ${
+                searchHighlightIds.size > 0 ? 'bg-gold text-slate-900' : 'bg-slate-100 text-slate-500'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
           </div>
 
           {/* KW Navigation - Mobile */}
@@ -554,7 +619,7 @@ export default function DashboardPage() {
         {/* Desktop: Original Layout */}
         <div className="hidden md:flex items-center">
           {/* View Toggle - Links */}
-          <div className="flex items-center gap-2">
+          <div className="flex-1 flex items-center gap-2">
             <div className="flex items-center bg-slate-100 rounded-xl p-1">
               <button
                 onClick={() => {
@@ -679,10 +744,50 @@ export default function DashboardPage() {
                 </>
               )}
             </div>
+
+            {/* Terminsuche - Desktop: Lupen-Icon expandiert zu Suchfeld */}
+            {desktopSearchState !== 'closed' ? (
+              <div
+                ref={desktopSearchRef}
+                className={`overflow-hidden ${
+                  desktopSearchState === 'open'
+                    ? 'animate-[expandSearch_0.25s_ease-out_forwards]'
+                    : 'animate-[collapseSearch_0.2s_ease-in_forwards]'
+                }`}
+                onAnimationEnd={() => {
+                  if (desktopSearchState === 'closing') {
+                    setDesktopSearchState('closed');
+                  }
+                }}
+              >
+                <AppointmentSearch
+                  onNavigate={(date, ids) => {
+                    handleSearchNavigate(date, ids);
+                    closeDesktopSearch();
+                  }}
+                  onHighlightChange={handleSearchHighlightChange}
+                  onClose={closeDesktopSearch}
+                />
+              </div>
+            ) : (
+              <button
+                onClick={() => setDesktopSearchState('open')}
+                className={`flex items-center justify-center px-3 py-2 rounded-xl transition-all ${
+                  searchHighlightIds.size > 0
+                    ? 'bg-gold text-slate-900 shadow-sm'
+                    : 'bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200'
+                }`}
+                title="Kunde suchen"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+            )}
           </div>
 
-          {/* Day Tabs - Mitte (zentriert) */}
-          <div className="flex-1 flex items-center justify-center gap-1">
+          {/* Day Tabs - Mitte (zentriert, visuell nach rechts versetzt für Kalender-Ausrichtung) */}
+          <div className="flex items-center justify-center gap-1 translate-x-[65px]">
           <button
             onClick={() => {
               if (viewMode === 'barber') {
@@ -783,8 +888,8 @@ export default function DashboardPage() {
           </button>
         </div>
 
-          {/* KW Navigation - Rechts (feste Breite) */}
-          <div className="flex items-center gap-1 w-[160px] justify-end">
+          {/* KW Navigation - Rechts */}
+          <div className="flex-1 flex items-center gap-1 justify-end">
             <button
               onClick={() => setCurrentWeekOffset(prev => prev - 1)}
               className="w-8 h-8 flex items-center justify-center rounded-lg bg-white text-slate-400 hover:text-slate-600 hover:ring-2 hover:ring-gold transition-all shadow-sm"
@@ -827,6 +932,7 @@ export default function DashboardPage() {
             onExitSelectionMode={handleExitSelectionMode}
             onSelectedAppointmentsChange={setSelectedAppointments}
             formatName={(name) => formatCustomerName(name, nameDisplayMode)}
+            searchHighlightIds={searchHighlightIds}
           />
         ) : (
           <BarberWeekView
@@ -838,9 +944,34 @@ export default function DashboardPage() {
             onClearSelection={handleClearSelection}
             onExitSelectionMode={handleExitSelectionMode}
             onSelectedAppointmentsChange={setSelectedAppointments}
+            searchHighlightIds={searchHighlightIds}
           />
         )}
       </main>
+
+      {/* Mobile Suche Overlay */}
+      {showMobileSearch && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => {
+            setShowMobileSearch(false);
+            setSearchHighlightIds(new Set());
+          }} />
+          <div className="absolute top-0 left-0 right-0 bg-white p-3 shadow-lg">
+            <AppointmentSearch
+              onNavigate={(date, ids) => {
+                handleSearchNavigate(date, ids);
+                setShowMobileSearch(false);
+              }}
+              onHighlightChange={handleSearchHighlightChange}
+              onClose={() => {
+                setShowMobileSearch(false);
+                setSearchHighlightIds(new Set());
+              }}
+              isMobile
+            />
+          </div>
+        </div>
+      )}
 
       {/* Stornierte Termine Modal - via Portal */}
       {showCancelledModal && typeof document !== 'undefined' && createPortal(

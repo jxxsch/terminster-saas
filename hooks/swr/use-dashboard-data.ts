@@ -192,6 +192,29 @@ export function useFreeDayExceptions(startDate?: string, endDate?: string) {
 }
 
 // ============================================
+// SEARCH HOOK (5 Wochen voraus)
+// ============================================
+
+export function useSearchAppointments(query: string) {
+  const today = new Date();
+  const fiveWeeksLater = new Date(today);
+  fiveWeeksLater.setDate(fiveWeeksLater.getDate() + 35);
+
+  const startDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const endDate = `${fiveWeeksLater.getFullYear()}-${String(fiveWeeksLater.getMonth() + 1).padStart(2, '0')}-${String(fiveWeeksLater.getDate()).padStart(2, '0')}`;
+
+  return useSWR<Appointment[]>(
+    query.length >= 2 ? `search:${startDate}:${endDate}` : null,
+    () => getAppointments(startDate, endDate),
+    {
+      dedupingInterval: 30 * 1000,
+      revalidateOnFocus: false,
+      fallbackData: [],
+    }
+  );
+}
+
+// ============================================
 // ADMIN HOOKS (All data including inactive)
 // ============================================
 

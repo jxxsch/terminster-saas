@@ -517,35 +517,35 @@ export function AddAppointmentModal({
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-white w-[600px] max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+      <div className="relative bg-white w-[700px] max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 z-10">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-gray-900">
+        <div className="sticky top-0 bg-white border-b border-gray-100 px-7 py-5 z-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">
               {mode === 'block' ? 'Blockierung' : mode === 'pause' ? 'Pause eintragen' : 'Neuer Termin'}
             </h2>
             <button
               onClick={onClose}
-              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
           {/* Mode Tabs */}
-          <div className="flex gap-2">
+          <div className="flex gap-2.5">
             <button
               type="button"
               onClick={() => setMode('appointment')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 mode === 'appointment'
                   ? 'bg-gold text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               Termin
@@ -553,13 +553,13 @@ export function AddAppointmentModal({
             <button
               type="button"
               onClick={() => setMode('pause')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 mode === 'pause'
                   ? 'bg-orange-500 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Pause
@@ -567,13 +567,13 @@ export function AddAppointmentModal({
             <button
               type="button"
               onClick={() => setMode('block')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 mode === 'block'
                   ? 'bg-red-500 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
               </svg>
               Blockierung
@@ -582,30 +582,30 @@ export function AddAppointmentModal({
         </div>
 
         {/* Content */}
-        <div className="p-5">
+        <div className="p-7">
           {/* Info Bar */}
-          <div className="bg-[#faf7f0] rounded-xl px-3.5 py-3 mb-4">
-            <div className="text-[15px] font-bold text-gold mb-1">{barberName}</div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+          <div className="bg-[#faf7f0] rounded-xl px-4 py-3.5 mb-5">
+            <div className="text-base font-bold text-gold mb-1.5">{barberName}</div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
                   <rect x="3" y="4" width="18" height="18" rx="2" />
                   <path d="M16 2v4M8 2v4M3 10h18" />
                 </svg>
-                <span className="text-[13px] text-gray-600">{formattedDate}</span>
+                <span className="text-sm text-gray-600">{formattedDate}</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 6v6l4 2" />
                 </svg>
-                <span className="text-[13px] font-semibold text-gray-600">{timeSlot} Uhr</span>
+                <span className="text-sm font-semibold text-gray-600">{timeSlot} Uhr</span>
               </div>
             </div>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Block Mode */}
             {mode === 'block' ? (
               <div className="space-y-4">
@@ -623,11 +623,11 @@ export function AddAppointmentModal({
 
                 {/* Bis-Endzeit */}
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1.5">Blockiert bis</label>
+                  <label className="block text-sm text-gray-500 mb-2">Blockiert bis</label>
                   <select
                     value={blockEndTime}
                     onChange={(e) => setBlockEndTime(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black focus:border-gold focus:outline-none transition-colors"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-black focus:border-gold focus:outline-none transition-colors"
                   >
                     {blockEndOptions.map((s) => (
                       <option key={s} value={s}>
@@ -642,11 +642,11 @@ export function AddAppointmentModal({
 
                 {/* Grund */}
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1.5">Grund</label>
+                  <label className="block text-sm text-gray-500 mb-2">Grund</label>
                   <select
                     value={blockReason}
                     onChange={(e) => setBlockReason(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black focus:border-gold focus:outline-none transition-colors"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-black focus:border-gold focus:outline-none transition-colors"
                   >
                     <option value="Krank">Krank</option>
                     <option value="Arzttermin">Arzttermin</option>
@@ -728,7 +728,7 @@ export function AddAppointmentModal({
                 {/* Name & Phone Row */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="relative">
-                    <label className="block text-xs text-gray-500 mb-1.5">
+                    <label className="block text-sm text-gray-500 mb-2">
                       Kundenname *
                     </label>
                     {selectedCustomer ? (
@@ -774,7 +774,7 @@ export function AddAppointmentModal({
                               }
                             }}
                             placeholder="Name eingeben..."
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors pr-8"
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors pr-8"
                             autoFocus
                           />
                           {isSearching && activeSearchField === 'name' && (
@@ -829,7 +829,7 @@ export function AddAppointmentModal({
                     )}
                   </div>
                   <div className="relative">
-                    <label className="block text-xs text-gray-500 mb-1.5">
+                    <label className="block text-sm text-gray-500 mb-2">
                       Telefon {selectedCustomer ? '' : '(optional)'}
                     </label>
                     <div className="relative">
@@ -911,7 +911,7 @@ export function AddAppointmentModal({
                 {/* E-Mail & Kundenkonto erstellen */}
                 {!selectedCustomer && (
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1.5">
+                    <label className="block text-sm text-gray-500 mb-2">
                       E-Mail {createAccount && <span className="text-red-500">*</span>}
                     </label>
                     <div className="flex gap-3">
@@ -920,7 +920,7 @@ export function AddAppointmentModal({
                         value={customerEmail}
                         onChange={(e) => setCustomerEmail(e.target.value)}
                         placeholder="kunde@example.com"
-                        className="flex-1 px-3 py-2.5 border border-gray-200 rounded-lg text-sm text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
+                        className="flex-1 px-4 py-3 border border-gray-200 rounded-xl text-sm text-black placeholder-gray-400 focus:border-gold focus:outline-none transition-colors"
                       />
                       <button
                         type="button"
@@ -973,7 +973,7 @@ export function AddAppointmentModal({
                 {/* Service Selection - nur anzeigen wenn Services vorhanden */}
                 {services.length > 0 && (
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1.5">
+                    <label className="block text-sm text-gray-500 mb-2">
                       Leistung
                     </label>
                     <div className="grid grid-cols-4 gap-2">
@@ -1001,17 +1001,17 @@ export function AddAppointmentModal({
                 )}
 
                 {/* Series Toggle */}
-                <div className="border-t border-gray-100 pt-4">
+                <div className="border-t border-gray-100 pt-5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="flex items-center gap-1.5 text-xs font-medium text-black">
-                        <svg className={`w-3.5 h-3.5 ${isSeries ? 'text-gold' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <span className="flex items-center gap-2 text-sm font-medium text-black">
+                        <svg className={`w-4 h-4 ${isSeries ? 'text-gold' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
                         Serientermin
                       </span>
                       {isSeries && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-sm text-gray-500">
                           {intervalWeeks === 1
                             ? `Jeden ${DAY_NAMES[dateObj.getDay()]}`
                             : `Alle ${intervalWeeks} Wochen ${DAY_NAMES[dateObj.getDay()]}`
@@ -1022,13 +1022,13 @@ export function AddAppointmentModal({
                     <button
                       type="button"
                       onClick={() => setIsSeries(!isSeries)}
-                      className={`relative w-12 h-6 rounded-full transition-colors outline-none focus:outline-none ${
+                      className={`relative w-14 h-7 rounded-full transition-colors outline-none focus:outline-none ${
                         isSeries ? 'bg-gold' : 'bg-gray-300'
                       }`}
                     >
                       <span
-                        className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-200 ${
-                          isSeries ? 'translate-x-6' : 'translate-x-0'
+                        className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 ${
+                          isSeries ? 'translate-x-7' : 'translate-x-0'
                         }`}
                       />
                     </button>
@@ -1037,11 +1037,11 @@ export function AddAppointmentModal({
                   {/* Intervall-Auswahl (only shown when series is enabled) */}
                   {isSeries && (
                     <div className="mt-3">
-                      <div className="flex gap-1.5 flex-wrap items-stretch">
+                      <div className="grid grid-cols-[1fr_1fr_1fr_minmax(10rem,auto)] gap-1.5 items-stretch">
                         <div
                           onClick={() => { setIntervalType('weekly'); setIntervalWeeks(1); }}
-                          className={`flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-all border cursor-pointer ${
-                            intervalWeeks === 1
+                          className={`flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-colors border cursor-pointer ${
+                            intervalType === 'weekly'
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
@@ -1050,8 +1050,8 @@ export function AddAppointmentModal({
                         </div>
                         <div
                           onClick={() => { setIntervalType('biweekly'); setIntervalWeeks(2); }}
-                          className={`flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-all border cursor-pointer ${
-                            intervalWeeks === 2
+                          className={`flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-colors border cursor-pointer ${
+                            intervalType === 'biweekly'
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
@@ -1060,30 +1060,29 @@ export function AddAppointmentModal({
                         </div>
                         <div
                           onClick={() => { setIntervalType('monthly'); setIntervalWeeks(4); }}
-                          className={`flex-1 flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-all border cursor-pointer ${
-                            intervalWeeks === 4
+                          className={`flex items-center justify-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-colors border cursor-pointer ${
+                            intervalType === 'monthly'
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
                           Monatlich
                         </div>
-                        <div className={`flex items-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-all border ${
-                            ![1, 2, 4].includes(intervalWeeks)
+                        <div
+                          onClick={() => setIntervalType('custom')}
+                          className={`flex items-center gap-1.5 h-8 px-2 rounded-lg text-xs transition-colors border cursor-pointer ${
+                            intervalType === 'custom'
                               ? 'border-gold bg-gold/10 text-gold'
-                              : 'border-gray-200 text-gray-400'
+                              : 'border-gray-200 text-gray-400 hover:border-gray-300'
                           }`}>
-                          <span className={![1, 2, 4].includes(intervalWeeks) ? '' : 'opacity-50'}>Alle</span>
+                          <span className={intervalType === 'custom' ? '' : 'opacity-50'}>Alle</span>
                           <div className="flex items-center border border-gray-200 rounded overflow-hidden">
                             <button
                               type="button"
                               onClick={() => {
                                 const val = Math.max(1, intervalWeeks - 1);
                                 setIntervalWeeks(val);
-                                if (val === 1) setIntervalType('weekly');
-                                else if (val === 2) setIntervalType('biweekly');
-                                else if (val === 4) setIntervalType('monthly');
-                                else setIntervalType('custom');
+                                setIntervalType('custom');
                               }}
                               className="w-6 h-6 flex items-center justify-center text-xs bg-gray-50 hover:bg-gray-100 transition-colors"
                             >−</button>
@@ -1093,14 +1092,12 @@ export function AddAppointmentModal({
                               onClick={() => {
                                 const val = intervalWeeks + 1;
                                 setIntervalWeeks(val);
-                                if (val === 2) setIntervalType('biweekly');
-                                else if (val === 4) setIntervalType('monthly');
-                                else setIntervalType('custom');
+                                setIntervalType('custom');
                               }}
                               className="w-6 h-6 flex items-center justify-center text-xs bg-gray-50 hover:bg-gray-100 transition-colors"
                             >+</button>
                           </div>
-                          <span className={![1, 2, 4].includes(intervalWeeks) ? '' : 'opacity-50'}>{intervalWeeks === 1 ? 'Woche' : 'Wochen'}</span>
+                          <span className={intervalType === 'custom' ? '' : 'opacity-50'}>Wochen</span>
                         </div>
                       </div>
                     </div>
@@ -1120,18 +1117,18 @@ export function AddAppointmentModal({
             )}
 
             {/* Buttons */}
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 pt-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-4 py-2.5 border border-gray-200 text-xs font-medium text-gray-600 rounded-xl hover:bg-gray-50 hover:text-black transition-colors"
+                className="flex-1 px-5 py-3 border border-gray-200 text-sm font-medium text-gray-600 rounded-xl hover:bg-gray-50 hover:text-black transition-colors"
               >
                 Abbrechen
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex-1 px-4 py-2.5 bg-gold text-xs font-medium text-white rounded-xl hover:bg-gold/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 px-5 py-3 bg-gold text-sm font-medium text-white rounded-xl hover:bg-gold/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <>
