@@ -713,31 +713,49 @@ export function AppointmentSlot({
                             {opt.label}
                           </button>
                         ))}
-                        <label
-                          className={`flex items-center gap-0 px-2 py-0.5 rounded text-[10px] border transition-all cursor-text ${
+                        <div className={`flex items-center rounded text-[10px] transition-all border ${
                             ![1, 2, 4].includes(selectedIntervalWeeks)
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                          }`}
-                        >
-                          <span>Alle&nbsp;</span>
-                          <input
-                            type="number"
-                            min={1}
-                            value={selectedIntervalWeeks}
-                            onFocus={(e) => { e.target.select(); if ([1, 2, 4].includes(selectedIntervalWeeks)) { setSelectedIntervalWeeks(3); setSelectedRhythm('custom'); } }}
-                            onChange={(e) => {
-                              const val = Math.max(1, parseInt(e.target.value) || 1);
-                              setSelectedIntervalWeeks(val);
-                              if (val === 1) setSelectedRhythm('weekly');
-                              else if (val === 2) setSelectedRhythm('biweekly');
-                              else if (val === 4) setSelectedRhythm('monthly');
-                              else setSelectedRhythm('custom');
+                          }`}>
+                          {![1, 2, 4].includes(selectedIntervalWeeks) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const val = Math.max(1, selectedIntervalWeeks - 1);
+                                setSelectedIntervalWeeks(val);
+                                if (val === 1) setSelectedRhythm('weekly');
+                                else if (val === 2) setSelectedRhythm('biweekly');
+                                else if (val === 4) setSelectedRhythm('monthly');
+                                else setSelectedRhythm('custom');
+                              }}
+                              className="px-1 py-0.5 text-[10px] hover:bg-gold/20 rounded-l transition-colors"
+                            >−</button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if ([1, 2, 4].includes(selectedIntervalWeeks)) {
+                                setSelectedIntervalWeeks(3);
+                                setSelectedRhythm('custom');
+                              }
                             }}
-                            className="w-[1.2em] text-center text-[10px] font-semibold bg-transparent border-none outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-                          <span>&nbsp;Wo.</span>
-                        </label>
+                            className="px-1.5 py-0.5"
+                          >
+                            Alle {![1, 2, 4].includes(selectedIntervalWeeks) ? selectedIntervalWeeks : '…'} Wo.
+                          </button>
+                          {![1, 2, 4].includes(selectedIntervalWeeks) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const val = selectedIntervalWeeks + 1;
+                                setSelectedIntervalWeeks(val);
+                                setSelectedRhythm('custom');
+                              }}
+                              className="px-1 py-0.5 text-[10px] hover:bg-gold/20 rounded-r transition-colors"
+                            >+</button>
+                          )}
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         <button
@@ -1380,31 +1398,49 @@ export function AppointmentSlot({
                             {opt.label}
                           </button>
                         ))}
-                        <label
-                          className={`flex items-center gap-0 px-2 py-0.5 rounded text-[10px] border transition-all cursor-text ${
+                        <div className={`flex items-center rounded text-[10px] transition-all border ${
                             ![1, 2, 4].includes(selectedIntervalWeeks)
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                          }`}
-                        >
-                          <span>Alle&nbsp;</span>
-                          <input
-                            type="number"
-                            min={1}
-                            value={selectedIntervalWeeks}
-                            onFocus={(e) => { e.target.select(); if ([1, 2, 4].includes(selectedIntervalWeeks)) { setSelectedIntervalWeeks(3); setSelectedRhythm('custom'); } }}
-                            onChange={(e) => {
-                              const val = Math.max(1, parseInt(e.target.value) || 1);
-                              setSelectedIntervalWeeks(val);
-                              if (val === 1) setSelectedRhythm('weekly');
-                              else if (val === 2) setSelectedRhythm('biweekly');
-                              else if (val === 4) setSelectedRhythm('monthly');
-                              else setSelectedRhythm('custom');
+                          }`}>
+                          {![1, 2, 4].includes(selectedIntervalWeeks) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const val = Math.max(1, selectedIntervalWeeks - 1);
+                                setSelectedIntervalWeeks(val);
+                                if (val === 1) setSelectedRhythm('weekly');
+                                else if (val === 2) setSelectedRhythm('biweekly');
+                                else if (val === 4) setSelectedRhythm('monthly');
+                                else setSelectedRhythm('custom');
+                              }}
+                              className="px-1 py-0.5 text-[10px] hover:bg-gold/20 rounded-l transition-colors"
+                            >−</button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if ([1, 2, 4].includes(selectedIntervalWeeks)) {
+                                setSelectedIntervalWeeks(3);
+                                setSelectedRhythm('custom');
+                              }
                             }}
-                            className="w-[1.2em] text-center text-[10px] font-semibold bg-transparent border-none outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-                          <span>&nbsp;Wo.</span>
-                        </label>
+                            className="px-1.5 py-0.5"
+                          >
+                            Alle {![1, 2, 4].includes(selectedIntervalWeeks) ? selectedIntervalWeeks : '…'} Wo.
+                          </button>
+                          {![1, 2, 4].includes(selectedIntervalWeeks) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const val = selectedIntervalWeeks + 1;
+                                setSelectedIntervalWeeks(val);
+                                setSelectedRhythm('custom');
+                              }}
+                              className="px-1 py-0.5 text-[10px] hover:bg-gold/20 rounded-r transition-colors"
+                            >+</button>
+                          )}
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         <button

@@ -1057,31 +1057,49 @@ export function AddAppointmentModal({
                         >
                           Monatlich
                         </button>
-                        <label
-                          className={`flex items-center gap-0 px-2.5 py-1 rounded-lg text-xs transition-all border cursor-text ${
+                        <div className={`flex items-center rounded-lg text-xs transition-all border ${
                             ![1, 2, 4].includes(intervalWeeks)
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                          }`}
-                        >
-                          <span>Alle&nbsp;</span>
-                          <input
-                            type="number"
-                            min={1}
-                            value={intervalWeeks}
-                            onFocus={(e) => { e.target.select(); if ([1, 2, 4].includes(intervalWeeks)) { setIntervalWeeks(3); setIntervalType('custom'); } }}
-                            onChange={(e) => {
-                              const val = Math.max(1, parseInt(e.target.value) || 1);
-                              setIntervalWeeks(val);
-                              if (val === 1) setIntervalType('weekly');
-                              else if (val === 2) setIntervalType('biweekly');
-                              else if (val === 4) setIntervalType('monthly');
-                              else setIntervalType('custom');
+                          }`}>
+                          {![1, 2, 4].includes(intervalWeeks) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const val = Math.max(1, intervalWeeks - 1);
+                                setIntervalWeeks(val);
+                                if (val === 1) setIntervalType('weekly');
+                                else if (val === 2) setIntervalType('biweekly');
+                                else if (val === 4) setIntervalType('monthly');
+                                else setIntervalType('custom');
+                              }}
+                              className="px-1.5 py-1 text-xs hover:bg-gold/20 rounded-l-lg transition-colors"
+                            >−</button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if ([1, 2, 4].includes(intervalWeeks)) {
+                                setIntervalWeeks(3);
+                                setIntervalType('custom');
+                              }
                             }}
-                            className="w-[1.2em] text-center text-xs font-semibold bg-transparent border-none outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                          />
-                          <span>&nbsp;Wo.</span>
-                        </label>
+                            className="px-2 py-1"
+                          >
+                            Alle {![1, 2, 4].includes(intervalWeeks) ? intervalWeeks : '…'} Wo.
+                          </button>
+                          {![1, 2, 4].includes(intervalWeeks) && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const val = intervalWeeks + 1;
+                                setIntervalWeeks(val);
+                                setIntervalType('custom');
+                              }}
+                              className="px-1.5 py-1 text-xs hover:bg-gold/20 rounded-r-lg transition-colors"
+                            >+</button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
