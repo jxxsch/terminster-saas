@@ -1032,8 +1032,8 @@ export function AddAppointmentModal({
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
-                          <div className="flex items-center border border-gray-200 rounded overflow-hidden">
-                            <span className="h-6 px-2.5 flex items-center justify-center text-xs bg-white">Wöchentlich</span>
+                          <div className="flex items-center rounded overflow-hidden">
+                            <span className="h-6 px-2.5 flex items-center justify-center text-xs">Wöchentlich</span>
                           </div>
                         </div>
                         <div
@@ -1044,8 +1044,8 @@ export function AddAppointmentModal({
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
-                          <div className="flex items-center border border-gray-200 rounded overflow-hidden">
-                            <span className="h-6 px-2.5 flex items-center justify-center text-xs bg-white">14-tägig</span>
+                          <div className="flex items-center rounded overflow-hidden">
+                            <span className="h-6 px-2.5 flex items-center justify-center text-xs">14-tägig</span>
                           </div>
                         </div>
                         <div
@@ -1056,8 +1056,8 @@ export function AddAppointmentModal({
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
-                          <div className="flex items-center border border-gray-200 rounded overflow-hidden">
-                            <span className="h-6 px-2.5 flex items-center justify-center text-xs bg-white">Monatlich</span>
+                          <div className="flex items-center rounded overflow-hidden">
+                            <span className="h-6 px-2.5 flex items-center justify-center text-xs">Monatlich</span>
                           </div>
                         </div>
                         <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs transition-all border ${
