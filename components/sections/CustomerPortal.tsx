@@ -53,6 +53,8 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
   const [profileSuccess, setProfileSuccess] = useState(false);
 
   // Delete account
+  const [isExporting, setIsExporting] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -790,7 +792,6 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                           style={styles.inputDisabled}
                         />
                       </div>
-                      <p style={{ fontSize: '0.6875rem', color: '#94a3b8' }}>{t('emailCannotChange')}</p>
                     </div>
 
                     {/* Geburtstag */}
@@ -823,24 +824,95 @@ export function CustomerPortal({ onClose, onBookNow }: CustomerPortalProps) {
                       </button>
                     </div>
 
-                    {/* Konto löschen */}
-                    <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
-                          <p style={{ fontSize: '0.75rem', fontWeight: 500, color: '#64748b' }}>
-                            {t('deleteAccount')}
-                          </p>
-                          <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.125rem' }}>
-                            {t('deleteAccountDesc')}
-                          </p>
-                        </div>
+                    {/* Datenschutz & Konto */}
+                    <div style={{ paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                      <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '0.75rem' }}>
                         <button
-                          onClick={() => { setShowDeleteConfirm(true); setDeleteStep(1); setDeleteConfirmText(''); setDeleteError(null); }}
-                          className="delete-account-btn"
-                          style={{ padding: '0.5rem 0.875rem', backgroundColor: '#f8fafc', color: '#ef4444', border: '1px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.6875rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s ease', flexShrink: 0, marginLeft: '1rem' }}
+                          onClick={() => setIsPrivacyOpen(!isPrivacyOpen)}
+                          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'none', border: 'none', cursor: 'pointer' }}
                         >
-                          {t('deleteAccount')}
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>
+                            {t('privacyAndAccount')}
+                          </span>
+                          <svg
+                            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                            style={{ transition: 'transform 0.25s ease', transform: isPrivacyOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                          >
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
                         </button>
+                        <div style={{ overflow: 'hidden', maxHeight: isPrivacyOpen ? '300px' : '0px', transition: 'max-height 0.25s ease' }}>
+                          <div style={{ padding: '0 1rem 0.75rem 1rem' }}>
+                            {/* Daten herunterladen */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <div>
+                                <p style={{ fontSize: '0.75rem', fontWeight: 500, color: '#64748b' }}>
+                                  {t('downloadData')}
+                                </p>
+                                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.125rem' }}>
+                                  {t('downloadDataDesc')}
+                                </p>
+                              </div>
+                              <button
+                                onClick={async () => {
+                                  setIsExporting(true);
+                                  try {
+                                    const res = await fetch('/api/customer/export', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ customerId: customer.id }),
+                                    });
+                                    if (!res.ok) throw new Error('Export failed');
+                                    const blob = await res.blob();
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `meine-daten-beban-${new Date().toISOString().split('T')[0]}.json`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                  } catch (err) {
+                                    console.error('Export error:', err);
+                                  } finally {
+                                    setIsExporting(false);
+                                  }
+                                }}
+                                disabled={isExporting}
+                                style={{ padding: '0.5rem 0.875rem', backgroundColor: 'white', color: '#0c4a6e', border: '1px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.6875rem', fontWeight: 600, cursor: isExporting ? 'not-allowed' : 'pointer', opacity: isExporting ? 0.6 : 1, transition: 'all 0.15s ease', flexShrink: 0, marginLeft: '1rem', display: 'flex', alignItems: 'center', gap: '0.375rem' }}
+                              >
+                                {!isExporting && (
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="7 10 12 15 17 10" />
+                                    <line x1="12" y1="15" x2="12" y2="3" />
+                                  </svg>
+                                )}
+                                {isExporting ? t('downloading') : t('downloadDataButton')}
+                              </button>
+                            </div>
+                            {/* Divider */}
+                            <div style={{ borderTop: '1px solid #e2e8f0', margin: '0.75rem 0' }} />
+                            {/* Konto löschen */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <div>
+                                <p style={{ fontSize: '0.75rem', fontWeight: 500, color: '#64748b' }}>
+                                  {t('deleteAccount')}
+                                </p>
+                                <p style={{ fontSize: '0.6875rem', color: '#94a3b8', marginTop: '0.125rem' }}>
+                                  {t('deleteAccountDesc')}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => { setShowDeleteConfirm(true); setDeleteStep(1); setDeleteConfirmText(''); setDeleteError(null); }}
+                                className="delete-account-btn"
+                                style={{ padding: '0.5rem 0.875rem', backgroundColor: 'white', color: '#ef4444', border: '1px solid #e2e8f0', borderRadius: '0.5rem', fontSize: '0.6875rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s ease', flexShrink: 0, marginLeft: '1rem' }}
+                              >
+                                {t('deleteAccount')}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
