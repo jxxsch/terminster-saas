@@ -76,7 +76,8 @@ export function AddAppointmentModal({
   const [isSearching, setIsSearching] = useState(false);
   const [serviceId, setServiceId] = useState(services[0]?.id || '1');
   const [isSeries, setIsSeries] = useState(false);
-  const [intervalType, setIntervalType] = useState<'weekly' | 'biweekly' | 'monthly'>('weekly');
+  const [intervalType, setIntervalType] = useState<'weekly' | 'biweekly' | 'monthly' | 'custom'>('weekly');
+  const [intervalWeeks, setIntervalWeeks] = useState(1);
   const [isPauseSeries, setIsPauseSeries] = useState(false);
   const [pauseDays, setPauseDays] = useState<number[]>([dayOfWeek]); // Standardmäßig aktueller Tag ausgewählt
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -246,6 +247,7 @@ export function AddAppointmentModal({
           start_date: date,
           end_date: null,
           interval_type: 'weekly',
+          interval_weeks: 1,
         }, true);
 
         if (result.series) {
@@ -289,6 +291,7 @@ export function AddAppointmentModal({
         start_date: date,
         end_date: null,
         interval_type: intervalType,
+        interval_weeks: intervalWeeks,
       }, false);
 
       if (!result.series) {
@@ -994,7 +997,12 @@ export function AddAppointmentModal({
                       </div>
                       <div>
                         <span className="block text-xs font-medium text-black">Serientermin</span>
-                        <span className="text-[10px] text-gray-500">Jeden {DAY_NAMES[dateObj.getDay()]}</span>
+                        <span className="text-[10px] text-gray-500">
+                          {intervalWeeks === 1
+                            ? `Jeden ${DAY_NAMES[dateObj.getDay()]}`
+                            : `Alle ${intervalWeeks} Wochen ${DAY_NAMES[dateObj.getDay()]}`
+                          }
+                        </span>
                       </div>
                     </div>
                     <button
@@ -1015,12 +1023,12 @@ export function AddAppointmentModal({
                   {/* Intervall-Auswahl (only shown when series is enabled) */}
                   {isSeries && (
                     <div className="mt-3 pl-8">
-                      <div className="flex gap-1.5 flex-wrap">
+                      <div className="flex gap-1.5 flex-wrap items-center">
                         <button
                           type="button"
-                          onClick={() => setIntervalType('weekly')}
+                          onClick={() => { setIntervalType('weekly'); setIntervalWeeks(1); }}
                           className={`px-2.5 py-1 rounded-lg text-xs transition-all border ${
-                            intervalType === 'weekly'
+                            intervalWeeks === 1
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
@@ -1029,9 +1037,9 @@ export function AddAppointmentModal({
                         </button>
                         <button
                           type="button"
-                          onClick={() => setIntervalType('biweekly')}
+                          onClick={() => { setIntervalType('biweekly'); setIntervalWeeks(2); }}
                           className={`px-2.5 py-1 rounded-lg text-xs transition-all border ${
-                            intervalType === 'biweekly'
+                            intervalWeeks === 2
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
@@ -1040,15 +1048,33 @@ export function AddAppointmentModal({
                         </button>
                         <button
                           type="button"
-                          onClick={() => setIntervalType('monthly')}
+                          onClick={() => { setIntervalType('monthly'); setIntervalWeeks(4); }}
                           className={`px-2.5 py-1 rounded-lg text-xs transition-all border ${
-                            intervalType === 'monthly'
+                            intervalWeeks === 4
                               ? 'border-gold bg-gold/10 text-gold'
                               : 'border-gray-200 text-gray-600 hover:border-gray-300'
                           }`}
                         >
                           Monatlich
                         </button>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <span className="text-xs text-gray-500">Alle</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={intervalWeeks}
+                          onChange={(e) => {
+                            const val = Math.max(1, parseInt(e.target.value) || 1);
+                            setIntervalWeeks(val);
+                            if (val === 1) setIntervalType('weekly');
+                            else if (val === 2) setIntervalType('biweekly');
+                            else if (val === 4) setIntervalType('monthly');
+                            else setIntervalType('custom');
+                          }}
+                          className="w-14 text-center text-xs px-2 py-1 border border-gray-200 rounded-lg focus:border-gold focus:outline-none"
+                        />
+                        <span className="text-xs text-gray-500">Wochen</span>
                       </div>
                     </div>
                   )}

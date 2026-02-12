@@ -84,7 +84,8 @@ export function AppointmentSlot({
   const [isDeletingEntireSeries, setIsDeletingEntireSeries] = useState(false);
   const [isEditingRhythm, setIsEditingRhythm] = useState(false);
   const [isSavingRhythm, setIsSavingRhythm] = useState(false);
-  const [selectedRhythm, setSelectedRhythm] = useState<'weekly' | 'biweekly' | 'monthly'>('weekly');
+  const [selectedRhythm, setSelectedRhythm] = useState<'weekly' | 'biweekly' | 'monthly' | 'custom'>('weekly');
+  const [selectedIntervalWeeks, setSelectedIntervalWeeks] = useState(1);
   const [isEditingSeriesContact, setIsEditingSeriesContact] = useState(false);
   const [isSavingSeriesContact, setIsSavingSeriesContact] = useState(false);
   const [seriesPhone, setSeriesPhone] = useState('');
@@ -259,7 +260,10 @@ export function AppointmentSlot({
     e.stopPropagation();
     if (!series) return;
     setIsSavingRhythm(true);
-    const updated = await updateSeries(series.id, { interval_type: selectedRhythm });
+    const updated = await updateSeries(series.id, {
+      interval_type: selectedRhythm,
+      interval_weeks: selectedIntervalWeeks,
+    });
     if (updated && onSeriesUpdate) {
       onSeriesUpdate(updated);
     }
@@ -370,7 +374,8 @@ export function AppointmentSlot({
       if (!showDetails) {
         // Berechne Position bevor Popup geöffnet wird
         calculatePopupPosition();
-        setSelectedRhythm((series.interval_type as 'weekly' | 'biweekly' | 'monthly') || 'weekly');
+        setSelectedRhythm(series.interval_type || 'weekly');
+        setSelectedIntervalWeeks(series.interval_weeks || 1);
         setIsEditingRhythm(false);
         setIsEditingSeriesContact(false);
         setSeriesPhone(series.customer_phone || '');
@@ -451,10 +456,12 @@ export function AppointmentSlot({
     };
 
     const currentRhythm = series.interval_type || 'weekly';
+    const currentIntervalWeeks = series.interval_weeks || 1;
     const rhythmLabels: Record<string, string> = {
       weekly: 'Wöchentlich',
       biweekly: 'Alle 2 Wochen',
-      monthly: 'Monatlich',
+      monthly: 'Alle 4 Wochen',
+      custom: `Alle ${currentIntervalWeeks} Wochen`,
     };
 
     // Im Selection Mode: Auswahl toggle statt Details
@@ -687,23 +694,51 @@ export function AppointmentSlot({
                 <div>
                   <span className="text-[9px] text-gray-400 uppercase tracking-wider block">Rhythmus</span>
                   {isEditingRhythm ? (
-                    <div className="mt-1 space-y-2">
-                      <select
-                        value={selectedRhythm}
-                        onChange={(e) => setSelectedRhythm(e.target.value as 'weekly' | 'biweekly' | 'monthly')}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-full text-sm text-black px-2 py-1.5 border border-gray-200 rounded focus:border-gold focus:outline-none"
-                      >
-                        <option value="weekly">Wöchentlich</option>
-                        <option value="biweekly">Alle 2 Wochen</option>
-                        <option value="monthly">Monatlich</option>
-                      </select>
+                    <div className="mt-1 space-y-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-1 flex-wrap">
+                        {[
+                          { label: 'Wöchentlich', type: 'weekly' as const, weeks: 1 },
+                          { label: '14-tägig', type: 'biweekly' as const, weeks: 2 },
+                          { label: 'Monatlich', type: 'monthly' as const, weeks: 4 },
+                        ].map(opt => (
+                          <button
+                            key={opt.type}
+                            onClick={() => { setSelectedRhythm(opt.type); setSelectedIntervalWeeks(opt.weeks); }}
+                            className={`px-2 py-0.5 rounded text-[10px] border transition-all ${
+                              selectedIntervalWeeks === opt.weeks
+                                ? 'border-gold bg-gold/10 text-gold'
+                                : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-gray-500">Alle</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={selectedIntervalWeeks}
+                          onChange={(e) => {
+                            const val = Math.max(1, parseInt(e.target.value) || 1);
+                            setSelectedIntervalWeeks(val);
+                            if (val === 1) setSelectedRhythm('weekly');
+                            else if (val === 2) setSelectedRhythm('biweekly');
+                            else if (val === 4) setSelectedRhythm('monthly');
+                            else setSelectedRhythm('custom');
+                          }}
+                          className="w-12 text-center text-xs px-1 py-0.5 border border-gray-200 rounded focus:border-gold focus:outline-none"
+                        />
+                        <span className="text-[10px] text-gray-500">Wochen</span>
+                      </div>
                       <div className="flex gap-2">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setIsEditingRhythm(false);
-                            setSelectedRhythm((series.interval_type as 'weekly' | 'biweekly' | 'monthly') || 'weekly');
+                            setSelectedRhythm(series.interval_type || 'weekly');
+                            setSelectedIntervalWeeks(series.interval_weeks || 1);
                           }}
                           className="flex-1 py-1 px-2 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50"
                         >
@@ -711,7 +746,7 @@ export function AppointmentSlot({
                         </button>
                         <button
                           onClick={handleSaveRhythm}
-                          disabled={isSavingRhythm || selectedRhythm === currentRhythm}
+                          disabled={isSavingRhythm || selectedIntervalWeeks === currentIntervalWeeks}
                           className="flex-1 py-1 px-2 text-xs text-white bg-gold hover:bg-gold-dark rounded disabled:opacity-50"
                         >
                           {isSavingRhythm ? 'Speichern...' : 'Speichern'}
@@ -720,7 +755,7 @@ export function AppointmentSlot({
                     </div>
                   ) : (
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700">{rhythmLabels[currentRhythm]}</span>
+                      <span className="text-sm text-gray-700">{rhythmLabels[currentRhythm] || `Alle ${currentIntervalWeeks} Wochen`}</span>
                       {!isPast && (
                         <button
                           onClick={(e) => {
@@ -1319,23 +1354,51 @@ export function AppointmentSlot({
                 <div>
                   <span className="text-[9px] text-gray-400 uppercase tracking-wider block">Rhythmus</span>
                   {isEditingRhythm ? (
-                    <div className="mt-1 space-y-2">
-                      <select
-                        value={selectedRhythm}
-                        onChange={(e) => setSelectedRhythm(e.target.value as 'weekly' | 'biweekly' | 'monthly')}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-full text-sm text-black px-2 py-1.5 border border-gray-200 rounded focus:border-gold focus:outline-none"
-                      >
-                        <option value="weekly">Wöchentlich</option>
-                        <option value="biweekly">Alle 2 Wochen</option>
-                        <option value="monthly">Monatlich</option>
-                      </select>
+                    <div className="mt-1 space-y-2" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-1 flex-wrap">
+                        {[
+                          { label: 'Wöchentlich', type: 'weekly' as const, weeks: 1 },
+                          { label: '14-tägig', type: 'biweekly' as const, weeks: 2 },
+                          { label: 'Monatlich', type: 'monthly' as const, weeks: 4 },
+                        ].map(opt => (
+                          <button
+                            key={opt.type}
+                            onClick={() => { setSelectedRhythm(opt.type); setSelectedIntervalWeeks(opt.weeks); }}
+                            className={`px-2 py-0.5 rounded text-[10px] border transition-all ${
+                              selectedIntervalWeeks === opt.weeks
+                                ? 'border-gold bg-gold/10 text-gold'
+                                : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-gray-500">Alle</span>
+                        <input
+                          type="number"
+                          min={1}
+                          value={selectedIntervalWeeks}
+                          onChange={(e) => {
+                            const val = Math.max(1, parseInt(e.target.value) || 1);
+                            setSelectedIntervalWeeks(val);
+                            if (val === 1) setSelectedRhythm('weekly');
+                            else if (val === 2) setSelectedRhythm('biweekly');
+                            else if (val === 4) setSelectedRhythm('monthly');
+                            else setSelectedRhythm('custom');
+                          }}
+                          className="w-12 text-center text-xs px-1 py-0.5 border border-gray-200 rounded focus:border-gold focus:outline-none"
+                        />
+                        <span className="text-[10px] text-gray-500">Wochen</span>
+                      </div>
                       <div className="flex gap-2">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setIsEditingRhythm(false);
-                            setSelectedRhythm((series.interval_type as 'weekly' | 'biweekly' | 'monthly') || 'weekly');
+                            setSelectedRhythm(series.interval_type || 'weekly');
+                            setSelectedIntervalWeeks(series.interval_weeks || 1);
                           }}
                           className="flex-1 py-1 px-2 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50"
                         >
@@ -1343,7 +1406,7 @@ export function AppointmentSlot({
                         </button>
                         <button
                           onClick={handleSaveRhythmGlobal}
-                          disabled={isSavingRhythm || selectedRhythm === ((series.interval_type as string) || 'weekly')}
+                          disabled={isSavingRhythm || selectedIntervalWeeks === (series.interval_weeks || 1)}
                           className="flex-1 py-1 px-2 text-xs text-white bg-gold hover:bg-gold-dark rounded disabled:opacity-50"
                         >
                           {isSavingRhythm ? 'Speichern...' : 'Speichern'}
@@ -1353,13 +1416,14 @@ export function AppointmentSlot({
                   ) : (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-700">
-                        {{ weekly: 'Wöchentlich', biweekly: 'Alle 2 Wochen', monthly: 'Monatlich' }[series.interval_type] || 'Wöchentlich'}
+                        {{ weekly: 'Wöchentlich', biweekly: 'Alle 2 Wochen', monthly: 'Alle 4 Wochen', custom: `Alle ${series.interval_weeks || 1} Wochen` }[series.interval_type] || `Alle ${series.interval_weeks || 1} Wochen`}
                       </span>
                       {!isPast && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedRhythm((series.interval_type as 'weekly' | 'biweekly' | 'monthly') || 'weekly');
+                            setSelectedRhythm(series.interval_type || 'weekly');
+                            setSelectedIntervalWeeks(series.interval_weeks || 1);
                             setIsEditingRhythm(true);
                           }}
                           className="text-[10px] text-gold hover:text-gold-dark"

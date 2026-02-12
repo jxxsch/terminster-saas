@@ -167,22 +167,22 @@ export function FullWeekView({ monday }: FullWeekViewProps) {
         const dayOfWeek = day.date.getDay() === 0 ? 7 : day.date.getDay();
         if (s.day_of_week === dayOfWeek) {
           if (s.start_date <= day.dateStr && (!s.end_date || s.end_date >= day.dateStr)) {
-            const intervalType = s.interval_type || 'weekly';
+            const intervalWeeks = s.interval_weeks || (
+              s.interval_type === 'biweekly' ? 2 :
+              s.interval_type === 'monthly' ? 4 : 1
+            );
             let shouldShow = false;
 
-            if (intervalType === 'weekly') {
+            if (intervalWeeks === 1) {
               shouldShow = true;
-            } else if (intervalType === 'biweekly') {
+            } else {
               const startParts = s.start_date.split('-').map(Number);
               const currentParts = day.dateStr.split('-').map(Number);
               const startUtc = Date.UTC(startParts[0], startParts[1] - 1, startParts[2]);
               const currentUtc = Date.UTC(currentParts[0], currentParts[1] - 1, currentParts[2]);
               const diffDays = Math.round((currentUtc - startUtc) / (24 * 60 * 60 * 1000));
               const diffWeeks = Math.floor(diffDays / 7);
-              shouldShow = diffWeeks >= 0 && diffWeeks % 2 === 0;
-            } else if (intervalType === 'monthly') {
-              const startDay = parseInt(s.start_date.split('-')[2], 10);
-              shouldShow = day.date.getDate() === startDay;
+              shouldShow = diffWeeks >= 0 && diffWeeks % intervalWeeks === 0;
             }
 
             if (shouldShow) {

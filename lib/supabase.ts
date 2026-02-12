@@ -144,7 +144,8 @@ export interface Series {
   customer_email: string | null;
   start_date: string;
   end_date: string | null;
-  interval_type: 'weekly' | 'biweekly' | 'monthly'; // Wiederholungsintervall
+  interval_type: 'weekly' | 'biweekly' | 'monthly' | 'custom'; // Wiederholungsintervall
+  interval_weeks: number; // Intervall in Wochen (1=wöchentlich, 2=14-tägig, 4=monatlich, etc.)
   last_generated_date: string | null;
   created_at: string;
 }
@@ -835,7 +836,13 @@ export async function generateSeriesAppointments(
     }
   }
 
-  // Für biweekly: Referenzpunkt ist start_date der Serie
+  // Intervall in Wochen (Fallback für alte Serien ohne interval_weeks)
+  const intervalWeeks = series.interval_weeks || (
+    series.interval_type === 'biweekly' ? 2 :
+    series.interval_type === 'monthly' ? 4 : 1
+  );
+
+  // Referenzpunkt für Intervall-Berechnung
   const seriesStartTime = parseDateNoon(series.start_date).getTime();
 
   const isPause = series.customer_name.toLowerCase().includes('pause');
@@ -843,18 +850,14 @@ export async function generateSeriesAppointments(
   while (formatDateLocal(current) <= effectiveEnd) {
     const dateStr = formatDateLocal(current);
 
+    // Prüfe ob dieses Datum ins Intervall passt
     let shouldGenerate = false;
-    if (series.interval_type === 'weekly') {
+    if (intervalWeeks === 1) {
       shouldGenerate = true;
-    } else if (series.interval_type === 'biweekly') {
+    } else {
       const diffDays = Math.round((current.getTime() - seriesStartTime) / (24 * 60 * 60 * 1000));
       const diffWeeks = Math.floor(diffDays / 7);
-      shouldGenerate = diffWeeks >= 0 && diffWeeks % 2 === 0;
-    } else if (series.interval_type === 'monthly') {
-      const startDay = parseInt(series.start_date.split('-')[2], 10);
-      const daysInMonth = new Date(current.getFullYear(), current.getMonth() + 1, 0).getDate();
-      const targetDay = Math.min(startDay, daysInMonth);
-      shouldGenerate = current.getDate() === targetDay;
+      shouldGenerate = diffWeeks >= 0 && diffWeeks % intervalWeeks === 0;
     }
 
     if (shouldGenerate) {
@@ -874,18 +877,8 @@ export async function generateSeriesAppointments(
       });
     }
 
-    // Nächstes Datum
-    if (series.interval_type === 'monthly') {
-      const targetMonth = current.getMonth() + 1;
-      current.setMonth(targetMonth);
-      // Edge-Case: 31. Jan → setMonth(1) ergibt 3. März
-      // Fix: Auf letzten Tag des Zielmonats zurücksetzen
-      if (current.getMonth() !== targetMonth % 12) {
-        current.setDate(0); // Letzter Tag des vorherigen Monats
-      }
-    } else {
-      current.setDate(current.getDate() + 7);
-    }
+    // Immer 7 Tage weiter (Intervall-Prüfung entscheidet ob generiert wird)
+    current.setDate(current.getDate() + 7);
   }
 
   if (appointments.length === 0) {
@@ -1099,13 +1092,18 @@ export async function extendSeriesAppointments(
  */
 export async function updateSeriesRhythm(
   seriesId: string,
-  newIntervalType: 'weekly' | 'biweekly' | 'monthly'
+  newIntervalType: 'weekly' | 'biweekly' | 'monthly' | 'custom',
+  newIntervalWeeks?: number
 ): Promise<SeriesGenerationResult> {
   const today = formatDateLocal(new Date());
   const emptyResult: SeriesGenerationResult = { created: 0, skipped: 0, exceptionSkipped: 0, total: 0, createdDates: [], skippedDates: [], exceptionSkippedDates: [] };
 
   // 1. Serie updaten
-  await updateSeries(seriesId, { interval_type: newIntervalType } as Partial<Series>);
+  const updates: Partial<Series> = { interval_type: newIntervalType };
+  if (newIntervalWeeks !== undefined) {
+    updates.interval_weeks = newIntervalWeeks;
+  }
+  await updateSeries(seriesId, updates);
 
   // 2. Alle zukünftigen Appointments löschen
   await supabase

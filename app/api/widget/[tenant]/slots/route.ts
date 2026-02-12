@@ -190,24 +190,28 @@ export async function GET(
     // Get series appointments
     const { data: series } = await supabase
       .from('series')
-      .select('time_slot, day_of_week, interval_type, start_date, end_date')
+      .select('time_slot, day_of_week, interval_type, interval_weeks, start_date, end_date')
       .eq('shop_id', shop.id)
       .eq('barber_id', barberId)
       .lte('start_date', dateStr)
 
     // Check if date matches any series
     const seriesDate = new Date(dateStr)
-    ;(series || []).forEach((s) => {
+    ;(series || []).forEach((s: { time_slot: string; day_of_week: number; interval_type: string; interval_weeks?: number; start_date: string; end_date?: string }) => {
       if (s.end_date && new Date(s.end_date) < seriesDate) return
       if (s.day_of_week !== (seriesDate.getDay() === 0 ? 7 : seriesDate.getDay())) return
 
-      // Check interval
-      if (s.interval_type === 'biweekly') {
+      // Check interval (alle Intervalle als "Alle N Wochen")
+      const intervalWeeks = s.interval_weeks || (
+        s.interval_type === 'biweekly' ? 2 :
+        s.interval_type === 'monthly' ? 4 : 1
+      )
+      if (intervalWeeks > 1) {
         const startDate = new Date(s.start_date)
         const weeksDiff = Math.floor(
           (seriesDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
         )
-        if (weeksDiff % 2 !== 0) return
+        if (weeksDiff % intervalWeeks !== 0) return
       }
 
       bookedSlots.add(s.time_slot)
